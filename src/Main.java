@@ -18,8 +18,8 @@ public class Main {
     static int height = 1080;
 
     // Ray data
-    static int bounces = 8;
-    static int samples = 10;
+    static int bounces = 128;
+    static int samples = 100;
 
     // Camera
     static Camera camera = new Camera(
@@ -33,9 +33,14 @@ public class Main {
     // Lights
     static final Vector3D AMBIENT = new Vector3D(1, 1, 1);
     static final Light[] LIGHTS = {
-            new Light(new Vector3D(-1.5, 0, 0), new Vector3D(0.5, 0.5, 0.5), 3D),
-            new Light(new Vector3D(0, 0, 0), new Vector3D(0.5, 0.5, 0.5), 3D),
-            new Light(new Vector3D(1.5, 0, 0), new Vector3D(0.5, 0.5, 0.5), 3D)
+            new Light(new Vector3D(-2, 0.5, 0), new Vector3D(1, 1, 1), 1D),
+            new Light(new Vector3D(-1, 0.5, 0), new Vector3D(1, 1, 1), 1D),
+            new Light(new Vector3D(0, 0.5, 0), new Vector3D(1, 1, 1), 1D),
+            new Light(new Vector3D(1, 0.5, 0), new Vector3D(1, 1, 1), 1D),
+            new Light(new Vector3D(-2, 0.5, -5), new Vector3D(1, 1, 1), 1D),
+            new Light(new Vector3D(-1, 0.5, -5), new Vector3D(1, 1, 1), 1D),
+            new Light(new Vector3D(0, 0.5, -5), new Vector3D(1, 1, 1), 1D),
+            new Light(new Vector3D(1, 0.5, -5), new Vector3D(1, 1, 1), 1D)
     };
 
     static final Object[] OBJECTS = new Object[] {
@@ -43,13 +48,13 @@ public class Main {
             //new Sphere(new Vector3D(0, 0, -2), 0.5D, new Matte(new Vector3D(224 / 255D, 74 / 255D, 89 / 255D), 0.1D, 0.6D, 0.3D, 32)),
             new Sphere(new Vector3D(0, 0, -2), 0.5D, new Glass(0.1D, 0.94)),
             //new Sphere(new Vector3D(-0.5, 0.2, -3), 0.5D, new Mirror(new Vector3D(0.9, 0.1, 0.9))),
-            new Sphere(new Vector3D(-0.5, 0, -3), 0.5D, new Reflective(new Vector3D(1, 0, 0), 0.1D, 0.5D, 0.3D)),
+            new Sphere(new Vector3D(-0.5, 0, -3), 0.5D, new Reflective(new Vector3D(1, 0, 0), 0.1D, 0.6D, 0.3D)),
             //new Box(new Vector3D(-0.62, -0.5, -1), new Vector3D(-0.9, 0.3, -2), new Matte(new Vector3D(88 / 255D, 124 / 255D, 166 / 255D), 0.1D, 0.6D, 0.5D, 4)),
             //new Box(new Vector3D(-0.62, -0.5, -1), new Vector3D(-0.9, 0.3, -2), new Glass(new Vector3D(1D, 1D, 1D), 0.15D, 0.3D, 0.9D, 32, 0.94D)),
-            new Box(new Vector3D(1, -0.5, -1.5), new Vector3D(2, 0.5, -2.5), new Reflective(new Vector3D(0D, 0D, 1D), 0.1D, 0.6D, 1)),
-            new Box(new Vector3D(-1.5, -0.5, -1), new Vector3D(-1, 0, -1.5), new ColoredGlass(new Vector3D(0, 1, 0), 0.1D, 1.04)),
+            new Box(new Vector3D(1, -0.5, -1.5), new Vector3D(2, 0.5, -2.5), new Reflective(new Vector3D(0D, 0D, 1D), 0.1D, 0.1D, 1)),
+            new Box(new Vector3D(-1.5, -0.5, -1), new Vector3D(-1, 0, -1.5), new ColoredGlass(new Vector3D(0, 1, 0), 0.1D, 0.94)),
             //new Sphere(new Vector3D(0, -100.5, -2), 100D, new Matte(new Vector3D(184 / 255D, 166 / 255D, 97 / 255D), 0.2D, 0.6D, 0.5D, 1)),
-            new Sphere(new Vector3D(0, -10000.5, -2), 10000D, new Reflective(new Vector3D(184 / 255D, 166 / 255D, 97 / 255D), 0.1D, 0.6D, 0))
+            new Sphere(new Vector3D(0, -10000.5, -2), 10000D, new Reflective(new Vector3D(255/255D, 253/255D, 208/255D), 0.1D, 0.6D, 0.5D))
     };
     public static void main(String[] args) throws IOException {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
