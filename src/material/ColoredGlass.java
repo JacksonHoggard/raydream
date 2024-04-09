@@ -2,9 +2,10 @@ package material;
 
 import math.Vector3D;
 
-public class Glass extends Material {
-    public Glass(double ambient, double indexOfRefraction) {
-        super(new Vector3D(),
+public class ColoredGlass extends Material {
+    public ColoredGlass(Vector3D albedo, double ambient, double indexOfRefraction) {
+        super(
+                albedo,
                 ambient,
                 0,
                 0,
@@ -12,7 +13,7 @@ public class Glass extends Material {
                 1,
                 indexOfRefraction,
                 Type.REFLECT_REFRACT,
-                false
+                true
         );
     }
 }

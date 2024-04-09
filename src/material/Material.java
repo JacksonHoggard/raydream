@@ -19,8 +19,9 @@ public abstract class Material {
     private double specularExponent;
     private final double metalness;
     private final Type type;
+    private final boolean hasColor;
 
-    public Material(Vector3D albedo, double ambient, double lambertian, double specular, double specularExponent, double metalness, double indexOfRefraction, Type type) {
+    public Material(Vector3D albedo, double ambient, double lambertian, double specular, double specularExponent, double metalness, double indexOfRefraction, Type type, boolean hasColor) {
         this.albedo = albedo;
         this.ambient = ambient;
         this.lambertian = lambertian;
@@ -29,11 +30,12 @@ public abstract class Material {
         this.indexOfRefraction = indexOfRefraction;
         this.metalness = metalness;
         this.type = type;
+        this.hasColor = hasColor;
     }
 
     public static Vector3D reflect(Ray rayIn, Vector3D normal) {
         Vector3D v = rayIn.getDirection().normalized();
-        return v.sub(Vector3D.mult(normal, 2*v.dot(normal)));
+        return Vector3D.sub(v, (Vector3D.mult(normal, 2*v.dot(normal))));
     }
 
     public static Vector3D refract(Ray rayIn, Vector3D normal, double ratio) {
@@ -56,7 +58,7 @@ public abstract class Material {
     }
 
     public double fresnel(Ray rayIn, Vector3D normal) {
-        Vector3D v = rayIn.getDirection();
+        Vector3D v = rayIn.getDirection().normalized();
         double cosi = Math.clamp(v.dot(normal), -1, 1);
         double etai = 1;
         double etat = indexOfRefraction;
@@ -121,6 +123,10 @@ public abstract class Material {
 
     public double getSpecularExponent() {
         return specularExponent;
+    }
+
+    public boolean hasColor() {
+        return hasColor;
     }
 
 }

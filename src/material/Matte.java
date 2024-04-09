@@ -7,12 +7,13 @@ public class Matte extends Material {
         super(
                 albedo,
                 ambient,
-                0.6D,
+                lambertian,
                 specular,
                 specularExponent,
-                1,
-                0,
-                Type.OTHER
+                0.5D,
+                1.5D,
+                Type.OTHER,
+                true
         );
     }
 }

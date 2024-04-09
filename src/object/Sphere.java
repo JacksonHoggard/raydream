@@ -26,6 +26,6 @@ public class Sphere extends Object {
 
     @Override
     public Vector3D normalAt(Vector3D point) {
-        return Vector3D.sub(point, getPosition()).div(radius);
+        return Vector3D.sub(point, getPosition()).normalize();
     }
 }

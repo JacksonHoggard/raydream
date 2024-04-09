@@ -1,10 +1,7 @@
 import light.Light;
-import material.Glass;
-import material.Material;
-import material.Mirror;
+import material.*;
 import math.Ray;
 import math.Vector3D;
-import material.Matte;
 import object.Box;
 import object.Object;
 import object.Sphere;
@@ -21,32 +18,39 @@ public class Main {
     static int height = 1080;
 
     // Ray data
-    static int bounces = 128;
-    static int samples = 100;
+    static int bounces = 8;
+    static int samples = 10;
 
     // Camera
-    static Vector3D origin = new Vector3D(0, 0, 0);
-    static double focalLength = 1.0D;
-    static double vHeight = 2.0D;
-    static double vWidth = vHeight * (width / (double) height);
+    static Camera camera = new Camera(
+            new Vector3D(-2, 1, 1),
+            new Vector3D(0, 0, -2),
+            50,
+            width,
+            height
+    );
 
     // Lights
     static final Vector3D AMBIENT = new Vector3D(1, 1, 1);
     static final Light[] LIGHTS = {
-            new Light(new Vector3D(1, 1, -0.5D), new Vector3D(1, 1, 1), 2),
-            new Light(new Vector3D(1, 2, -1), new Vector3D(0.99D, 0.01D, 0.01D), 1)
+            new Light(new Vector3D(-1.5, 0, 0), new Vector3D(0.5, 0.5, 0.5), 3D),
+            new Light(new Vector3D(0, 0, 0), new Vector3D(0.5, 0.5, 0.5), 3D),
+            new Light(new Vector3D(1.5, 0, 0), new Vector3D(0.5, 0.5, 0.5), 3D)
     };
 
     static final Object[] OBJECTS = new Object[] {
             //new Sphere(new Vector3D(0, 0, -2), 0.5D, new Mirror(new Vector3D(224 / 255D, 74 / 255D, 89 / 255D))),
-            new Sphere(new Vector3D(0, 0, -2), -0.5D, new Glass(new Vector3D(1, 1, 1), 0.15D, 0.3D, 0.9D, 32, 1.06D)),
-            new Sphere(new Vector3D(-0.5, 0.2, -3), 0.5D, new Matte(new Vector3D(0.9, 0.1, 0.9), 0.1D, 0.6D, 0.5D, 4)),
-            new Box(new Vector3D(-0.62, -0.5, -1), new Vector3D(-0.9, 0.3, -2), new Matte(new Vector3D(88 / 255D, 124 / 255D, 166 / 255D), 0.1D, 0.6D, 0.5D, 4)),
-            //new Box(new Vector3D(-0.62, -0.5, -1), new Vector3D(-0.9, 0.3, -2), new Mirror(new Vector3D(1D, 1D, 1D))),
+            //new Sphere(new Vector3D(0, 0, -2), 0.5D, new Matte(new Vector3D(224 / 255D, 74 / 255D, 89 / 255D), 0.1D, 0.6D, 0.3D, 32)),
+            new Sphere(new Vector3D(0, 0, -2), 0.5D, new Glass(0.1D, 0.94)),
+            //new Sphere(new Vector3D(-0.5, 0.2, -3), 0.5D, new Mirror(new Vector3D(0.9, 0.1, 0.9))),
+            new Sphere(new Vector3D(-0.5, 0, -3), 0.5D, new Reflective(new Vector3D(1, 0, 0), 0.1D, 0.5D, 0.3D)),
+            //new Box(new Vector3D(-0.62, -0.5, -1), new Vector3D(-0.9, 0.3, -2), new Matte(new Vector3D(88 / 255D, 124 / 255D, 166 / 255D), 0.1D, 0.6D, 0.5D, 4)),
+            //new Box(new Vector3D(-0.62, -0.5, -1), new Vector3D(-0.9, 0.3, -2), new Glass(new Vector3D(1D, 1D, 1D), 0.15D, 0.3D, 0.9D, 32, 0.94D)),
+            new Box(new Vector3D(1, -0.5, -1.5), new Vector3D(2, 0.5, -2.5), new Reflective(new Vector3D(0D, 0D, 1D), 0.1D, 0.6D, 1)),
+            new Box(new Vector3D(-1.5, -0.5, -1), new Vector3D(-1, 0, -1.5), new ColoredGlass(new Vector3D(0, 1, 0), 0.1D, 1.04)),
             //new Sphere(new Vector3D(0, -100.5, -2), 100D, new Matte(new Vector3D(184 / 255D, 166 / 255D, 97 / 255D), 0.2D, 0.6D, 0.5D, 1)),
-            new Sphere(new Vector3D(0, -100.5, -2), 100D, new Mirror(new Vector3D(184 / 255D, 166 / 255D, 97 / 255D))),
+            new Sphere(new Vector3D(0, -10000.5, -2), 10000D, new Reflective(new Vector3D(184 / 255D, 166 / 255D, 97 / 255D), 0.1D, 0.6D, 0))
     };
-
     public static void main(String[] args) throws IOException {
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
@@ -56,8 +60,7 @@ public class Main {
                 Vector3D totalColor = new Vector3D(0, 0, 0);
                 for(int s = 0; s < samples; s++) {
                     // Calculate the direction of the ray
-                    Ray ray = new Ray(origin, new Vector3D());
-                    shootRay(i, j, ray);
+                    Ray ray = camera.shootRay(i, j);
                     totalColor.add(trace(ray, bounces));
                 }
                 totalColor.div(samples);
@@ -87,7 +90,7 @@ public class Main {
         for(Object object : OBJECTS) {
             double t = object.intersect(ray);
             if(t > 0) {
-                double distance = origin.distance(pointHit);
+                double distance = ray.getOrigin().distance(ray.at(t));
                 if(distance < minDist) {
                     objectHit = object;
                     minDist = distance;
@@ -106,6 +109,8 @@ public class Main {
         switch(material.getType()) {
             case REFLECT -> {
                 reflectionColor.set(trace(material.reflectRay(ray, pointHit, normalHit), bounce - 1));
+                if(!material.hasColor())
+                    objectHit.getMaterial().getAlbedo().set(reflectionColor);
                 return phong(ray, objectHit, pointHit, normalHit).add(reflectionColor);
             }
             case REFLECT_REFRACT -> {
@@ -114,6 +119,7 @@ public class Main {
                 Ray refractionRay = material.refractRay(ray, pointHit, normalHit);
                 reflectionColor.set(trace(reflectionRay, bounce - 1));
                 refractionColor.set(trace(refractionRay, bounce - 1));
+                if(!material.hasColor()) objectHit.getMaterial().getAlbedo().set(reflectionColor);
                 return phong(ray, objectHit, pointHit, normalHit).add(reflectionColor.mult(kr).add(refractionColor.mult(1 - kr)));
             }
         }
@@ -138,40 +144,15 @@ public class Main {
             }
             if(!inShadow) {
                 Ray reflectedRay = objectHit.getMaterial().reflectRay(shadowRay, pointHit, normalHit);
-                double kl = Math.max(0D, normalHit.dot(shadowRay.getDirection())) * objectHit.getMaterial().getLambertian();
-                double ks = Math.pow(Math.max(0, ray.getDirection().dot(reflectedRay.getDirection())), objectHit.getMaterial().getSpecularExponent()) * objectHit.getMaterial().getSpecular();
+                double kl = Math.max(0D, normalHit.dot(shadowRay.getDirection().normalized())) * objectHit.getMaterial().getLambertian();
+                double ks = Math.pow(Math.max(0, ray.getDirection().normalized().dot(reflectedRay.getDirection().normalized())), objectHit.getMaterial().getSpecularExponent()) * objectHit.getMaterial().getSpecular();
                 Vector3D s = Vector3D.mult(objectHit.getMaterial().getAlbedo(), objectHit.getMaterial().getMetalness()).add(new Vector3D(1, 1, 1).mult(1 - objectHit.getMaterial().getMetalness()));
-                s.mult(ks);
                 diffuse.set(objectHit.getMaterial().getAlbedo()).mult(kl);
-                specular.set(light.color()).mult(s);
+                specular.set(light.color()).mult(s).mult(ks);
                 double brightness = light.brightness() / (light.brightness() + lightDist);
                 color.add(Vector3D.add(diffuse, specular).mult(brightness));
             }
         }
         return color;
-    }
-
-    /**
-     * Finds the direction of the primary ray based on the pixel coordinates
-     * @param i pixel row index
-     * @param j pixel column index
-     * @param ray primary ray
-     */
-    private static void shootRay(int i, int j, Ray ray) {
-        double u = (i / (double) (width - 1)) * vWidth;
-        double v = (j / (double) (height - 1)) * vHeight;
-        double pixelSizeX = vWidth / width;
-        double pixelSizeY = vHeight / height;
-        double pixelXVariation = randomRange(-pixelSizeX/2, pixelSizeX/2);
-        double pixelYVariation = randomRange(-pixelSizeY/2, pixelSizeY/2);
-        ray.getDirection().z -= focalLength;
-        ray.getDirection().x -= (0.5D * vWidth);
-        ray.getDirection().y += (0.5D * vHeight);
-        ray.getDirection().x += u + pixelXVariation;
-        ray.getDirection().y -= v - pixelYVariation;
-    }
-
-    private static double randomRange(double min, double max) {
-        return min + (max - min) * Math.random();
     }
 }
