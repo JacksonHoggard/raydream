@@ -29,10 +29,11 @@ public class Vector3D {
         return this;
     }
 
-    public void set(double x, double y, double z) {
+    public Vector3D set(double x, double y, double z) {
         this.x = x;
         this.y = y;
         this.z = z;
+        return this;
     }
 
     public Vector3D negate() {
@@ -93,6 +94,10 @@ public class Vector3D {
         return new Vector3D(v).mult(t);
     }
 
+    public static Vector3D mult(double t, Vector3D v) {
+        return new Vector3D(v).mult(t);
+    }
+
     public static Vector3D div(Vector3D v, double t) {
         return new Vector3D(v).mult(1/t);
     }
@@ -127,6 +132,6 @@ public class Vector3D {
 
     @Override
     public String toString() {
-        return "< " + this.x + ", " + this.y + ", " + this.z + " >";
+        return "<" + this.x + ", " + this.y + ", " + this.z + ">";
     }
 }

@@ -85,18 +85,19 @@ public class Scene {
         Vector3D refractionColor = new Vector3D();
         switch(material.getType()) {
             case REFLECT -> {
+                double kr = material.fresnelMetal(ray, normalHit);
                 reflectionColor.set(trace(material.reflectRay(ray, pointHit, normalHit), bounce - 1));
                 if(!material.hasColor())
-                    objectHit.getMaterial().getAlbedo().set(reflectionColor);
-                return phong(ray, objectHit, pointHit, normalHit).add(reflectionColor);
+                    objectHit.getMaterial().getColor(objectHit, pointHit).set(reflectionColor);
+                return phong(ray, objectHit, pointHit, normalHit).add(reflectionColor.mult(kr));
             }
             case REFLECT_REFRACT -> {
-                double kr = material.fresnel(ray, normalHit);
+                double kr = material.fresnelDielectric(ray, normalHit);
                 Ray reflectionRay = material.reflectRay(ray, pointHit, normalHit);
                 Ray refractionRay = material.refractRay(ray, pointHit, normalHit);
                 reflectionColor.set(trace(reflectionRay, bounce - 1));
                 refractionColor.set(trace(refractionRay, bounce - 1));
-                if(!material.hasColor()) objectHit.getMaterial().getAlbedo().set(reflectionColor);
+                if(!material.hasColor()) objectHit.getMaterial().getColor(objectHit, pointHit).set(reflectionColor);
                 return phong(ray, objectHit, pointHit, normalHit).add(reflectionColor.mult(kr).add(refractionColor.mult(1 - kr)));
             }
         }
@@ -106,7 +107,7 @@ public class Scene {
     private Vector3D phong(Ray ray, Object objectHit, Vector3D pointHit, Vector3D normalHit) {
         Vector3D diffuse = new Vector3D();
         Vector3D specular = new Vector3D();
-        Vector3D color = Vector3D.mult(objectHit.getMaterial().getAlbedo(), objectHit.getMaterial().getAmbient()).mult(ambient.color());
+        Vector3D color = Vector3D.mult(objectHit.getMaterial().getColor(objectHit, pointHit), objectHit.getMaterial().getAmbient()).mult(ambient.color());
         for(Light light : lights) {
             Vector3D shadowDir = Vector3D.sub(light.position(), pointHit).normalize();
             Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(shadowDir, 0.00001D)), shadowDir);
@@ -123,8 +124,8 @@ public class Scene {
                 Ray reflectedRay = objectHit.getMaterial().reflectRay(shadowRay, pointHit, normalHit);
                 double kl = Math.max(0D, normalHit.dot(shadowRay.getDirection().normalized())) * objectHit.getMaterial().getLambertian();
                 double ks = Math.pow(Math.max(0, ray.getDirection().normalized().dot(reflectedRay.getDirection().normalized())), objectHit.getMaterial().getSpecularExponent()) * objectHit.getMaterial().getSpecular();
-                Vector3D s = Vector3D.mult(objectHit.getMaterial().getAlbedo(), objectHit.getMaterial().getMetalness()).add(new Vector3D(1, 1, 1).mult(1 - objectHit.getMaterial().getMetalness()));
-                diffuse.set(objectHit.getMaterial().getAlbedo()).mult(kl);
+                Vector3D s = Vector3D.mult(objectHit.getMaterial().getColor(objectHit, pointHit), objectHit.getMaterial().getMetalness()).add(new Vector3D(1, 1, 1).mult(1 - objectHit.getMaterial().getMetalness()));
+                diffuse.set(objectHit.getMaterial().getColor(objectHit, pointHit)).mult(kl);
                 specular.set(light.color()).mult(s).mult(ks);
                 double brightness = light.brightness() / (light.brightness() + lightDist);
                 color.add(Vector3D.add(diffuse, specular).mult(brightness));

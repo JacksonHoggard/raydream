@@ -2,6 +2,7 @@ package object;
 
 import material.Material;
 import math.Ray;
+import math.Vector2D;
 import math.Vector3D;
 
 public class Sphere extends Object {
@@ -27,5 +28,16 @@ public class Sphere extends Object {
     @Override
     public Vector3D normalAt(Vector3D point) {
         return Vector3D.sub(point, getPosition()).normalize();
+    }
+
+    @Override
+    public Vector2D mapTexture(Vector3D point) {
+        Vector3D temp = this.normalAt(point).mult(radius);
+        double theta = Math.atan2(temp.x, temp.z);
+        double phi = Math.acos(temp.y / radius);
+        double rawU = theta / (2 * Math.PI);
+        double u = 1 - (rawU + 0.5D);
+        double v = 1 - phi / Math.PI;
+        return new Vector2D(u, v);
     }
 }

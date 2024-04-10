@@ -3,15 +3,16 @@ package material;
 import math.Vector3D;
 
 public class ColoredGlass extends Material {
-    public ColoredGlass(Vector3D albedo, double ambient, double indexOfRefraction) {
+    public ColoredGlass(Vector3D color, double ambient, double indexOfRefraction) {
         super(
-                albedo,
+                color,
                 ambient,
+                0.3D,
+                0.6D,
+                100,
                 0,
-                0,
-                0,
-                1,
                 indexOfRefraction,
+                0,
                 Type.REFLECT_REFRACT,
                 true
         );

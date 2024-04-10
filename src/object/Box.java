@@ -2,6 +2,7 @@ package object;
 
 import material.Material;
 import math.Ray;
+import math.Vector2D;
 import math.Vector3D;
 
 public class Box extends Object {
@@ -74,5 +75,10 @@ public class Box extends Object {
                 (int) (p.y / Math.abs(d.y) * bias),
                 (int) (p.z / Math.abs(d.z) * bias)
         ).normalize();
+    }
+
+    @Override
+    public Vector2D mapTexture(Vector3D point) {
+        return null;
     }
 }

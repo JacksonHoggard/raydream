@@ -3,14 +3,15 @@ package material;
 import math.Vector3D;
 
 public class Reflective extends Material {
-    public Reflective(Vector3D albedo, double ambient, double lambertian, double metalness) {
-        super(albedo,
+    public Reflective(Vector3D color, double ambient, double lambertian, double specular, double specularExponent, double metalness, double indexOfRefraction, double k) {
+        super(color,
                 ambient,
                 lambertian,
-                0.8D,
-                25,
+                specular,
+                specularExponent,
                 metalness,
-                1,
+                indexOfRefraction,
+                k,
                 Type.REFLECT,
                 true
         );

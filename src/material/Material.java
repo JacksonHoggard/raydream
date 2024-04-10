@@ -2,6 +2,7 @@ package material;
 
 import math.Ray;
 import math.Vector3D;
+import object.Object;
 
 public abstract class Material {
 
@@ -11,8 +12,9 @@ public abstract class Material {
         OTHER
     }
 
-    private final Vector3D albedo;
+    private final Vector3D color;
     private final double indexOfRefraction;
+    private final double k;
     private double ambient;
     private double lambertian;
     private double specular;
@@ -21,13 +23,14 @@ public abstract class Material {
     private final Type type;
     private final boolean hasColor;
 
-    public Material(Vector3D albedo, double ambient, double lambertian, double specular, double specularExponent, double metalness, double indexOfRefraction, Type type, boolean hasColor) {
-        this.albedo = albedo;
+    public Material(Vector3D color, double ambient, double lambertian, double specular, double specularExponent, double metalness, double indexOfRefraction, double k, Type type, boolean hasColor) {
+        this.color = color;
         this.ambient = ambient;
         this.lambertian = lambertian;
         this.specular = specular;
         this.specularExponent = specularExponent;
         this.indexOfRefraction = indexOfRefraction;
+        this.k = k;
         this.metalness = metalness;
         this.type = type;
         this.hasColor = hasColor;
@@ -57,7 +60,8 @@ public abstract class Material {
         return k < 0 ? new Vector3D() : v.mult(eta).add(n.mult(eta * cosi - Math.sqrt(k)));
     }
 
-    public double fresnel(Ray rayIn, Vector3D normal) {
+    // Fresnel for dielectrics
+    public double fresnelDielectric(Ray rayIn, Vector3D normal) {
         Vector3D v = rayIn.getDirection().normalized();
         double cosi = Math.clamp(v.dot(normal), -1, 1);
         double etai = 1;
@@ -75,6 +79,15 @@ public abstract class Material {
         double Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
         double Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
         return (Rs * Rs + Rp * Rp) / 2;
+    }
+
+    // Fresnel for metals
+    public double fresnelMetal(Ray rayIn, Vector3D normal) {
+        Vector3D v = rayIn.getDirection().normalized();
+        double cosi = Math.abs(Math.clamp(v.dot(normal), -1, 1));
+        double top = Math.pow(indexOfRefraction - 1, 2) + ((4 * indexOfRefraction) * Math.pow(1 - cosi, 5)) + k*k;
+        double bottom = Math.pow(indexOfRefraction + 1, 2) + k*k;
+        return top / bottom;
     }
 
     public Ray reflectRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
@@ -97,8 +110,8 @@ public abstract class Material {
         return type;
     }
 
-    public Vector3D getAlbedo() {
-        return albedo;
+    public Vector3D getColor(Object object, Vector3D point) {
+        return color;
     }
 
     public double getIndexOfRefraction() {
