@@ -24,14 +24,17 @@ public class Main {
 
         Light ambient = new Light(new Vector3D(), new Vector3D(1, 1, 1), 1);
         Light[] lights = {
-                new Light(new Vector3D(-3, 0.5, 0), new Vector3D(1, 1, 1), 1D),
-                new Light(new Vector3D(-1.5, 0.5, 0), new Vector3D(1, 1, 1), 1D),
-                new Light(new Vector3D(0, 0.5, 0), new Vector3D(1, 1, 1), 1D),
-                new Light(new Vector3D(1.5, 0.5, 0), new Vector3D(1, 1, 1), 1D),
-                new Light(new Vector3D(-3, 0.5, -5), new Vector3D(1, 1, 1), 1D),
-                new Light(new Vector3D(-1.5, 0.5, -5), new Vector3D(1, 1, 1), 1D),
-                new Light(new Vector3D(0, 0.5, -5), new Vector3D(1, 1, 1), 1D),
-                new Light(new Vector3D(1.5, 0.5, -5), new Vector3D(1, 1, 1), 1D)
+                new Light(new Vector3D(-10, 10, -10), new Vector3D(1, 1, 1), 10D),
+                new Light(new Vector3D(-10, 10, 10), new Vector3D(1, 1, 1), 10D),
+                new Light(new Vector3D(10, 10, -10), new Vector3D(1, 1, 1), 10D),
+                new Light(new Vector3D(10, 10, 10), new Vector3D(1, 1, 1), 10D),
+//                new Light(new Vector3D(-1.5, 0.5, 0), new Vector3D(1, 1, 1), 1D),
+//                new Light(new Vector3D(0, 0.5, 0), new Vector3D(1, 1, 1), 1D),
+//                new Light(new Vector3D(1.5, 0.5, 0), new Vector3D(1, 1, 1), 1D),
+//                new Light(new Vector3D(-3, 0.5, -5), new Vector3D(1, 1, 1), 1D),
+//                new Light(new Vector3D(-1.5, 0.5, -5), new Vector3D(1, 1, 1), 1D),
+//                new Light(new Vector3D(0, 0.5, -5), new Vector3D(1, 1, 1), 1D),
+//                new Light(new Vector3D(1.5, 0.5, -5), new Vector3D(1, 1, 1), 1D)
         };
 
         Object[] objects = new Object[] {
@@ -39,7 +42,7 @@ public class Main {
                 new Sphere(new Vector3D(-0.5, 0, -3), 0.5D, new Reflective(new Vector3D(1, 0, 0), 0.1D, 0.6D, 0.6D, 50, 0.2D, 0.617D, 2.63D)),
                 new Sphere(new Vector3D(0, -0.25, -1), 0.25D, new Pattern(new Checker(16, 16, new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), 0.1D, 0.6D, 0.6D, 50, 0.6D, 2.485D, 3.433D)),
                 new Box(new Vector3D(1, -0.5, -1.5), new Vector3D(2, 0.5, -2.5), new Reflective(new Vector3D(0D, 0D, 1D), 0.1D, 0.4D, 0.5, 32, 0.3D, 0.177, 3.638)),
-                new Box(new Vector3D(-1.5, -0.5, -1), new Vector3D(-1, 0, -1.5), new ColoredGlass(new Vector3D(0, 1, 0), 0.1D, 1.52)),
+                new Box(new Vector3D(-1.5, -0.5, -1), new Vector3D(-1, 0, -1.5), new Reflective(new Vector3D(0, 1, 0), 0.1D, 0.6D, 0.6D, 32, 0.3D, 0.617, 2.63)),
                 new Plane(-0.5, new Vector3D(0, 1, 0), new Reflective(new Vector3D(255/255D, 253/255D, 208/255D), 0.1D, 0.6D, 0.5D, 4, 1, 0.617D, 2.63D))
         };
 
