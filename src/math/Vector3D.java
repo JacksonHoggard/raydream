@@ -134,4 +134,10 @@ public class Vector3D {
     public String toString() {
         return "<" + this.x + ", " + this.y + ", " + this.z + ">";
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        Vector3D v = (Vector3D) obj;
+        return x == v.x && y == v.y && z == v.z;
+    }
 }

@@ -121,4 +121,10 @@ public class Vector2D {
     public String toString() {
         return "<" + this.x + ", " + this.y + ">";
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        Vector2D v = (Vector2D) obj;
+        return x == v.x && y == v.y;
+    }
 }

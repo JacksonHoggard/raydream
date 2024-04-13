@@ -79,6 +79,67 @@ public class Box extends Object {
 
     @Override
     public Vector2D mapTexture(Vector3D point) {
-        return null;
+        Vector3D localizedPoint = new Vector3D(point).sub(min);
+        Vector3D normal = normalAt(point);
+        if(normal.equals(new Vector3D(1, 0, 0))) return uvRight(localizedPoint);
+        if(normal.equals(new Vector3D(-1, 0, 0))) return uvLeft(localizedPoint);
+        if(normal.equals(new Vector3D(0, 1, 0))) return uvUp(localizedPoint);
+        if(normal.equals(new Vector3D(0, -1, 0))) return uvDown(localizedPoint);
+        if(normal.equals(new Vector3D(0, 0, 1))) return uvFront(localizedPoint);
+        return uvBack(localizedPoint);
+    }
+
+    private Vector2D uvFront(Vector3D point) {
+        double lengthU = Math.abs(max.x - min.x);
+        double lengthV = Math.abs(max.y - min.y);
+        return new Vector2D(
+                (point.x % lengthU) / lengthU,
+                (point.y % lengthV) / lengthV
+        );
+    }
+
+    private Vector2D uvBack(Vector3D point) {
+        double lengthU = Math.abs(max.x - min.x);
+        double lengthV = Math.abs(max.y - min.y);
+        return new Vector2D(
+                1 - ((point.x % lengthU) / lengthU),
+                (point.y % lengthV) / lengthV
+        );
+    }
+
+    private Vector2D uvLeft(Vector3D point) {
+        double lengthU = Math.abs(max.z - min.z);
+        double lengthV = Math.abs(max.y - min.y);
+        return new Vector2D(
+                (point.z % lengthU) / lengthU,
+                (point.y % lengthV) / lengthV
+        );
+    }
+
+    private Vector2D uvRight(Vector3D point) {
+        double lengthU = Math.abs(max.z - min.z);
+        double lengthV = Math.abs(max.y - min.y);
+        return new Vector2D(
+                1 - ((point.z % lengthU) / lengthU),
+                (point.y % lengthV) / lengthV
+        );
+    }
+
+    private Vector2D uvUp(Vector3D point) {
+        double lengthU = Math.abs(max.x - min.x);
+        double lengthV = Math.abs(max.z - min.z);
+        return new Vector2D(
+                ((point.x % lengthU) / lengthU),
+                1 - ((point.z % lengthV) / lengthV)
+        );
+    }
+
+    private Vector2D uvDown(Vector3D point) {
+        double lengthU = Math.abs(max.x - min.x);
+        double lengthV = Math.abs(max.z - min.z);
+        return new Vector2D(
+                (point.x % lengthU) / lengthU,
+                (point.z % lengthV) / lengthV
+        );
     }
 }

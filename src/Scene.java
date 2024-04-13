@@ -88,8 +88,8 @@ public class Scene {
                 double kr = material.fresnelMetal(ray, normalHit);
                 reflectionColor.set(trace(material.reflectRay(ray, pointHit, normalHit), bounce - 1));
                 if(!material.hasColor())
-                    objectHit.getMaterial().getColor(objectHit, pointHit).set(reflectionColor);
-                return phong(ray, objectHit, pointHit, normalHit).add(reflectionColor.mult(kr));
+                    objectHit.getMaterial().getColor(objectHit, pointHit).set(Vector3D.mult(reflectionColor, kr));
+                return phong(ray, objectHit, pointHit, normalHit).add(Vector3D.mult(reflectionColor, kr));
             }
             case REFLECT_REFRACT -> {
                 double kr = material.fresnelDielectric(ray, normalHit);
@@ -97,8 +97,8 @@ public class Scene {
                 Ray refractionRay = material.refractRay(ray, pointHit, normalHit);
                 reflectionColor.set(trace(reflectionRay, bounce - 1));
                 refractionColor.set(trace(refractionRay, bounce - 1));
-                if(!material.hasColor()) objectHit.getMaterial().getColor(objectHit, pointHit).set(reflectionColor);
-                return phong(ray, objectHit, pointHit, normalHit).add(reflectionColor.mult(kr).add(refractionColor.mult(1 - kr)));
+                if(!material.hasColor()) objectHit.getMaterial().getColor(objectHit, pointHit).set(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr)));
+                return phong(ray, objectHit, pointHit, normalHit).add(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr)));
             }
         }
         return phong(ray, objectHit, pointHit, normalHit);
