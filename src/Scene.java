@@ -80,20 +80,22 @@ public class Scene {
         if(objectHit == null) {
             return new Vector3D(0.125, 0.125, 0.125);
         }
+        Vector3D reflectionNormal = ray.getDirection().normalized().dot(normalHit) < 0 ?
+                new Vector3D(normalHit).negate() : normalHit;
         Material material = objectHit.getMaterial();
         Vector3D reflectionColor = new Vector3D();
         Vector3D refractionColor = new Vector3D();
         switch(material.getType()) {
             case REFLECT -> {
                 double kr = material.fresnelMetal(ray, normalHit);
-                reflectionColor.set(trace(material.reflectRay(ray, pointHit, normalHit), bounce - 1));
+                reflectionColor.set(trace(material.reflectRay(ray, pointHit, reflectionNormal), bounce - 1));
                 if(!material.hasColor())
                     objectHit.getMaterial().getColor(objectHit, pointHit).set(Vector3D.mult(reflectionColor, kr));
                 return phong(ray, objectHit, pointHit, normalHit).add(Vector3D.mult(reflectionColor, kr));
             }
             case REFLECT_REFRACT -> {
                 double kr = material.fresnelDielectric(ray, normalHit);
-                Ray reflectionRay = material.reflectRay(ray, pointHit, normalHit);
+                Ray reflectionRay = material.reflectRay(ray, pointHit, reflectionNormal);
                 Ray refractionRay = material.refractRay(ray, pointHit, normalHit);
                 reflectionColor.set(trace(reflectionRay, bounce - 1));
                 refractionColor.set(trace(refractionRay, bounce - 1));
