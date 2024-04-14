@@ -10,6 +10,7 @@ public class Checker extends Texture {
     private final int height;
 
     public Checker(int width, int height, Vector3D colorA, Vector3D colorB) {
+        super(null, width, height);
         this.colorA = colorA;
         this.colorB = colorB;
         this.width = width;
@@ -17,7 +18,7 @@ public class Checker extends Texture {
     }
 
     @Override
-    protected Vector3D uvPatternAt(double u, double v) {
+    protected Vector3D getColorAt(double u, double v) {
         double u2 = Math.floor(u * width);
         double v2 = Math.floor(v * height);
 

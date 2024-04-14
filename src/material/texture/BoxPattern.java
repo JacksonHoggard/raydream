@@ -11,6 +11,7 @@ public class BoxPattern extends Texture {
     private final Vector3D br;
 
     public BoxPattern(Vector3D main, Vector3D ul, Vector3D ur, Vector3D bl, Vector3D br) {
+        super(null, 1, 1);
         this.main = main;
         this.ul = ul;
         this.ur = ur;
@@ -19,7 +20,7 @@ public class BoxPattern extends Texture {
     }
 
     @Override
-    protected Vector3D uvPatternAt(double u, double v) {
+    protected Vector3D getColorAt(double u, double v) {
         if(v > 0.8D) {
             if(u < 0.2D) return ul;
             if(u > 0.8D) return ur;

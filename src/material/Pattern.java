@@ -15,6 +15,6 @@ public class Pattern extends Material {
 
     @Override
     public Vector3D getColor(Object object, Vector3D point) {
-        return texture.patternAt(object, point);
+        return texture.textureAt(object, point);
     }
 }
