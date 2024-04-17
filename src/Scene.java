@@ -41,7 +41,6 @@ public class Scene {
                     totalColor.add(trace(ray, bounces));
                 }
                 totalColor.div(samples);
-                //System.out.println(totalColor);
                 image.setRGB(i, j, new Color((int) Math.min(totalColor.x * 255, 255), (int) Math.min(totalColor.y * 255, 255), (int) Math.min(totalColor.z * 255, 255)).getRGB());
             }
         }

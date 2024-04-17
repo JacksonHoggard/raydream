@@ -2,10 +2,8 @@ import light.Light;
 import material.*;
 import material.texture.Checker;
 import math.Vector3D;
-import object.Box;
+import object.*;
 import object.Object;
-import object.Plane;
-import object.Sphere;
 
 import java.io.IOException;
 
@@ -15,8 +13,8 @@ public class Main {
         int height = 1080;
 
         Camera camera = new Camera(
-                new Vector3D(-2, 1, 1),
-                new Vector3D(0, 0, -2),
+                new Vector3D(0, 1, 2),
+                new Vector3D(0, 0.5, 0),
                 50,
                 width,
                 height
