@@ -35,7 +35,7 @@ public class Main {
                 //new Box(new Vector3D(1, -0.5, -1.5), new Vector3D(2, 0.5, -2.5), new Reflective(new Vector3D(0D, 0D, 1D), 0.1D, 0.4D, 0.5, 32, 0.3D, 0.177, 3.638)),
                 //new Box(new Vector3D(-1.5, -0.5, -1), new Vector3D(-1, 0, -1.5),  new Pattern(new Checker(2, 2, new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), 0.1D, 0.6D, 0.6D, 50, 0.6D, 2.485D, 3.433D)),
                 new Plane(-0.5, new Vector3D(0, 1, 0), new Reflective(new Vector3D(255/255D, 253/255D, 208/255D), 0.1D, 0.6D, 0.5D, 4, 1, 0.617D, 2.63D)),
-                new Model(new Transform(new Vector3D(120, 0, 50), new Vector3D(-90, 45, 0), new Vector3D(0.01, 0.01, 0.01)), new Reflective(new Vector3D(255/255D, 253/255D, 208/255D), 0.1D, 0.6D, 0.5D, 4, 1, 0.617D, 2.63D), Util.loadOBJ("./diamond.obj"), false)
+                new Model(new Transform(new Vector3D(10, 10, -7), new Vector3D(-90, 0, 0), new Vector3D(0.1, 0.1, 0.1)), new Reflective(new Vector3D(0, 0, 1), 0.1D, 0.6D, 0.5D, 4, 1, 0.617D, 2.63D), Util.loadOBJ("./diamond.obj"), false)
         };
 
         Scene scene = new Scene(camera, ambient, lights, objects, width, height);

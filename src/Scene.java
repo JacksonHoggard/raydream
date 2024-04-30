@@ -72,13 +72,11 @@ public class Scene {
             Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
             double t = object.intersect(rayOS);
             if(t > 0) {
-                double distance = ray.getOrigin().distance(ray.at(t));
-                if(distance < minDist) {
+                if(t < minDist) {
                     objectHit = object;
-                    minDist = distance;
-                    pointHit = rayOS.at(t);
-                    normalHit = objectHit.normalAt(pointHit);
+                    minDist = t;
                     pointHit = ray.at(t);
+                    normalHit = objectHit.normalAt(rayOS.at(t));
                 }
             }
         }

@@ -38,7 +38,7 @@ public class Model extends Object {
     public Vector3D normalAt(Vector3D point) {
         Vector4D normalWS = new Vector4D(normal.x, normal.y, normal.z, 0);
         normalWS = normalWS.mult(getNormalMatrix());
-        return new Vector3D(normalWS.x, normalWS.y, normalWS.z);
+        return new Vector3D(normalWS.x, normalWS.y, normalWS.z).normalize();
     }
 
     @Override
