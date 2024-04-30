@@ -6,9 +6,7 @@ import math.Vector3D;
 
 public interface IObject {
 
-    double intersect(Ray ray);
-
-    Vector3D normalAt(Vector3D point);
+    Hit intersect(Ray ray);
 
     Vector2D mapTexture(Vector3D point);
 

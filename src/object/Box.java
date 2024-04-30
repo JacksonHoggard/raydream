@@ -4,6 +4,7 @@ import material.Material;
 import math.Ray;
 import math.Vector2D;
 import math.Vector3D;
+import math.Vector4D;
 
 public class Box extends Object {
 
@@ -11,15 +12,15 @@ public class Box extends Object {
     private final Vector3D min;
     private final Vector3D max;
 
-    public Box(Transform transform, Material material) {
+    public Box(Transform transform, Vector3D size, Material material) {
         super(transform, material);
-        this.min = new Vector3D(-1, -1, -1);
-        this.max = new Vector3D(1, 1, 1);
+        this.min = new Vector3D(-size.x/2, -size.y/2, -size.z/2);
+        this.max = new Vector3D(size.x/2, size.y/2, size.z/2);
         this.center = Vector3D.add(min, max).div(2.0D);
     }
 
     @Override
-    public double intersect(Ray ray) {
+    public Hit intersect(Ray ray) {
         double tMin = (min.x - ray.getOrigin().x) / ray.getDirection().x;
         double tMax = (max.x - ray.getOrigin().x) / ray.getDirection().x;
 
@@ -39,7 +40,7 @@ public class Box extends Object {
         }
 
         if((tMin > tYMax) || (tYMin > tMax))
-            return -1.0D;
+            return new Hit(this, null, null, -1.0D);
 
         if(tYMin > tMin)
             tMin = tYMin;
@@ -57,15 +58,14 @@ public class Box extends Object {
         }
 
         if((tMin > tZMax) || (tZMin > tMax))
-            return -1.0D;
+            return new Hit(this, null, null, -1.0D);
 
         if(tZMin > tMin)
             tMin = tZMin;
 
-        return tMin;
+        return new Hit(this, ray.at(tMin), transformNormalToWS(normalAt(ray.at(tMin)), getNormalMatrix()), tMin);
     }
 
-    @Override
     public Vector3D normalAt(Vector3D point) {
         double bias = 1.000001D;
         Vector3D p = Vector3D.sub(point, center);
@@ -79,14 +79,13 @@ public class Box extends Object {
 
     @Override
     public Vector2D mapTexture(Vector3D point) {
-        Vector3D localizedPoint = new Vector3D(point).sub(min);
         Vector3D normal = normalAt(point);
-        if(normal.equals(new Vector3D(1, 0, 0))) return uvRight(localizedPoint);
-        if(normal.equals(new Vector3D(-1, 0, 0))) return uvLeft(localizedPoint);
-        if(normal.equals(new Vector3D(0, 1, 0))) return uvUp(localizedPoint);
-        if(normal.equals(new Vector3D(0, -1, 0))) return uvDown(localizedPoint);
-        if(normal.equals(new Vector3D(0, 0, 1))) return uvFront(localizedPoint);
-        return uvBack(localizedPoint);
+        if(normal.equals(new Vector3D(1, 0, 0))) return uvRight(point);
+        if(normal.equals(new Vector3D(-1, 0, 0))) return uvLeft(point);
+        if(normal.equals(new Vector3D(0, 1, 0))) return uvUp(point);
+        if(normal.equals(new Vector3D(0, -1, 0))) return uvDown(point);
+        if(normal.equals(new Vector3D(0, 0, 1))) return uvFront(point);
+        return uvBack(point);
     }
 
     private Vector2D uvFront(Vector3D point) {

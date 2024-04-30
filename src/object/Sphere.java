@@ -15,23 +15,20 @@ public class Sphere extends Object {
     }
 
     @Override
-    public double intersect(Ray ray) {
+    public Hit intersect(Ray ray) {
         Vector3D oc = ray.getOrigin();
         double a = ray.getDirection().dot(ray.getDirection());
         double b = 2.0D * oc.dot(ray.getDirection());
         double c = oc.dot(oc) - radius * radius;
         double discriminant = b * b - 4 * a * c;
         if(discriminant < 0)
-            return -1.0D;
-        return (-b - Math.sqrt(discriminant)) / (2.0D * a);
+            return new Hit(this, null, null, -1.0D);
+        double t = (-b - Math.sqrt(discriminant)) / (2.0D * a);
+        return new Hit(this, ray.at(t), transformNormalToWS(ray.at(t).normalized(), getNormalMatrix()), t);
     }
 
-    @Override
     public Vector3D normalAt(Vector3D point) {
-        Vector3D normal = point.normalized();
-        Vector4D normalWS = new Vector4D(normal.x, normal.y, normal.z, 0);
-        normalWS = normalWS.mult(getNormalMatrix());
-        return new Vector3D(normalWS.x, normalWS.y, normalWS.z);
+        return point.normalized(); // Note: point is a point in object space
     }
 
     @Override

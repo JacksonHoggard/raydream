@@ -2,6 +2,8 @@ package object;
 
 import material.Material;
 import math.Matrix4D;
+import math.Vector3D;
+import math.Vector4D;
 
 public abstract class Object implements IObject {
 
@@ -37,6 +39,12 @@ public abstract class Object implements IObject {
                 )
         )).inverse();
         this.normalMatrix = inverseTransformMatrix.transpose();
+    }
+
+    public static Vector3D transformNormalToWS(Vector3D normal, Matrix4D normalMatrix) {
+        Vector4D normalWS = new Vector4D(normal.x, normal.y, normal.z, 0);
+        normalWS = normalWS.mult(normalMatrix);
+        return new Vector3D(normalWS.x, normalWS.y, normalWS.z).normalize();
     }
 
     public Material getMaterial() {

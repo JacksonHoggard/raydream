@@ -17,13 +17,11 @@ public class Plane extends Object {
     }
 
     @Override
-    public double intersect(Ray ray) {
-        return (offset - ray.getOrigin().dot(normal)) / ray.getDirection().dot(normal);
-    }
-
-    @Override
-    public Vector3D normalAt(Vector3D point) {
-        return normal;
+    public Hit intersect(Ray ray) {
+        double t = (offset - ray.getOrigin().dot(normal)) / ray.getDirection().dot(normal);
+        return new Hit(
+                this, ray.at(t), normal, t
+        );
     }
 
     @Override

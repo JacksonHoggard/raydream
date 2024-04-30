@@ -9,7 +9,6 @@ import math.Vector4D;
 public class Model extends Object {
 
     private final Mesh mesh;
-    private Vector3D normal;
     private final boolean invertNormals;
 
     public Model(Transform transform, Material material, Mesh mesh, boolean invertNormals) {
@@ -19,8 +18,9 @@ public class Model extends Object {
     }
 
     @Override
-    public double intersect(Ray ray) {
+    public Hit intersect(Ray ray) {
         double t = Double.MAX_VALUE;
+        Vector3D normal = null;
         for(Triangle triangle : mesh.getTriangles()) {
             double distance = triangle.intersect(ray);
             if(distance < t && distance > 0.0D) {
@@ -30,15 +30,8 @@ public class Model extends Object {
             }
         }
         if(t < Double.MAX_VALUE)
-            return t;
-        return -1.0D;
-    }
-
-    @Override
-    public Vector3D normalAt(Vector3D point) {
-        Vector4D normalWS = new Vector4D(normal.x, normal.y, normal.z, 0);
-        normalWS = normalWS.mult(getNormalMatrix());
-        return new Vector3D(normalWS.x, normalWS.y, normalWS.z).normalize();
+            return new Hit(this, ray.at(t), transformNormalToWS(normal, getNormalMatrix()), t);
+        return new Hit(this, null, null, -1.0D);
     }
 
     @Override
