@@ -11,7 +11,7 @@ public class Plane extends Object {
     private final Vector3D normal;
 
     public Plane(double offset, Vector3D normal, Material material) {
-        super(normal, material);
+        super(new Transform(new Vector3D(0, 0, 0), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), material);
         this.offset = offset;
         this.normal = normal.normalize();
     }

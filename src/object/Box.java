@@ -11,11 +11,11 @@ public class Box extends Object {
     private final Vector3D min;
     private final Vector3D max;
 
-    public Box(Vector3D min, Vector3D max, Material material) {
-        super(Vector3D.add(min, max).div(2.0D), material);
-        this.center = getPosition();
-        this.min = min;
-        this.max = max;
+    public Box(Transform transform, Material material) {
+        super(transform, material);
+        this.min = new Vector3D(-1, -1, -1);
+        this.max = new Vector3D(1, 1, 1);
+        this.center = Vector3D.add(min, max).div(2.0D);
     }
 
     @Override

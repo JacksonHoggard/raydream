@@ -4,18 +4,19 @@ import material.Material;
 import math.Ray;
 import math.Vector2D;
 import math.Vector3D;
+import math.Vector4D;
 
 public class Sphere extends Object {
     private final double radius;
 
-    public Sphere(Vector3D position, double radius, Material material) {
-        super(position, material);
+    public Sphere(Transform transform, double radius, Material material) {
+        super(transform, material);
         this.radius = radius;
     }
 
     @Override
     public double intersect(Ray ray) {
-        Vector3D oc = Vector3D.sub(ray.getOrigin(), getPosition());
+        Vector3D oc = ray.getOrigin();
         double a = ray.getDirection().dot(ray.getDirection());
         double b = 2.0D * oc.dot(ray.getDirection());
         double c = oc.dot(oc) - radius * radius;
@@ -27,7 +28,10 @@ public class Sphere extends Object {
 
     @Override
     public Vector3D normalAt(Vector3D point) {
-        return Vector3D.sub(point, getPosition()).normalize();
+        Vector3D normal = point.normalized();
+        Vector4D normalWS = new Vector4D(normal.x, normal.y, normal.z, 0);
+        normalWS = normalWS.mult(getNormalMatrix());
+        return new Vector3D(normalWS.x, normalWS.y, normalWS.z);
     }
 
     @Override

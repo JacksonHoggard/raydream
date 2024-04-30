@@ -2,6 +2,7 @@ import light.Light;
 import material.Material;
 import math.Ray;
 import math.Vector3D;
+import math.Vector4D;
 import object.Object;
 
 import javax.imageio.ImageIO;
@@ -64,14 +65,20 @@ public class Scene {
         Vector3D normalHit = null;
         double minDist = Double.MAX_VALUE;
         for(Object object : objects) {
-            double t = object.intersect(ray);
+            Vector4D rOriginOS = new Vector4D(ray.getOrigin().x, ray.getOrigin().y, ray.getOrigin().z, 1);
+            Vector4D rDirOS = new Vector4D(ray.getDirection().x, ray.getDirection().y, ray.getDirection().z, 0);
+            rOriginOS = rOriginOS.mult(object.getInverseTransformMatrix());
+            rDirOS = rDirOS.mult(object.getInverseTransformMatrix());
+            Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
+            double t = object.intersect(rayOS);
             if(t > 0) {
                 double distance = ray.getOrigin().distance(ray.at(t));
                 if(distance < minDist) {
                     objectHit = object;
                     minDist = distance;
-                    pointHit = ray.at(t);
+                    pointHit = rayOS.at(t);
                     normalHit = objectHit.normalAt(pointHit);
+                    pointHit = ray.at(t);
                 }
             }
         }
@@ -81,6 +88,8 @@ public class Scene {
         }
         Vector3D reflectionNormal = ray.getDirection().normalized().dot(normalHit) < 0 ?
                 new Vector3D(normalHit).negate() : normalHit;
+        Vector3D refractionNormal = ray.getDirection().normalized().dot(normalHit) < 0 ?
+                normalHit : new Vector3D(normalHit).negate();
         Material material = objectHit.getMaterial();
         Vector3D reflectionColor = new Vector3D();
         Vector3D refractionColor = new Vector3D();
@@ -95,7 +104,7 @@ public class Scene {
             case REFLECT_REFRACT -> {
                 double kr = material.fresnelDielectric(ray, normalHit);
                 Ray reflectionRay = material.reflectRay(ray, pointHit, reflectionNormal);
-                Ray refractionRay = material.refractRay(ray, pointHit, normalHit);
+                Ray refractionRay = material.refractRay(ray, pointHit, refractionNormal);
                 reflectionColor.set(trace(reflectionRay, bounce - 1));
                 refractionColor.set(trace(refractionRay, bounce - 1));
                 if(!material.hasColor()) objectHit.getMaterial().getColor(objectHit, pointHit).set(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr)));
@@ -115,7 +124,15 @@ public class Scene {
             boolean inShadow = false;
             double lightDist = light.intersect(shadowRay);
             for(Object object : objects) {
-                double t = object.intersect(shadowRay);
+                Vector4D shadowRayOriginOS = new Vector4D(shadowRay.getOrigin().x, shadowRay.getOrigin().y, shadowRay.getOrigin().z, 1);
+                Vector4D shadowRayDirOS = new Vector4D(shadowRay.getDirection().x, shadowRay.getDirection().y, shadowRay.getDirection().z, 0);
+                shadowRayOriginOS = shadowRayOriginOS.mult(object.getInverseTransformMatrix());
+                shadowRayDirOS = shadowRayDirOS.mult(object.getInverseTransformMatrix());
+                Ray shadowRayOS = new Ray(
+                        new Vector3D(shadowRayOriginOS.x, shadowRayOriginOS.y, shadowRayOriginOS.z),
+                        new Vector3D(shadowRayDirOS.x, shadowRayDirOS.y, shadowRayDirOS.z)
+                );
+                double t = object.intersect(shadowRayOS);
                 if(t > 0 && t < lightDist) {
                     inShadow = true;
                     break;

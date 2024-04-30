@@ -1,4 +1,7 @@
+package util;
+
 import material.texture.Texture;
+import object.Mesh;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -13,5 +16,10 @@ public class Util {
     public static Texture loadTexture(String path) throws IOException {
         BufferedImage image = ImageIO.read(new File(path));
         return new Texture(image, image.getWidth(), image.getHeight());
+    }
+
+    public static Mesh loadOBJ(String path) {
+        OBJLoader loader = new OBJLoader();
+        return loader.meshFromOBJ(path);
     }
 }

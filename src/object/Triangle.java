@@ -1,11 +1,10 @@
 package object;
 
-import material.Material;
 import math.Ray;
 import math.Vector2D;
 import math.Vector3D;
 
-public class Triangle extends Object {
+public class Triangle {
 
     private final Vector3D v0, v1, v2;
     private final Vector3D edge0, edge1, edge2;
@@ -13,15 +12,7 @@ public class Triangle extends Object {
     private final Vector3D normalNotNormal;
     private final double area2;
 
-    public Triangle(Vector3D v0, Vector3D v1, Vector3D v2, Material material) {
-        super(
-                new Vector3D(
-                        (v0.x + v1.x + v2.x) / 3,
-                        (v0.y + v1.y + v2.y) / 3,
-                        (v0.z + v1.z + v2.z) / 3
-                ),
-                material
-        );
+    public Triangle(Vector3D v0, Vector3D v1, Vector3D v2) {
         this.v0 = v0;
         this.v1 = v1;
         this.v2 = v2;
@@ -34,7 +25,6 @@ public class Triangle extends Object {
         this.normal = normalNotNormal.normalized();
     }
 
-    @Override
     public double intersect(Ray ray) {
         // Check if ray is parallel to ray
         double nDotRDir = normalNotNormal.dot(ray.getDirection());
@@ -69,12 +59,10 @@ public class Triangle extends Object {
         return t;
     }
 
-    @Override
-    public Vector3D normalAt(Vector3D point) {
+    public Vector3D getNormal() {
         return normal;
     }
 
-    @Override
     public Vector2D mapTexture(Vector3D point) {
         Vector3D vp1 = Vector3D.sub(point, v1);
         Vector3D perp = edge1.cross(vp1);
