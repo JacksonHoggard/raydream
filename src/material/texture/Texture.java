@@ -19,7 +19,7 @@ public class Texture {
     }
 
     public Vector3D textureAt(Object object, Vector3D point) {
-        Vector2D map = object.mapTexture(point);
+        Vector2D map = object.mapTexture(Object.transformPointToOS(point, object.getInverseTransformMatrix()));
         return getColorAt(map.x, map.y);
     }
 

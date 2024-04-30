@@ -26,7 +26,7 @@ public class Scene {
     private final int width;
     private final int height;
     private static int threadCounter;
-    private static Lock lock = new ReentrantLock();
+    private static final Lock lock = new ReentrantLock();
 
     public Scene(Camera camera, Light ambient, Light[] lights, Object[] objects, int width, int height) {
         this.camera = camera;
@@ -82,7 +82,7 @@ public class Scene {
             printProgress();
         }
 
-        public void printProgress() {
+        private void printProgress() {
             lock.lock();
             threadCounter--;
             int progress = (int) (((((width * height) - threadCounter) / (double) (width * height))) * 100);
