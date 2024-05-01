@@ -9,15 +9,12 @@ import java.util.ArrayList;
 
 public class OBJLoader {
 
-    private final ArrayList<Vector3D> vertices;
-    private final ArrayList<Triangle> triangles;
+    private static ArrayList<Vector3D> vertices = new ArrayList<Vector3D>();
+    private static ArrayList<Triangle> triangles = new ArrayList<Triangle>();
 
-    public OBJLoader() {
-        this.vertices = new ArrayList<>();
-        this.triangles = new ArrayList<>();
-    }
-
-    public Mesh meshFromOBJ(String path) {
+    public static Mesh meshFromOBJ(String path) {
+        vertices.clear();
+        triangles.clear();
         FileInputStream stream = null;
         try {
             stream = new FileInputStream(path);
@@ -28,7 +25,6 @@ public class OBJLoader {
         String line;
         try {
             while((line = reader.readLine()) != null) {
-                //String lastWord = line.substring(line.lastIndexOf(" ") + 1);
                 parseLine(line);
             }
         } catch (IOException e) {
@@ -43,7 +39,7 @@ public class OBJLoader {
         return new Mesh(triangles.toArray(t));
     }
 
-    private void parseLine(String line) {
+    private static void parseLine(String line) {
         String[] tokens = line.split("\\s+");
         switch(tokens[0]) {
             case "v":
@@ -56,13 +52,26 @@ public class OBJLoader {
                 );
                 break;
             case "f":
-                triangles.add(
-                        new Triangle(
-                                vertices.get(Integer.parseInt(tokens[1]) - 1),
-                                vertices.get(Integer.parseInt(tokens[2]) - 1),
-                                vertices.get(Integer.parseInt(tokens[3]) - 1)
-                        )
-                );
+                if(tokens.length > 4) {
+                    int numTrisInFace = tokens.length - 3;
+                    for(int i = 0; i < numTrisInFace; i++) {
+                        triangles.add(
+                                new Triangle(
+                                        vertices.get(Integer.parseInt(tokens[1]) - 1),
+                                        vertices.get(Integer.parseInt(tokens[i + 2]) - 1),
+                                        vertices.get(Integer.parseInt(tokens[i + 3]) - 1)
+                                )
+                        );
+                    }
+                } else {
+                    triangles.add(
+                            new Triangle(
+                                    vertices.get(Integer.parseInt(tokens[1]) - 1),
+                                    vertices.get(Integer.parseInt(tokens[2]) - 1),
+                                    vertices.get(Integer.parseInt(tokens[3]) - 1)
+                            )
+                    );
+                }
                 break;
         }
     }

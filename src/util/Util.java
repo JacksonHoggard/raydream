@@ -19,7 +19,6 @@ public class Util {
     }
 
     public static Mesh loadOBJ(String path) {
-        OBJLoader loader = new OBJLoader();
-        return loader.meshFromOBJ(path);
+        return OBJLoader.meshFromOBJ(path);
     }
 }
