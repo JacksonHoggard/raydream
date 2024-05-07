@@ -12,7 +12,7 @@ public class Model extends Object {
     private final boolean invertNormals;
 
     public Model(Transform transform, Material material, Mesh mesh, boolean invertNormals) {
-        super(transform, material);
+        super(transform, material, mesh.getMin(), mesh.getMax());
         this.mesh = mesh;
         this.invertNormals = invertNormals;
     }
@@ -31,7 +31,7 @@ public class Model extends Object {
         }
         if(t < Double.MAX_VALUE)
             return new Hit(this, ray.at(t), transformNormalToWS(normal, getNormalMatrix()), t);
-        return new Hit(this, null, null, -1.0D);
+        return new Hit(null, null, null, -1.0D);
     }
 
     @Override

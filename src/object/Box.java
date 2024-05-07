@@ -12,7 +12,7 @@ public class Box extends Object {
     private final Vector3D max;
 
     public Box(Transform transform, Vector3D size, Material material) {
-        super(transform, material);
+        super(transform, material, new Vector3D(-size.x/2, -size.y/2, -size.z/2), new Vector3D(size.x/2, size.y/2, size.z/2));
         this.min = new Vector3D(-size.x/2, -size.y/2, -size.z/2);
         this.max = new Vector3D(size.x/2, size.y/2, size.z/2);
         this.center = Vector3D.add(min, max).div(2.0D);
@@ -39,7 +39,7 @@ public class Box extends Object {
         }
 
         if((tMin > tYMax) || (tYMin > tMax))
-            return new Hit(this, null, null, -1.0D);
+            return new Hit(null, null, null, -1.0D);
 
         if(tYMin > tMin)
             tMin = tYMin;
@@ -57,7 +57,7 @@ public class Box extends Object {
         }
 
         if((tMin > tZMax) || (tZMin > tMax))
-            return new Hit(this, null, null, -1.0D);
+            return new Hit(null, null, null, -1.0D);
 
         if(tZMin > tMin)
             tMin = tZMin;

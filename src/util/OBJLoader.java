@@ -9,12 +9,16 @@ import java.util.ArrayList;
 
 public class OBJLoader {
 
-    private static ArrayList<Vector3D> vertices = new ArrayList<Vector3D>();
-    private static ArrayList<Triangle> triangles = new ArrayList<Triangle>();
+    private static final ArrayList<Vector3D> vertices = new ArrayList<Vector3D>();
+    private static final ArrayList<Triangle> triangles = new ArrayList<Triangle>();
+    private static Vector3D min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+    private static Vector3D max = new Vector3D(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
 
     public static Mesh meshFromOBJ(String path) {
         vertices.clear();
         triangles.clear();
+        min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+        max = new Vector3D(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
         FileInputStream stream = null;
         try {
             stream = new FileInputStream(path);
@@ -36,20 +40,25 @@ public class OBJLoader {
             e.printStackTrace();
         }
         Triangle[] t = new Triangle[triangles.size()];
-        return new Mesh(triangles.toArray(t));
+        return new Mesh(triangles.toArray(t), min, max);
     }
 
     private static void parseLine(String line) {
         String[] tokens = line.split("\\s+");
         switch(tokens[0]) {
             case "v":
-                vertices.add(
-                        new Vector3D(
-                                Double.parseDouble(tokens[1]),
-                                Double.parseDouble(tokens[2]),
-                                Double.parseDouble(tokens[3])
-                        )
+                Vector3D v = new Vector3D(
+                        Double.parseDouble(tokens[1]),
+                        Double.parseDouble(tokens[2]),
+                        Double.parseDouble(tokens[3])
                 );
+                vertices.add(v);
+                min.x = Math.min(min.x, v.x);
+                min.y = Math.min(min.y, v.y);
+                min.z = Math.min(min.z, v.z);
+                max.x = Math.max(max.x, v.x);
+                max.y = Math.max(max.y, v.y);
+                max.z = Math.max(max.z, v.z);
                 break;
             case "f":
                 if(tokens.length > 4) {

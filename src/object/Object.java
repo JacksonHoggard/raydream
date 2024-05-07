@@ -12,8 +12,10 @@ public abstract class Object implements IObject {
     private final Matrix4D inverseTransformMatrix;
     private final Matrix4D normalMatrix;
     private final Vector3D centroid;
+    private final Vector3D min;
+    private final Vector3D max;
 
-    public Object(Transform transform, Material material) {
+    public Object(Transform transform, Material material, Vector3D min, Vector3D max) {
         this.transform = transform;
         this.material = material;
         double rotX = Math.toRadians(transform.rotation().x);
@@ -41,7 +43,28 @@ public abstract class Object implements IObject {
         ));
         this.inverseTransformMatrix = transformMatrix.inverse();
         this.normalMatrix = inverseTransformMatrix.transpose();
-        this.centroid = transformPointToOS(new Vector3D(0, 0, 0), transformMatrix);
+        this.min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+        this.max = new Vector3D(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
+        Vector3D[] aabb = {
+                min,
+                new Vector3D(min.x, max.y, min.z),
+                new Vector3D(max.x, min.y, min.z),
+                new Vector3D(max.x, max.y, min.z),
+                new Vector3D(min.x, min.y, max.z),
+                new Vector3D(min.x, max.y, max.z),
+                new Vector3D(max.x, min.y, max.z),
+                max
+        };
+        for(Vector3D v : aabb) {
+            v = transformPointToOS(v, transformMatrix);
+            this.min.x = Math.min(this.min.x, v.x);
+            this.min.y = Math.min(this.min.y, v.y);
+            this.min.z = Math.min(this.min.z, v.z);
+            this.max.x = Math.max(this.max.x, v.x);
+            this.max.y = Math.max(this.max.y, v.y);
+            this.max.z = Math.max(this.max.z, v.z);
+        }
+        this.centroid = Vector3D.add(this.min, this.max).div(2.0D);
     }
 
     public static Vector3D transformNormalToWS(Vector3D normal, Matrix4D normalMatrix) {
@@ -73,5 +96,13 @@ public abstract class Object implements IObject {
 
     public Vector3D getCentroid() {
         return centroid;
+    }
+
+    public Vector3D getMin() {
+        return min;
+    }
+
+    public Vector3D getMax() {
+        return max;
     }
 }

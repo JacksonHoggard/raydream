@@ -3,6 +3,7 @@ import material.Material;
 import math.Ray;
 import math.Vector3D;
 import math.Vector4D;
+import object.BVH;
 import object.Hit;
 import object.Object;
 
@@ -23,6 +24,7 @@ public class Scene {
     private final Light ambient;
     private final Light[] lights;
     private final Object[] objects;
+    private final BVH bvh;
     private final int width;
     private final int height;
     private static int threadCounter;
@@ -36,6 +38,7 @@ public class Scene {
         this.width = width;
         this.height = height;
         threadCounter = width * height;
+        bvh = new BVH(objects);
     }
 
     public void render(String filename, int samples, int bounces, int threads) throws IOException {
@@ -63,7 +66,7 @@ public class Scene {
         System.out.println("Finished in " + durationSeconds + "s");
     }
 
-    class TraceRayTask implements Runnable {
+    private class TraceRayTask implements Runnable {
         private final BufferedImage image;
         private final int bounces;
         private final int samples;
@@ -107,25 +110,10 @@ public class Scene {
             if(bounce <= 0)
                 return new Vector3D(0, 0, 0);
             // Find intersections
-            Vector3D pointHit = null;
-            Object objectHit = null;
-            Vector3D normalHit = null;
-            double minDist = Double.MAX_VALUE;
-            for(Object object : objects) {
-                Vector4D rOriginOS = new Vector4D(ray.getOrigin().x, ray.getOrigin().y, ray.getOrigin().z, 1);
-                Vector4D rDirOS = new Vector4D(ray.getDirection().x, ray.getDirection().y, ray.getDirection().z, 0);
-                rOriginOS = rOriginOS.mult(object.getInverseTransformMatrix());
-                rDirOS = rDirOS.mult(object.getInverseTransformMatrix());
-                Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
-                Hit hit = object.intersect(rayOS);
-                double t = hit.t();
-                if(t > 0 && t < minDist) {
-                    objectHit = object;
-                    minDist = t;
-                    pointHit = ray.at(t);
-                    normalHit = hit.normal();
-                }
-            }
+            Hit bvhHit = bvh.intersect(ray, objects);
+            Vector3D pointHit = bvhHit.point();
+            Object objectHit = bvhHit.object();
+            Vector3D normalHit = bvhHit.normal();
             // Return sky if no object is hit
             if(objectHit == null) {
                 return new Vector3D(0.125, 0.125, 0.125);
@@ -167,21 +155,10 @@ public class Scene {
                 Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(shadowDir, 0.00001D)), shadowDir);
                 boolean inShadow = false;
                 double lightDist = light.intersect(shadowRay);
-                for(Object object : objects) {
-                    Vector4D shadowRayOriginOS = new Vector4D(shadowRay.getOrigin().x, shadowRay.getOrigin().y, shadowRay.getOrigin().z, 1);
-                    Vector4D shadowRayDirOS = new Vector4D(shadowRay.getDirection().x, shadowRay.getDirection().y, shadowRay.getDirection().z, 0);
-                    shadowRayOriginOS = shadowRayOriginOS.mult(object.getInverseTransformMatrix());
-                    shadowRayDirOS = shadowRayDirOS.mult(object.getInverseTransformMatrix());
-                    Ray shadowRayOS = new Ray(
-                            new Vector3D(shadowRayOriginOS.x, shadowRayOriginOS.y, shadowRayOriginOS.z),
-                            new Vector3D(shadowRayDirOS.x, shadowRayDirOS.y, shadowRayDirOS.z)
-                    );
-                    Hit hit = object.intersect(shadowRayOS);
-                    double t = hit.t();
-                    if(t > 0 && t < lightDist) {
+                Hit bvhHit = bvh.intersect(shadowRay, objects);
+                if(bvhHit.object() != null) {
+                    if(bvhHit.t() > 0 && bvhHit.t() < lightDist)
                         inShadow = true;
-                        break;
-                    }
                 }
                 if(!inShadow) {
                     Ray reflectedRay = objectHit.getMaterial().reflectRay(shadowRay, pointHit, normalHit);

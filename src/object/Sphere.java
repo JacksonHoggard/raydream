@@ -10,7 +10,7 @@ public class Sphere extends Object {
     private final double radius;
 
     public Sphere(Transform transform, double radius, Material material) {
-        super(transform, material);
+        super(transform, material, new Vector3D(-radius, -radius, -radius), new Vector3D(radius, radius, radius));
         this.radius = radius;
     }
 
@@ -22,7 +22,7 @@ public class Sphere extends Object {
         double c = oc.dot(oc) - radius * radius;
         double discriminant = b * b - 4 * a * c;
         if(discriminant < 0)
-            return new Hit(this, null, null, -1.0D);
+            return new Hit(null, null, null, -1.0D);
         double t = (-b - Math.sqrt(discriminant)) / (2.0D * a);
         return new Hit(this, ray.at(t), transformNormalToWS(ray.at(t).normalized(), getNormalMatrix()), t);
     }

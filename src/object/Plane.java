@@ -9,9 +9,17 @@ public class Plane extends Object {
 
     private final Vector3D normal;
 
-    public Plane(double offset, Vector3D normal, Material material) {
-        super(new Transform(new Vector3D(0, offset, 0), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), material);
-        this.normal = normal.normalize();
+    public Plane(double offset, Vector3D rotation, Material material) {
+        super(
+                new Transform(
+                        new Vector3D(0, offset, 0),
+                        rotation,
+                        new Vector3D(1, 1, 1)),
+                material,
+                new Vector3D(-10000, -1, -10000),
+                new Vector3D(10000, 0, 10000)
+        );
+        this.normal = new Vector3D(0, 1, 0);
     }
 
     @Override

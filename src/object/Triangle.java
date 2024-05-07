@@ -11,6 +11,7 @@ public class Triangle {
     private final Vector3D normal;
     private final Vector3D normalNotNormal;
     private final double area2;
+    private final Vector3D centroid;
 
     public Triangle(Vector3D v0, Vector3D v1, Vector3D v2) {
         this.v0 = v0;
@@ -23,6 +24,11 @@ public class Triangle {
         this.normalNotNormal = edge0.cross(v);
         this.area2 = normalNotNormal.dot(normalNotNormal);
         this.normal = normalNotNormal.normalized();
+        this.centroid = new Vector3D(
+                (v0.x + v1.x + v2.x) / 3D,
+                (v0.y + v1.y + v2.y) / 3D,
+                (v0.z + v1.z + v2.z) / 3D
+        );
     }
 
     public double intersect(Ray ray) {
@@ -61,6 +67,10 @@ public class Triangle {
 
     public Vector3D getNormal() {
         return normal;
+    }
+
+    public Vector3D getCentroid() {
+        return centroid;
     }
 
     public Vector2D mapTexture(Vector3D point) {
