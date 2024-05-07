@@ -49,7 +49,7 @@ public class Main {
         Object[] objects = new Object[]{
                 new Sphere(new Transform(new Vector3D(0, 0, -2), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), 0.5D, new Glass(0.1D, 0.94)),
                 new Sphere(new Transform(new Vector3D(-0.5, 0, -3), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), 0.5D, new Reflective(new Vector3D(1, 0, 0), 0.1D, 0.6D, 0.6D, 50, 0.2D, 0.617D, 2.63D)),
-                new Plane(-0.5, new Vector3D(0, 1, 0), new Reflective(new Vector3D(255 / 255D, 253 / 255D, 208 / 255D), 0.1D, 0.6D, 0.5D, 4, 1, 0.617D, 2.63D))
+                new Plane(-0.5, new Vector3D(0, 0, 0), new Reflective(new Vector3D(255 / 255D, 253 / 255D, 208 / 255D), 0.1D, 0.6D, 0.5D, 4, 1, 0.617D, 2.63D))
         };
 
         Scene scene = new Scene(camera, ambient, lights, objects, width, height);
@@ -80,3 +80,5 @@ Resources used for this project.
 * [Ray-plane Intersection Princeton Slide](https://www.cs.princeton.edu/courses/archive/fall00/cs426/lectures/raycast/sld017.htm)
 * [Scratchapixel: Ray-Tracing: Rendering a Triangle](https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-rendering-a-triangle/barycentric-coordinates.html)
 * [Graphics Compendium Raytracing Chapter 34: Transformations](https://graphicscompendium.com/raytracing/12-transformations)
+* [Jacco's Blog](https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)
+* [The University of Utah CS 6958 Lecture 8](https://my.eng.utah.edu/~cs6958/slides/Lec8_2.pdf)
