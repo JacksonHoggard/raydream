@@ -7,18 +7,16 @@ import math.Vector3D;
 
 public class Plane extends Object {
 
-    private final double offset;
     private final Vector3D normal;
 
     public Plane(double offset, Vector3D normal, Material material) {
-        super(new Transform(new Vector3D(0, 0, 0), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), material);
-        this.offset = offset;
+        super(new Transform(new Vector3D(0, offset, 0), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), material);
         this.normal = normal.normalize();
     }
 
     @Override
     public Hit intersect(Ray ray) {
-        double t = (offset - ray.getOrigin().dot(normal)) / ray.getDirection().dot(normal);
+        double t = (-ray.getOrigin().dot(normal)) / ray.getDirection().dot(normal);
         return new Hit(
                 this, ray.at(t), normal, t
         );

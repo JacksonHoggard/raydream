@@ -39,6 +39,8 @@ public class Scene {
     }
 
     public void render(String filename, int samples, int bounces, int threads) throws IOException {
+        long startTime = System.nanoTime();
+
         ExecutorService pool = Executors.newFixedThreadPool(threads);
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
@@ -55,6 +57,10 @@ public class Scene {
         }
         File output = new File(filename);
         ImageIO.write(image, "png", output);
+
+        long duration = System.nanoTime() - startTime;
+        double durationSeconds = ((int) ((duration / 1e9D) * 100) / 100.0);
+        System.out.println("Finished in " + durationSeconds + "s");
     }
 
     class TraceRayTask implements Runnable {
@@ -85,8 +91,9 @@ public class Scene {
         private void printProgress() {
             lock.lock();
             threadCounter--;
-            int progress = (int) (((((width * height) - threadCounter) / (double) (width * height))) * 100);
-            System.out.println("Progress: " + progress + "% (" + ((width * height) - threadCounter) + "/" + (width * height) + ")");
+            double progress = (((((width * height) - threadCounter) / (double) (width * height))) * 100);
+            if(progress % 1 == 0)
+                System.out.println("Progress: " + (long) progress + "% (" + ((width * height) - threadCounter) + "/" + (width * height) + ")");
             lock.unlock();
         }
 

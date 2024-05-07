@@ -11,6 +11,7 @@ public abstract class Object implements IObject {
     private final Material material;
     private final Matrix4D inverseTransformMatrix;
     private final Matrix4D normalMatrix;
+    private final Vector3D centroid;
 
     public Object(Transform transform, Material material) {
         this.transform = transform;
@@ -18,7 +19,7 @@ public abstract class Object implements IObject {
         double rotX = Math.toRadians(transform.rotation().x);
         double rotY = Math.toRadians(transform.rotation().y);
         double rotZ = Math.toRadians(transform.rotation().z);
-        this.inverseTransformMatrix = (new Matrix4D(
+        Matrix4D transformMatrix = (new Matrix4D(
                 transform.scale().x, 0, 0, 0,
                 0, transform.scale().y, 0, 0,
                 0, 0, transform.scale().z, 0,
@@ -37,8 +38,10 @@ public abstract class Object implements IObject {
                         0, 0, 1, transform.translation().z,
                         0, 0, 0, 1
                 )
-        )).inverse();
+        ));
+        this.inverseTransformMatrix = transformMatrix.inverse();
         this.normalMatrix = inverseTransformMatrix.transpose();
+        this.centroid = transformPointToOS(new Vector3D(0, 0, 0), transformMatrix);
     }
 
     public static Vector3D transformNormalToWS(Vector3D normal, Matrix4D normalMatrix) {
@@ -66,5 +69,9 @@ public abstract class Object implements IObject {
 
     public Matrix4D getNormalMatrix() {
         return normalMatrix;
+    }
+
+    public Vector3D getCentroid() {
+        return centroid;
     }
 }
