@@ -13,6 +13,7 @@ A simple yet powerful ray tracer implemented in Java. RayDream creates realistic
 - **Materials and Textures:** Assign materials and textures to objects to add realism to a scene.
 - **Antialiasing:** Reduces aliasing artifacts with built-in sampling techniques.
 - **Parallel Rendering:** Utilizes multi-threading for faster rendering of complex scenes.
+- **Acceleration Structures:** Makes use of bounding volume hierarchies and adaptive supersampling to reduce computation times.
 
 ## Usage
 RayDream is designed to be easy to use while still providing flexibility for advanced users. Here's a basic example of how to render a scene using RayDream:
@@ -53,7 +54,7 @@ public class Main {
         };
 
         Scene scene = new Scene(camera, ambient, lights, objects, width, height);
-        scene.render("output.png", 10, 8, 8);
+        scene.render("output.png", 2, 4, 8);
     }
 }
 ```
