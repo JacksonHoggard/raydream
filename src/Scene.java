@@ -1,8 +1,8 @@
 import light.Light;
 import material.Material;
 import math.Ray;
+import math.Vector2D;
 import math.Vector3D;
-import math.Vector4D;
 import object.BVH;
 import object.Hit;
 import object.Object;
@@ -41,7 +41,7 @@ public class Scene {
         bvh = new BVH(objects);
     }
 
-    public void render(String filename, int samples, int bounces, int threads) throws IOException {
+    public void render(String filename, int sampleDepth, int bounces, int threads) throws IOException {
         long startTime = System.nanoTime();
 
         ExecutorService pool = Executors.newFixedThreadPool(threads);
@@ -49,7 +49,7 @@ public class Scene {
 
         for(int j = 0; j < height; j++) {
             for(int i = 0; i < width; i++) {
-                pool.execute(new TraceRayTask(image, bounces, samples, i, j));
+                pool.execute(new TraceRayTask(image, bounces, sampleDepth, i, j));
             }
         }
         pool.shutdown();
@@ -63,29 +63,35 @@ public class Scene {
 
         long duration = System.nanoTime() - startTime;
         double durationSeconds = ((int) ((duration / 1e9D) * 100) / 100.0);
-        System.out.println("Finished in " + durationSeconds + "s");
+        int minutes =  (int) (durationSeconds / 60);
+        if(minutes > 0)
+            System.out.println("Finished in " + minutes + "m " + (durationSeconds - (minutes * 60)) + "s");
+        else
+            System.out.println("Finished in " + durationSeconds + "s");
     }
 
     private class TraceRayTask implements Runnable {
         private final BufferedImage image;
         private final int bounces;
-        private final int samples;
+        private final int sampleDepth;
+        private int samples;
+        private int reusedRayIdx;
+        private Vector3D reusedColor;
         private final int i, j;
 
-        public TraceRayTask(BufferedImage image, int bounces, int samples, int i, int j) {
+        public TraceRayTask(BufferedImage image, int bounces, int sampleDepth, int i, int j) {
             this.image = image;
             this.bounces = bounces;
-            this.samples = samples;
+            this.sampleDepth = sampleDepth;
             this.i = i;
             this.j = j;
+            this.samples = 0;
+            this.reusedRayIdx = -1;
         }
 
         public void run() {
             Vector3D totalColor = new Vector3D(0, 0, 0);
-            for(int s = 0; s < samples; s++) {
-                Ray ray = camera.shootRay(i, j);
-                totalColor.add(trace(ray, bounces));
-            }
+            totalColor.add(takeSamples(sampleDepth, 0, 0, 1, -1));
             totalColor.div(samples);
             image.setRGB(i, j, new Color((int) Math.min(totalColor.x * 255, 255), (int) Math.min(totalColor.y * 255, 255), (int) Math.min(totalColor.z * 255, 255)).getRGB());
             printProgress();
@@ -98,6 +104,46 @@ public class Scene {
             if(progress % 1 == 0)
                 System.out.println("Progress: " + (long) progress + "% (" + ((width * height) - threadCounter) + "/" + (width * height) + ")");
             lock.unlock();
+        }
+
+        private Vector3D takeSamples(int sampleDepth, double tlx, double tly, double brx, double bry) {
+            // Return black if maximum sample depth reached
+            if(sampleDepth <= 0)
+                return new Vector3D(0, 0, 0);
+            double w = brx - tlx;
+            double h = tly - bry;
+            Ray rayTL = reusedRayIdx != 0 ? camera.shootRay(i, j, tlx, tly) : null;
+            Ray rayTR = reusedRayIdx != 1 ? camera.shootRay(i, j, tlx + w, bry + h) : null;
+            Ray rayBL = reusedRayIdx != 2 ? camera.shootRay(i, j, tlx, bry) : null;
+            Ray rayBR = reusedRayIdx != 3 ? camera.shootRay(i, j, brx, bry) : null;
+            Vector3D colorTL = reusedRayIdx != 0 ? trace(rayTL, bounces) : reusedColor;
+            Vector3D colorTR = reusedRayIdx != 1 ? trace(rayTR, bounces) : reusedColor;
+            Vector3D colorBL = reusedRayIdx != 2 ? trace(rayBL, bounces) : reusedColor;
+            Vector3D colorBR = reusedRayIdx != 3 ? trace(rayBR, bounces) : reusedColor;
+            Vector3D totalColor = Vector3D.add(colorTL, colorTR).add(colorBL).add(colorBR).div(4);
+            Vector3D temp = new Vector3D(0, 0, 0);
+            samples++;
+            if(colorTL.distance(totalColor) > 0.01) {
+                reusedColor = colorTL;
+                reusedRayIdx = 0;
+                temp.add(takeSamples(sampleDepth - 1, tlx, tly, brx - (w / 2), bry + (h / 2)));
+            }
+            if(colorTR.distance(totalColor) > 0.01) {
+                reusedColor = colorTR;
+                reusedRayIdx = 1;
+                temp.add(takeSamples(sampleDepth - 1, tlx + (w / 2), tly, brx, bry + (h / 2)));
+            }
+            if(colorBL.distance(totalColor) > 0.01) {
+                reusedColor = colorBL;
+                reusedRayIdx = 2;
+                temp.add(takeSamples(sampleDepth - 1, tlx, tly - (h / 2), brx - (w / 2), bry));
+            }
+            if(colorBR.distance(totalColor) > 0.01) {
+                reusedColor = colorBL;
+                reusedRayIdx = 3;
+                temp.add(takeSamples(sampleDepth - 1, tlx + (w / 2), tly - (h / 2), brx, bry));
+            }
+            return totalColor.add(temp);
         }
 
         /**

@@ -29,9 +29,11 @@ public class Camera {
      * Finds the direction of the primary ray based on the pixel coordinates
      * @param i pixel row index
      * @param j pixel column index
+     * @param x x offset from pixel center
+     * @param y y offset from pixel center
      * @return primary ray
      */
-    public Ray shootRay(int i, int j) {
+    public Ray shootRay(int i, int j, double x, double y) {
         Vector3D vu = Vector3D.mult(u, vWidth);
         Vector3D vv = Vector3D.mult(v.negated(), vHeight);
         Vector3D px = Vector3D.div(vu, imgWidth);
@@ -40,8 +42,8 @@ public class Camera {
         direction.sub(Vector3D.div(vu, 2));
         direction.sub(Vector3D.div(vv, 2));
         direction.add(Vector3D.add(px, py).mult(0.5D));
-        Vector3D pixelXVariation = Vector3D.mult(px, i + Util.randomRange(-0.5D, 0.5D));
-        Vector3D pixelYVariation = Vector3D.mult(py, j + Util.randomRange(-0.5D, 0.5D));
+        Vector3D pixelXVariation = Vector3D.mult(px, i + x);
+        Vector3D pixelYVariation = Vector3D.mult(py, j + y);
         direction.add(pixelXVariation).add(pixelYVariation);
         return new Ray(lookFrom, direction.sub(lookFrom));
     }
