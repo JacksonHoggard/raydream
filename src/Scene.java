@@ -1,7 +1,6 @@
 import light.Light;
 import material.Material;
 import math.Ray;
-import math.Vector2D;
 import math.Vector3D;
 import object.BVH;
 import object.Hit;
@@ -75,6 +74,7 @@ public class Scene {
         private final int bounces;
         private final int sampleDepth;
         private int samples;
+        private Ray ray;
         private int reusedRayIdx;
         private Vector3D reusedColor;
         private final int i, j;
@@ -87,6 +87,7 @@ public class Scene {
             this.j = j;
             this.samples = 0;
             this.reusedRayIdx = -1;
+            this.ray = new Ray(new Vector3D(), new Vector3D());
         }
 
         public void run() {
@@ -112,14 +113,34 @@ public class Scene {
                 return new Vector3D(0, 0, 0);
             double w = brx - tlx;
             double h = tly - bry;
-            Ray rayTL = reusedRayIdx != 0 ? camera.shootRay(i, j, tlx, tly) : null;
-            Ray rayTR = reusedRayIdx != 1 ? camera.shootRay(i, j, tlx + w, bry + h) : null;
-            Ray rayBL = reusedRayIdx != 2 ? camera.shootRay(i, j, tlx, bry) : null;
-            Ray rayBR = reusedRayIdx != 3 ? camera.shootRay(i, j, brx, bry) : null;
-            Vector3D colorTL = reusedRayIdx != 0 ? trace(rayTL, bounces) : reusedColor;
-            Vector3D colorTR = reusedRayIdx != 1 ? trace(rayTR, bounces) : reusedColor;
-            Vector3D colorBL = reusedRayIdx != 2 ? trace(rayBL, bounces) : reusedColor;
-            Vector3D colorBR = reusedRayIdx != 3 ? trace(rayBR, bounces) : reusedColor;
+            Vector3D colorTL;
+            Vector3D colorTR;
+            Vector3D colorBL;
+            Vector3D colorBR;
+            if(reusedRayIdx != 0) {
+                ray = camera.shootRay(ray, i, j, tlx, tly);
+                colorTL = trace(ray, bounces);
+            } else {
+                colorTL = reusedColor;
+            }
+            if(reusedRayIdx != 1) {
+                ray = camera.shootRay(ray, i, j, tlx + w, bry + h);
+                colorTR = trace(ray, bounces);
+            } else {
+                colorTR = reusedColor;
+            }
+            if(reusedRayIdx != 2) {
+                ray = camera.shootRay(ray, i, j, tlx, bry);
+                colorBL = trace(ray, bounces);
+            } else {
+                colorBL = reusedColor;
+            }
+            if(reusedRayIdx != 3) {
+                ray = camera.shootRay(ray, i, j, brx, bry);
+                colorBR = trace(ray, bounces);
+            } else {
+                colorBR = reusedColor;
+            }
             Vector3D totalColor = Vector3D.add(colorTL, colorTR).add(colorBL).add(colorBR).div(4);
             Vector3D temp = new Vector3D(0, 0, 0);
             samples++;

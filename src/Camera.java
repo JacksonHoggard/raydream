@@ -33,7 +33,7 @@ public class Camera {
      * @param y y offset from pixel center
      * @return primary ray
      */
-    public Ray shootRay(int i, int j, double x, double y) {
+    public Ray shootRay(Ray ray, int i, int j, double x, double y) {
         Vector3D vu = Vector3D.mult(u, vWidth);
         Vector3D vv = Vector3D.mult(v.negated(), vHeight);
         Vector3D px = Vector3D.div(vu, imgWidth);
@@ -45,6 +45,8 @@ public class Camera {
         Vector3D pixelXVariation = Vector3D.mult(px, i + x);
         Vector3D pixelYVariation = Vector3D.mult(py, j + y);
         direction.add(pixelXVariation).add(pixelYVariation);
-        return new Ray(lookFrom, direction.sub(lookFrom));
+        ray.getOrigin().set(lookFrom);
+        ray.getDirection().set(direction.sub(lookFrom));
+        return ray;
     }
 }
