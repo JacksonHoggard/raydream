@@ -88,6 +88,7 @@ public class Scene {
             this.samples = 0;
             this.reusedRayIdx = -1;
             this.ray = new Ray(new Vector3D(), new Vector3D());
+            this.reusedColor = new Vector3D();
         }
 
         public void run() {
@@ -142,29 +143,22 @@ public class Scene {
                 colorBR = reusedColor;
             }
             Vector3D totalColor = Vector3D.add(colorTL, colorTR).add(colorBL).add(colorBR).div(4);
-            Vector3D temp = new Vector3D(0, 0, 0);
             samples++;
-            if(colorTL.distance(totalColor) > 0.01) {
-                reusedColor = colorTL;
+            if(colorTL.distance(totalColor) > 0.01D || colorTR.distance(totalColor) > 0.01D || colorBL.distance(totalColor) > 0.01D || colorBR.distance(totalColor) > 0.01D) {
                 reusedRayIdx = 0;
-                temp.add(takeSamples(sampleDepth - 1, tlx, tly, brx - (w / 2), bry + (h / 2)));
-            }
-            if(colorTR.distance(totalColor) > 0.01) {
-                reusedColor = colorTR;
+                reusedColor.set(colorTR);
+                totalColor.add(takeSamples(sampleDepth - 1, tlx, tly, brx - (w / 2), bry + (h / 2)));
                 reusedRayIdx = 1;
-                temp.add(takeSamples(sampleDepth - 1, tlx + (w / 2), tly, brx, bry + (h / 2)));
-            }
-            if(colorBL.distance(totalColor) > 0.01) {
-                reusedColor = colorBL;
+                reusedColor.set(colorTR);
+                totalColor.add(takeSamples(sampleDepth - 1, tlx + (w / 2), tly, brx, bry + (h / 2)));
                 reusedRayIdx = 2;
-                temp.add(takeSamples(sampleDepth - 1, tlx, tly - (h / 2), brx - (w / 2), bry));
-            }
-            if(colorBR.distance(totalColor) > 0.01) {
-                reusedColor = colorBL;
+                reusedColor.set(colorBL);
+                totalColor.add(takeSamples(sampleDepth - 1, tlx, tly - (h / 2), brx - (w / 2), bry));
                 reusedRayIdx = 3;
-                temp.add(takeSamples(sampleDepth - 1, tlx + (w / 2), tly - (h / 2), brx, bry));
+                reusedColor.set(colorBR);
+                totalColor.add(takeSamples(sampleDepth - 1, tlx + (w / 2), tly - (h / 2), brx, bry));
             }
-            return totalColor.add(temp);
+            return totalColor;
         }
 
         /**

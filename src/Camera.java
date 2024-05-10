@@ -1,6 +1,5 @@
 import math.Ray;
 import math.Vector3D;
-import util.Util;
 
 public class Camera {
 
@@ -27,6 +26,7 @@ public class Camera {
 
     /**
      * Finds the direction of the primary ray based on the pixel coordinates
+     * @param ray the ray to be sent into the scene
      * @param i pixel row index
      * @param j pixel column index
      * @param x x offset from pixel center
