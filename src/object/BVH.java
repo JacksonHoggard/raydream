@@ -1,5 +1,6 @@
 package object;
 
+import material.Material;
 import math.Ray;
 import math.Vector3D;
 import math.Vector4D;
@@ -25,20 +26,22 @@ public class BVH {
         Node currentNode = root;
         Hit out = new Hit(null, null, null, Double.MAX_VALUE);
         while(true) {
-            if(intersectAABB(ray, currentNode.min, currentNode.max, out.t())) {
+            if(intersectAABB(ray, currentNode.min, currentNode.max)) {
                 if(!currentNode.isLeaf()) {
                     stack.push(currentNode.right);
                     currentNode = currentNode.left;
                     continue;
                 } else {
-                    Vector4D rOriginOS = new Vector4D(ray.getOrigin().x, ray.getOrigin().y, ray.getOrigin().z, 1);
-                    Vector4D rDirOS = new Vector4D(ray.getDirection().x, ray.getDirection().y, ray.getDirection().z, 0);
-                    rOriginOS = rOriginOS.mult(objects[currentNode.firstObject].getInverseTransformMatrix());
-                    rDirOS = rDirOS.mult(objects[currentNode.firstObject].getInverseTransformMatrix());
-                    Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
-                    Hit hit = objects[currentNode.firstObject].intersect(rayOS);
-                    if(hit.object() != null && hit.t() > 0 && hit.t() < out.t()) {
-                        out = new Hit(hit.object(), ray.at(hit.t()), hit.normal(), hit.t());
+                    for(int i = currentNode.firstObject; i < currentNode.firstObject + currentNode.objectCount; i++) {
+                        Vector4D rOriginOS = new Vector4D(ray.getOrigin().x, ray.getOrigin().y, ray.getOrigin().z, 1);
+                        Vector4D rDirOS = new Vector4D(ray.getDirection().x, ray.getDirection().y, ray.getDirection().z, 0);
+                        rOriginOS = rOriginOS.mult(objects[i].getInverseTransformMatrix());
+                        rDirOS = rDirOS.mult(objects[i].getInverseTransformMatrix());
+                        Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
+                        Hit hit = objects[i].intersect(rayOS);
+                        if(hit.object() != null && hit.t() > 0 && hit.t() < out.t()) {
+                            out = new Hit(hit.object(), ray.at(hit.t()), hit.normal(), hit.t());
+                        }
                     }
                 }
             }
@@ -49,7 +52,7 @@ public class BVH {
         return out;
     }
 
-    private boolean intersectAABB(Ray ray, Vector3D min, Vector3D max, double t) {
+    private boolean intersectAABB(Ray ray, Vector3D min, Vector3D max) {
         double tx1 = (min.x - ray.getOrigin().x) / ray.getDirection().x, tx2 = (max.x - ray.getOrigin().x) / ray.getDirection().x;
         double tmin = Math.min(tx1, tx2), tmax = Math.max(tx1, tx2);
         double ty1 = (min.y - ray.getOrigin().y) / ray.getDirection().y, ty2 = (max.y - ray.getOrigin().y) / ray.getDirection().y;
@@ -58,7 +61,7 @@ public class BVH {
         double tz1 = (min.z - ray.getOrigin().z) / ray.getDirection().z, tz2 = (max.z - ray.getOrigin().z) / ray.getDirection().z;
         tmin = Math.max(tmin, Math.min(tz1, tz2));
         tmax = Math.min(tmax, Math.max(tz1, tz2));
-        return tmax >= tmin && tmin < t && tmax > 0;
+        return tmax >= tmin;
     }
 
     private void updateNodeBounds(Node node, Object[] objects) {

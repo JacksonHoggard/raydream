@@ -74,8 +74,8 @@ public abstract class Object implements IObject {
     }
 
     public static Vector3D transformPointToOS(Vector3D point, Matrix4D inverseTransformMatrix) {
-        Vector4D normalWS = new Vector4D(point.x, point.y, point.z, 1);
-        Vector4D pointOS = normalWS.mult(inverseTransformMatrix);
+        Vector4D pointWS = new Vector4D(point.x, point.y, point.z, 1);
+        Vector4D pointOS = pointWS.mult(inverseTransformMatrix);
         return new Vector3D(pointOS.x, pointOS.y, pointOS.z);
     }
     public Material getMaterial() {

@@ -1,16 +1,27 @@
 package light;
 
-import math.Ray;
 import math.Vector3D;
 
-public record Light(Vector3D position, Vector3D color, double brightness) {
-    public double intersect(Ray ray) {
-        double t;
-        Vector3D origin = ray.getOrigin();
-        Vector3D direction = ray.getDirection();
-        t = Vector3D.sub(origin, position).dot(direction.negated());
-        if (t > 0)
-            return t;
-        return -1;
+public abstract class Light implements ILight {
+    private final Vector3D position;
+    private final Vector3D color;
+    private final double brightness;
+
+    public Light(Vector3D position, Vector3D color, double brightness) {
+        this.position = position;
+        this.color = color;
+        this.brightness = brightness;
+    }
+
+    public Vector3D getPosition() {
+        return position;
+    }
+
+    public Vector3D getColor() {
+        return color;
+    }
+
+    public double getBrightness() {
+        return brightness;
     }
 }
