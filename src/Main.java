@@ -26,10 +26,9 @@ public class Main {
 
         Light ambient = new PointLight(new Vector3D(), new Vector3D(1, 1, 1), 1);
         Light[] lights = {
-                new PointLight(new Vector3D(-10, 10, -10), new Vector3D(1, 1, 1), 10D),
                 new AreaLight(new Transform(new Vector3D(-10, 2, 10), new Vector3D(0, 0, 0), new Vector3D(1, 10, 1)), new Vector3D(1, 1, 1), 10D),
                 new SphereLight(new Vector3D(10, 10, 10), new Vector3D(1, 1, 1), 10D, 2),
-                //new PointLight(new Vector3D(0, 10, 0), new Vector3D(1, 1, 1), 10D)
+                new SphereLight(new Vector3D(-10, 10, -10), new Vector3D(1, 1, 1), 10D, 2)
         };
 
         Object[] objects = new Object[] {
@@ -43,6 +42,6 @@ public class Main {
         };
 
         Scene scene = new Scene(camera, ambient, lights, objects, width, height);
-        scene.render("output.png", 3, 4, 16, 16);
+        scene.render("output.png", 1, 3, 1, 16);
     }
 }

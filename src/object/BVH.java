@@ -1,6 +1,5 @@
 package object;
 
-import material.Material;
 import math.Ray;
 import math.Vector3D;
 import math.Vector4D;

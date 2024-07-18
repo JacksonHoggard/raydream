@@ -11,13 +11,15 @@ public class PointLight extends Light {
 
     @Override
     public double intersect(Ray ray) {
-        double t;
-        Vector3D origin = ray.getOrigin();
-        Vector3D direction = ray.getDirection();
-        t = Vector3D.sub(origin, getPosition()).dot(direction.negated());
-        if (t > 0)
-            return t;
-        return -1;
+        Vector3D oc = Vector3D.sub(ray.getOrigin(), getPosition());
+        double a = ray.getDirection().dot(ray.getDirection());
+        double b = 2.0D * oc.dot(ray.getDirection());
+        double c = oc.dot(oc) - 0.1D * 0.1D;
+        double discriminant = b*b - 4*a*c;
+        if(discriminant < 0.0D) {
+            return -1;
+        }
+        return (-b - Math.sqrt(discriminant)) / (2*a);
     }
 
     @Override

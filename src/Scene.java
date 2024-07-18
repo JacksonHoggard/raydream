@@ -12,6 +12,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -175,9 +176,19 @@ public class Scene {
             Vector3D pointHit = bvhHit.point();
             Object objectHit = bvhHit.object();
             Vector3D normalHit = bvhHit.normal();
-            // Return sky if no object is hit
+            // Check if light is hit if no object is hit
             if(objectHit == null) {
-                return new Vector3D(0.125, 0.125, 0.125);
+                double minLightDist = Double.MAX_VALUE;
+                Vector3D minLightColor = null;
+                for(Light light : lights) {
+                    double lightDist = light.intersect(ray);
+                    if(lightDist > 0.0D && lightDist < minLightDist) {
+                        minLightDist = lightDist;
+                        minLightColor = light.getColor();
+                    }
+                }
+                // If no light is hit, return sky, else return the color of the light
+                return Objects.requireNonNullElseGet(minLightColor, () -> new Vector3D(0.125, 0.125, 0.125));
             }
             Material material = objectHit.getMaterial();
             Vector3D reflectionColor = new Vector3D();
