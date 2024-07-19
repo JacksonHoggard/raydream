@@ -20,6 +20,7 @@ public class Main {
                 new Vector3D(-2, 1, 1),
                 new Vector3D(0, 0, -2),
                 50,
+                20,
                 width,
                 height
         );
@@ -42,6 +43,6 @@ public class Main {
         };
 
         Scene scene = new Scene(camera, ambient, lights, objects, width, height);
-        scene.render("output.png", 1, 3, 1, 16);
+        scene.render("output.png", 4, 64, 16, 16);
     }
 }
