@@ -43,6 +43,6 @@ public class Main {
         };
 
         Scene scene = new Scene(camera, ambient, lights, objects, width, height);
-        scene.render("output.png", 4, 64, 16, 16);
+        scene.render("output.png", 2, 8, 4, 16);
     }
 }
