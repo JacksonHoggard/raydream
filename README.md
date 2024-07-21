@@ -1,12 +1,12 @@
 # 💡 RayDream: Java Ray Tracer
 
-A simple yet powerful ray tracer implemented in Java. RayDream creates realistic images by simulating the behavior of light rays as they interact with objects in a scene.
+A simple yet powerful ray tracer implemented in Java. RayDream creates realistic images by simulating the behavior of me.jacksonhoggard.raydream.light rays as they interact with objects in a scene.
 
 ![example](example.png)
 
 ## Features
 
-- **Ray Tracing Basics:** Implements fundamental ray tracing algorithms, including ray-object intersection, reflection, refraction, and shading.
+- **Ray Tracing Basics:** Implements fundamental ray tracing algorithms, including ray-me.jacksonhoggard.raydream.object intersection, reflection, refraction, and shading.
 - **Scene Description:** Define scenes by programmatically constructing objects and lights.
 - **Support for Basic Shapes:** Supports rendering of basic geometric shapes such as spheres and boxes.
 - **Model Support:** Supports rendering of models in the wavefront obj format.
@@ -16,13 +16,20 @@ A simple yet powerful ray tracer implemented in Java. RayDream creates realistic
 - **Acceleration Structures:** Makes use of bounding volume hierarchies and adaptive supersampling to reduce computation times.
 
 ## Usage
-RayDream is designed to be easy to use while still providing flexibility for advanced users. Here's a basic example of how to render a scene using RayDream:
+RayDream is designed to be easy to use while still providing flexibility for advanced users. Here's a basic example of how to me.jacksonhoggard.raydream.render a scene using RayDream:
+
 ```java
-import light.Light;
-import material.*;
-import math.Vector3D;
-import object.*;
-import object.Object;
+import me.jacksonhoggard.raydream.light.AreaLight;
+import me.jacksonhoggard.raydream.light.Light;
+import me.jacksonhoggard.raydream.light.PointLight;
+import me.jacksonhoggard.raydream.light.SphereLight;
+import me.jacksonhoggard.raydream.material.*;
+import me.jacksonhoggard.raydream.material.texture.Checker;
+import me.jacksonhoggard.raydream.math.Vector3D;
+import me.jacksonhoggard.raydream.object.*;
+import me.jacksonhoggard.raydream.object.Object;
+import me.jacksonhoggard.raydream.render.Camera;
+import me.jacksonhoggard.raydream.render.Scene;
 
 import java.io.IOException;
 
@@ -35,26 +42,27 @@ public class Main {
                 new Vector3D(-2, 1, 1),
                 new Vector3D(0, 0, -2),
                 50,
+                20,
                 width,
                 height
         );
 
-        Light ambient = new Light(new Vector3D(), new Vector3D(1, 1, 1), 1);
+        Light ambient = new PointLight(new Vector3D(), new Vector3D(1, 1, 1), 1);
         Light[] lights = {
-                new Light(new Vector3D(-10, 10, -10), new Vector3D(1, 1, 1), 10D),
-                new Light(new Vector3D(-10, 10, 10), new Vector3D(1, 1, 1), 10D),
-                new Light(new Vector3D(10, 10, -10), new Vector3D(1, 1, 1), 10D),
-                new Light(new Vector3D(10, 10, 10), new Vector3D(1, 1, 1), 10D)
+                new AreaLight(new Transform(new Vector3D(-10, 2, 10), new Vector3D(0, 0, 0), new Vector3D(1, 10, 1)), new Vector3D(1, 1, 1), 10D),
+                new SphereLight(new Vector3D(10, 10, 10), new Vector3D(1, 1, 1), 10D, 2),
         };
 
         Object[] objects = new Object[]{
-                new Sphere(new Transform(new Vector3D(0, 0, -2), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), 0.5D, new Glass(0.1D, 0.94)),
+                new Sphere(new Transform(new Vector3D(0, 0, -2), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), 0.5D, new Glass(0.1D, 1.5D)),
+                new Sphere(new Transform(new Vector3D(0, 0, -2), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), 0.45D, new Glass(0.1D, 1.0D / 1.5D)),
                 new Sphere(new Transform(new Vector3D(-0.5, 0, -3), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), 0.5D, new Reflective(new Vector3D(1, 0, 0), 0.1D, 0.6D, 0.6D, 50, 0.2D, 0.617D, 2.63D)),
-                new Plane(-0.5, new Vector3D(0, 0, 0), new Reflective(new Vector3D(255 / 255D, 253 / 255D, 208 / 255D), 0.1D, 0.6D, 0.5D, 4, 1, 0.617D, 2.63D))
+                new Box(new Transform(new Vector3D(0.5, -0.25, -2.25), new Vector3D(0, 45, 0), new Vector3D(1, 1, 1)), new Vector3D(0.5, 0.5, 0.5), new TexturedMaterial(new Checker(8, 8, new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)), 0.1D, 0.4D, 0.5, 32, 0.3D, 0.177, 3.638)),
+                new Plane(-0.5, new Vector3D(0, 0, 0), new Reflective(new Vector3D(255 / 255D, 253 / 255D, 208 / 255D), 0.1D, 0.6D, 0.5D, 4, 1, 0.617D, 2.63D)),
         };
 
         Scene scene = new Scene(camera, ambient, lights, objects, width, height);
-        scene.render("output.png", 2, 4, 8);
+        scene.render("output.png", 2, 8, 4, 16);
     }
 }
 ```
