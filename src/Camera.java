@@ -33,11 +33,10 @@ public class Camera {
      * @param j pixel column index
      * @param x x offset from pixel center
      * @param y y offset from pixel center
-     * @param origin origin the ray will shoot from
      * @return primary ray
      */
-    public Ray shootRay(Ray ray, int i, int j, double x, double y, Vector3D origin) {
-        ray.getOrigin().set(origin);
+    public Ray shootRay(Ray ray, int i, int j, double x, double y) {
+        ray.getOrigin().set(getRandomOrigin());
         w = Vector3D.sub(ray.getOrigin(), lookAt).normalized();
         u = vUp.cross(w).normalized();
         v = w.cross(u);

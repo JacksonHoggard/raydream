@@ -80,7 +80,6 @@ public class Scene {
         private int reusedRayIdx;
         private final Vector3D reusedColor;
         private final int i, j;
-        private final Vector3D rayOrigin;
 
         public TraceRayTask(int bounces, int sampleDepth, int numShadowRays, int i, int j) {
             this.bounces = bounces;
@@ -92,7 +91,6 @@ public class Scene {
             this.reusedRayIdx = -1;
             this.ray = new Ray(new Vector3D(), new Vector3D());
             this.reusedColor = new Vector3D();
-            this.rayOrigin = camera.getRandomOrigin();
         }
 
         public void run() {
@@ -122,25 +120,25 @@ public class Scene {
             Vector3D colorBL;
             Vector3D colorBR;
             if(reusedRayIdx != 0) {
-                ray = camera.shootRay(ray, i, j, tlx, tly, rayOrigin);
+                ray = camera.shootRay(ray, i, j, tlx, tly);
                 colorTL = trace(ray, bounces);
             } else {
                 colorTL = reusedColor;
             }
             if(reusedRayIdx != 1) {
-                ray = camera.shootRay(ray, i, j, tlx + w, bry + h, rayOrigin);
+                ray = camera.shootRay(ray, i, j, tlx + w, bry + h);
                 colorTR = trace(ray, bounces);
             } else {
                 colorTR = reusedColor;
             }
             if(reusedRayIdx != 2) {
-                ray = camera.shootRay(ray, i, j, tlx, bry, rayOrigin);
+                ray = camera.shootRay(ray, i, j, tlx, bry);
                 colorBL = trace(ray, bounces);
             } else {
                 colorBL = reusedColor;
             }
             if(reusedRayIdx != 3) {
-                ray = camera.shootRay(ray, i, j, brx, bry, rayOrigin);
+                ray = camera.shootRay(ray, i, j, brx, bry);
                 colorBR = trace(ray, bounces);
             } else {
                 colorBR = reusedColor;
