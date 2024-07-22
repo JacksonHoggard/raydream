@@ -3,6 +3,7 @@ package me.jacksonhoggard.raydream.util;
 import me.jacksonhoggard.raydream.material.texture.Texture;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Mesh;
+import me.jacksonhoggard.raydream.util.io.OBJLoader;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

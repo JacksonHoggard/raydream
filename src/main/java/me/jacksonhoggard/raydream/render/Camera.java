@@ -9,7 +9,7 @@ public class Camera {
     private final Vector3D lookFrom;
     private final Vector3D lookAt;
     private Vector3D u, v, w;
-    private static final Vector3D vUp = new Vector3D(0, 1, 0);
+    private final Vector3D vUp;
     private final double focalLength;
     private final double aperture;
     private final double vHeight;
@@ -17,9 +17,10 @@ public class Camera {
     private final int imgWidth;
     private final int imgHeight;
 
-    public Camera(Vector3D lookFrom, Vector3D lookAt, double fov, double aperture, int imgWidth, int imgHeight) {
+    public Camera(Vector3D lookFrom, Vector3D lookAt, Vector3D vUp, double fov, double aperture, int imgWidth, int imgHeight) {
         this.lookFrom = lookFrom;
         this.lookAt = lookAt;
+        this.vUp = vUp;
         this.focalLength = Vector3D.sub(lookFrom, lookAt).length();
         this.aperture = 1 / aperture;
         this.imgHeight = imgHeight;

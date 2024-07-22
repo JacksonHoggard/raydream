@@ -1,4 +1,4 @@
-package me.jacksonhoggard.raydream.util;
+package me.jacksonhoggard.raydream.util.io;
 
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Mesh;
