@@ -1,12 +1,12 @@
 # 💡 RayDream: Java Ray Tracer
 
-A simple yet powerful ray tracer implemented in Java. RayDream creates realistic images by simulating the behavior of me.jacksonhoggard.raydream.light rays as they interact with objects in a scene.
+A simple yet powerful ray tracer implemented in Java. RayDream creates realistic images by simulating the behavior of light rays as they interact with objects in a scene.
 
 ![example](example.png)
 
 ## Features
 
-- **Ray Tracing Basics:** Implements fundamental ray tracing algorithms, including ray-me.jacksonhoggard.raydream.object intersection, reflection, refraction, and shading.
+- **Ray Tracing Basics:** Implements fundamental ray tracing algorithms, including object intersection, reflection, refraction, and shading.
 - **Scene Description:** Define scenes by programmatically constructing objects and lights.
 - **Support for Basic Shapes:** Supports rendering of basic geometric shapes such as spheres and boxes.
 - **Model Support:** Supports rendering of models in the wavefront obj format.
