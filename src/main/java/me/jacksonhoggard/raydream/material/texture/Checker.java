@@ -10,7 +10,7 @@ public class Checker extends Texture {
     private final int height;
 
     public Checker(int width, int height, Vector3D colorA, Vector3D colorB) {
-        super(null, width, height);
+        super(null, null, width, height);
         this.colorA = colorA;
         this.colorB = colorB;
         this.width = width;
@@ -27,4 +27,19 @@ public class Checker extends Texture {
         return colorB;
     }
 
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public Vector3D getColorA() {
+        return colorA;
+    }
+
+    public Vector3D getColorB() {
+        return colorB;
+    }
 }

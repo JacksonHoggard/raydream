@@ -9,11 +9,13 @@ import java.awt.image.BufferedImage;
 public class Texture {
 
     private final BufferedImage image;
+    private final String path;
     private final int width;
     private final int height;
 
-    public Texture(BufferedImage image, int width, int height) {
+    public Texture(BufferedImage image, String path, int width, int height) {
         this.image = image;
+        this.path = path;
         this.width = width;
         this.height = height;
     }
@@ -34,4 +36,7 @@ public class Texture {
         );
     }
 
+    public String getPath() {
+        return path;
+    }
 }

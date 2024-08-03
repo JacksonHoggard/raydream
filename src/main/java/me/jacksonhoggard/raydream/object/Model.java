@@ -37,4 +37,12 @@ public class Model extends Object {
     public Vector2D mapTexture(Vector3D point) {
         return null;
     }
+
+    public Mesh getMesh() {
+        return mesh;
+    }
+
+    public boolean isInvertNormals() {
+        return invertNormals;
+    }
 }

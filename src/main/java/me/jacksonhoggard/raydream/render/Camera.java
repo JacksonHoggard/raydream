@@ -12,6 +12,7 @@ public class Camera {
     private final Vector3D vUp;
     private final double focalLength;
     private final double aperture;
+    private final double fov;
     private final double vHeight;
     private final double vWidth;
     private final int imgWidth;
@@ -21,6 +22,7 @@ public class Camera {
         this.lookFrom = lookFrom;
         this.lookAt = lookAt;
         this.vUp = vUp;
+        this.fov = fov;
         this.focalLength = Vector3D.sub(lookFrom, lookAt).length();
         this.aperture = 1 / aperture;
         this.imgHeight = imgHeight;
@@ -65,5 +67,37 @@ public class Camera {
         randomOrigin.mult(aperture).add(lookFrom);
         Vector3D direction = Vector3D.sub(lookAt, randomOrigin).normalize();
         return Vector3D.sub(lookAt, direction.mult(focalLength));
+    }
+
+    public double getAperture() {
+        return 1 / aperture;
+    }
+
+    public double getFocalLength() {
+        return focalLength;
+    }
+
+    public Vector3D getLookFrom() {
+        return lookFrom;
+    }
+
+    public Vector3D getLookAt() {
+        return lookAt;
+    }
+
+    public Vector3D getVUp() {
+        return vUp;
+    }
+
+    public double getFov() {
+        return fov;
+    }
+
+    public int getImgWidth() {
+        return imgWidth;
+    }
+
+    public int getImgHeight() {
+        return imgHeight;
     }
 }

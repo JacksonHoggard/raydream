@@ -138,6 +138,10 @@ public abstract class Material {
         return specularExponent;
     }
 
+    public double getK() {
+        return k;
+    }
+
     public boolean hasColor() {
         return hasColor;
     }

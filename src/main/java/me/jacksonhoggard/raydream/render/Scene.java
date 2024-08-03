@@ -2,12 +2,13 @@ package me.jacksonhoggard.raydream.render;
 
 import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.light.PointLight;
-import me.jacksonhoggard.raydream.material.Material;
+import me.jacksonhoggard.raydream.material.*;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector3D;
-import me.jacksonhoggard.raydream.object.BVH;
-import me.jacksonhoggard.raydream.object.Hit;
+import me.jacksonhoggard.raydream.object.*;
 import me.jacksonhoggard.raydream.object.Object;
+import me.jacksonhoggard.raydream.util.io.SceneReader;
+import me.jacksonhoggard.raydream.util.io.SceneWriter;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -71,6 +72,32 @@ public class Scene {
             System.out.print("\nFinished in " + minutes + "m " + (float) (durationSeconds - (minutes * 60)) + "s");
         else
             System.out.print("\nFinished in " + durationSeconds + "s");
+    }
+
+    public void save(String path) {
+        SceneWriter sceneWriter = new SceneWriter();
+        sceneWriter.write(this, path);
+    }
+
+    public static Scene read(String path) {
+        SceneReader sceneReader = new SceneReader();
+        return sceneReader.read(path);
+    }
+
+    public Camera getCamera() {
+        return camera;
+    }
+
+    public Light getAmbient() {
+        return ambient;
+    }
+
+    public Object[] getObjects() {
+        return objects;
+    }
+
+    public Light[] getLights() {
+        return lights;
     }
 
     private class TraceRayTask implements Runnable {
@@ -256,5 +283,4 @@ public class Scene {
             return Vector3D.add(diffuse, specular).mult(brightness);
         }
     }
-
 }

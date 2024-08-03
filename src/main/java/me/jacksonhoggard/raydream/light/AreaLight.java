@@ -10,6 +10,7 @@ import me.jacksonhoggard.raydream.object.Triangle;
 import me.jacksonhoggard.raydream.util.Util;
 
 public class AreaLight extends Light {
+    private final Transform transform;
     private final Matrix4D transformMatrix;
     private final Matrix4D inverseTransformMatrix;
     private final Triangle t0, t1;
@@ -19,6 +20,7 @@ public class AreaLight extends Light {
         double rotX = Math.toRadians(transform.rotation().x);
         double rotY = Math.toRadians(transform.rotation().y);
         double rotZ = Math.toRadians(transform.rotation().z);
+        this.transform = transform;
         this.transformMatrix = (new Matrix4D(
                 transform.scale().x, 0, 0, 0,
                 0, transform.scale().y, 0, 0,
@@ -79,5 +81,9 @@ public class AreaLight extends Light {
         double y = -0.5D + (j * gridSizeY) + Util.randomRange(0, gridSizeY);
         Vector3D pointOS = new Vector3D(x, y, 0);
         return Object.transformPointToOS(pointOS, transformMatrix);
+    }
+
+    public Transform getTransform() {
+        return transform;
     }
 }

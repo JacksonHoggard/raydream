@@ -10,11 +10,13 @@ public class Box extends Object {
     private final Vector3D center;
     private final Vector3D min;
     private final Vector3D max;
+    private final Vector3D size;
 
     public Box(Transform transform, Vector3D size, Material material) {
         super(transform, material, new Vector3D(-size.x/2, -size.y/2, -size.z/2), new Vector3D(size.x/2, size.y/2, size.z/2));
         this.min = new Vector3D(-size.x/2, -size.y/2, -size.z/2);
         this.max = new Vector3D(size.x/2, size.y/2, size.z/2);
+        this.size = size;
         this.center = Vector3D.add(min, max).div(2.0D);
     }
 
@@ -139,5 +141,9 @@ public class Box extends Object {
                 (point.x % lengthU) / lengthU,
                 (point.z % lengthV) / lengthV
         );
+    }
+
+    public Vector3D getSize() {
+        return size;
     }
 }

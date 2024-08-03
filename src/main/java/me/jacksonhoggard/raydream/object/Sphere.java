@@ -40,4 +40,8 @@ public class Sphere extends Object {
         double v = 1 - phi / Math.PI;
         return new Vector2D(u, v);
     }
+
+    public double getRadius() {
+        return radius;
+    }
 }

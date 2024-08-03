@@ -26,7 +26,7 @@ public class Util {
 
     public static Texture loadTexture(String path) throws IOException {
         BufferedImage image = ImageIO.read(new File(path));
-        return new Texture(image, image.getWidth(), image.getHeight());
+        return new Texture(image, path, image.getWidth(), image.getHeight());
     }
 
     public static Mesh loadOBJ(String path) {

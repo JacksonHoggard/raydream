@@ -30,4 +30,8 @@ public class SphereLight extends Light {
         Vector3D random = Util.randomUnitVector();
         return Vector3D.add(getPosition(), random.mult(radius - 0.00001D));
     }
+
+    public double getRadius() {
+        return radius;
+    }
 }
