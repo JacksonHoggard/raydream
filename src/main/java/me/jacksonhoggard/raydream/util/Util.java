@@ -9,6 +9,8 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class Util {
     public static double randomRange(double min, double max) {
@@ -24,9 +26,22 @@ public class Util {
         return new Vector3D(r * Math.cos(theta), r * Math.sin(theta), z);
     }
 
-    public static Texture loadTexture(String path) throws IOException {
-        BufferedImage image = ImageIO.read(new File(path));
+    public static Texture loadTexture(String path) {
+        BufferedImage image = null;
+        try {
+            image = ImageIO.read(new File(path));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load texture file:" + path, e);
+        }
         return new Texture(image, path, image.getWidth(), image.getHeight());
+    }
+
+    public static String loadShader(String path) {
+        try {
+            return new String(Files.readAllBytes(Paths.get(path)));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load shader file:" + path, e);
+        }
     }
 
     public static Mesh loadOBJ(String path) {

@@ -4,7 +4,7 @@ import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Object;
 
-public abstract class Material {
+public class Material {
 
     public enum Type {
         REFLECT,
