@@ -14,10 +14,9 @@ public class PreviewWindow {
     private static float posY;
     private static float width;
     private static float height;
+    private static float frameScale;
     private static float frameWidth;
     private static float frameHeight;
-    private static float framePosX;
-    private static float framePosY;
 
     public static void show(FrameBuffer frameBuffer) {
         posX = EditorWindow.getPosX();
@@ -27,22 +26,26 @@ public class PreviewWindow {
         ImGui.setNextWindowPos(posX, posY, ImGuiCond.Always);
         ImGui.setNextWindowSize(width, height, ImGuiCond.Always);
         ImGui.begin("Scene Preview", new ImBoolean(true), ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoBringToFrontOnFocus);
-        frameWidth = SettingsWindow.getImgWidth() > SettingsWindow.getImgHeight() ? width : height * camera.getAspect();
-        frameHeight = SettingsWindow.getHeight() > SettingsWindow.getImgWidth() ? height : width / camera.getAspect();
-        while(frameWidth > width)
-            frameWidth--;
-        frameHeight = frameWidth / camera.getAspect();
-        while(frameHeight > height)
-            frameHeight--;
-        frameWidth = frameHeight * camera.getAspect();
-        framePosX = posX + (0.5F * width) - (0.5F * frameWidth);
-        framePosY = posY + (0.5F * height) - (0.5F * frameHeight);
+        frameWidth = SettingsWindow.getImgWidth();
+        frameHeight = SettingsWindow.getImgHeight();
         frameBuffer.setClearColor(SettingsWindow.getSkyColor());
         frameBuffer.rescale((int) frameWidth, (int) frameHeight);
+        float tempW = SettingsWindow.getImgWidth() > SettingsWindow.getImgHeight() ? width : height * camera.getAspect();
+        float tempH = SettingsWindow.getImgHeight() > SettingsWindow.getImgWidth() ? height : width / camera.getAspect();
+        while(tempW > width) {
+            tempW--;
+            tempH = tempW / camera.getAspect();
+        }
+        while(tempH > height) {
+            tempH--;
+            tempW = tempH * camera.getAspect();
+        }
+        float framePosX = posX + (0.5F * width) - (0.5F * tempW);
+        float framePosY = posY + (0.5F * height) - (0.5F * tempH);
         ImGui.getWindowDrawList().addImage(
                 frameBuffer.getTextureId(),
                 framePosX, framePosY,
-                framePosX + frameWidth, framePosY + frameHeight,
+                framePosX + tempW, framePosY + tempH,
                 0, 1,
                 1, 0
         );
