@@ -76,7 +76,6 @@ public class BoxModel extends EditorModel {
         // normal attribute
         GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, 6 * Float.BYTES, 3 * Float.BYTES);
         GL20.glEnableVertexAttribArray(1);
-        GL30.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         GL30.glBindVertexArray(0);
         created = true;
     }

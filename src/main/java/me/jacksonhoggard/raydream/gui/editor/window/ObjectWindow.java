@@ -5,6 +5,7 @@ import imgui.flag.ImGuiWindowFlags;
 import me.jacksonhoggard.raydream.gui.MenuBar;
 import me.jacksonhoggard.raydream.gui.editor.object.BoxEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
+import me.jacksonhoggard.raydream.gui.editor.object.PlaneEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.object.SphereEditorObject;
 import org.lwjgl.glfw.GLFW;
 
@@ -30,9 +31,14 @@ public class ObjectWindow {
             if(ImGui.beginMenu("Add")) {
                 if(ImGui.menuItem("Box")) {
                     objects.add(new BoxEditorObject());
+                    EditorObject.setSelected(objects.getLast().getId());
                 }
                 if(ImGui.menuItem("Sphere")) {
                     objects.add(new SphereEditorObject());
+                    EditorObject.setSelected(objects.getLast().getId());
+                }
+                if(ImGui.menuItem("Plane")) {
+                    objects.add(new PlaneEditorObject());
                     EditorObject.setSelected(objects.getLast().getId());
                 }
                 ImGui.endMenu();

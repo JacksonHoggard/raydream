@@ -57,6 +57,7 @@ public class SphereEditorObject extends EditorObject {
         glPrimitiveRestartIndex(GL_PRIMITIVE_RESTART_FIXED_INDEX);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, sphereModel.getIndicesBufferId());
         glDrawElements(GL_TRIANGLE_STRIP, sphereModel.getIndicesCount(), GL_UNSIGNED_INT, 0);
+        glDisable(GL_PRIMITIVE_RESTART);
         glBindVertexArray(0);
     }
 
