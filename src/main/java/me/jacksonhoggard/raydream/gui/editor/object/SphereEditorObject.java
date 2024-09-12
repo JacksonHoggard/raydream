@@ -1,7 +1,7 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
 import imgui.ImGui;
-import me.jacksonhoggard.raydream.gui.editor.material.EditorMaterial;
+import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.SphereModel;
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.object.Object;
@@ -18,14 +18,14 @@ public class SphereEditorObject extends EditorObject {
 
     private static final SphereModel sphereModel = new SphereModel();
 
-    public SphereEditorObject(EditorMaterial material) {
+    public SphereEditorObject(EditorObjectMaterial material) {
         super(sphereModel, material);
     }
 
     public SphereEditorObject() {
         super(
                 sphereModel,
-                new EditorMaterial(
+                new EditorObjectMaterial(
                         new float[]{0.f, 1.f, 1.f},
                         0.1f,
                         0.4f,
@@ -37,17 +37,6 @@ public class SphereEditorObject extends EditorObject {
                         Material.Type.REFLECT
                 )
         );
-    }
-
-    @Override
-    public void show() {
-        ImGui.pushID(id);
-
-        if(ImGui.selectable(label, id == selected)) {
-            selected = id;
-        }
-
-        ImGui.popID();
     }
 
     @Override

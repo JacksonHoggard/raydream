@@ -3,7 +3,7 @@ package me.jacksonhoggard.raydream.gui.editor.material;
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Vector3D;
 
-public class EditorMaterial {
+public class EditorObjectMaterial {
 
     private float[] color;
     private float ambient;
@@ -15,7 +15,7 @@ public class EditorMaterial {
     private float metalness;
     private Material.Type type;
 
-    public EditorMaterial(float[] color, float ambient, float diffuse, float specular, float specularExponent, float indexOfRefraction, float k, float metalness, Material.Type type) {
+    public EditorObjectMaterial(float[] color, float ambient, float diffuse, float specular, float specularExponent, float indexOfRefraction, float k, float metalness, Material.Type type) {
         this.color = color;
         this.ambient = ambient;
         this.diffuse = diffuse;

@@ -130,6 +130,10 @@ public class Vector3D {
         return Vector3D.sub(this, v).length();
     }
 
+    public double[] toArray() {
+        return new double[] {x, y, z};
+    }
+
     @Override
     public String toString() {
         return "<" + this.x + ", " + this.y + ", " + this.z + ">";

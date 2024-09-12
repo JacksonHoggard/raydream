@@ -1,11 +1,13 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
 import imgui.ImGui;
-import me.jacksonhoggard.raydream.gui.editor.material.EditorMaterial;
+import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.gui.editor.model.PlaneModel;
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.object.Object;
+import me.jacksonhoggard.raydream.object.Plane;
+import me.jacksonhoggard.raydream.object.Transform;
 
 import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
 import static org.lwjgl.opengl.GL11.glDrawArrays;
@@ -13,16 +15,16 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 public class PlaneEditorObject extends EditorObject {
 
-    private static final EditorModel planeModel = new PlaneModel();
+    private static final EditorModel planeModel = new PlaneModel(1000, 1000);
 
-    public PlaneEditorObject(EditorMaterial material) {
+    public PlaneEditorObject(EditorObjectMaterial material) {
         super(planeModel, material);
     }
 
     public PlaneEditorObject() {
         super(
                 planeModel,
-                new EditorMaterial(
+                new EditorObjectMaterial(
                         new float[] {0.8f, 0.8f, 0.8f},
                         0.1f,
                         0.4f,
@@ -38,13 +40,9 @@ public class PlaneEditorObject extends EditorObject {
 
     @Override
     public void show() {
-        ImGui.pushID(id);
-
-        if(ImGui.selectable(label, id == selected)) {
-            selected = id;
-        }
-
-        ImGui.popID();
+        super.show();
+        getModelMatrix()[12] = 0;
+        getModelMatrix()[14] = 0;
     }
 
     @Override
@@ -56,6 +54,7 @@ public class PlaneEditorObject extends EditorObject {
 
     @Override
     public Object toObject() {
-        return null;
+        Transform t = getTransform();
+        return new Plane(t.translation().y, t.rotation(), getMaterial().toRayDreamMaterial());
     }
 }

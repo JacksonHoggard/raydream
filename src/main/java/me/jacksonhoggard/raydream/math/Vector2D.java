@@ -117,6 +117,10 @@ public class Vector2D {
         return Vector2D.sub(this, v).length();
     }
 
+    public double[] toArray() {
+        return new double[]{x, y};
+    }
+
     @Override
     public String toString() {
         return "<" + this.x + ", " + this.y + ">";

@@ -140,6 +140,10 @@ public class Vector4D {
         return Vector4D.sub(this, v).length();
     }
 
+    public double[] toArray() {
+        return new double[] {x, y, z, w};
+    }
+
     @Override
     public String toString() {
         return "<" + this.x + ", " + this.y + ", " + this.z + ", " + this.w + ">";

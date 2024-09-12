@@ -130,6 +130,10 @@ public class Vector3F {
         return Vector3F.sub(this, v).length();
     }
 
+    public float[] toArray() {
+        return new float[]{x, y, z};
+    }
+
     @Override
     public String toString() {
         return "<" + this.x + ", " + this.y + ", " + this.z + ">";

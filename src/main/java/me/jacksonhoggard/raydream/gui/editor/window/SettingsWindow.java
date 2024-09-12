@@ -19,7 +19,8 @@ public class SettingsWindow {
     private static final float[] lookFrom = new float[] {0, 1, 2};
     private static final float[] lookAt = new float[] {0, 0, 0};
     private static final float[] up = new float[] {0, 1, 0};
-    private static final float[] skyColor = new float[] {0, 0, 0, 1.F};
+    private static final float[] skyColor = new float[] {0, 0, 0, 1.f};
+    private static final float[] ambientColor = new float[] {1.f, 1.f, 1.f};
     private static float aperture = 100;
     private static int imgWidth = 1280;
     private static int imgHeight = 720;
@@ -50,6 +51,7 @@ public class SettingsWindow {
         ImGui.inputInt("Height", inputInt);
         imgHeight = inputInt.get();
         ImGui.inputFloat3("Sky Color", skyColor);
+        ImGui.inputFloat3("Ambient Color", ambientColor);
 
         camera.setAspect((float) imgWidth / (float) imgHeight);
         camera.updateProjection();
@@ -90,19 +92,11 @@ public class SettingsWindow {
         return aperture;
     }
 
-    public static float[] getLookAt() {
-        return lookAt;
-    }
-
-    public static float[] getLookFrom() {
-        return lookFrom;
-    }
-
-    public static float[] getUp() {
-        return up;
-    }
-
     public static float[] getSkyColor() {
         return skyColor;
+    }
+
+    public static float[] getAmbientColor() {
+        return ambientColor;
     }
 }

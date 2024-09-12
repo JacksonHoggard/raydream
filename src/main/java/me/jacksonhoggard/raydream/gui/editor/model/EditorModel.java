@@ -15,6 +15,14 @@ public abstract class EditorModel implements IEditorModel {
         created = false;
     }
 
+    public float[] getVertices() {
+        return vertices;
+    }
+
+    public int[] getIndices() {
+        return indices;
+    }
+
     public int getVertexArrayId() {
         return vertexArrayId;
     }

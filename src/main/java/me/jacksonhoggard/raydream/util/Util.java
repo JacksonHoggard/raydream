@@ -7,10 +7,13 @@ import me.jacksonhoggard.raydream.util.io.OBJLoader;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Scanner;
 
 public class Util {
     public static double randomRange(double min, double max) {
@@ -42,6 +45,19 @@ public class Util {
         } catch (IOException e) {
             throw new RuntimeException("Failed to load shader file:" + path, e);
         }
+    }
+
+    public static List<String> readAllLines(String path) {
+        List<String> list = new ArrayList<>();
+        try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(path), StandardCharsets.UTF_8))) {
+            String line;
+            while((line = br.readLine()) != null) {
+                list.add(line);
+            }
+        } catch (IOException | NullPointerException e) {
+            throw new RuntimeException("Failed to read resource file:" + path, e);
+        }
+        return list;
     }
 
     public static Mesh loadOBJ(String path) {

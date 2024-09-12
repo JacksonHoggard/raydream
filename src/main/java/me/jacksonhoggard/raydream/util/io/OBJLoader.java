@@ -9,8 +9,8 @@ import java.util.ArrayList;
 
 public class OBJLoader {
 
-    private static final ArrayList<Vector3D> vertices = new ArrayList<Vector3D>();
-    private static final ArrayList<Triangle> triangles = new ArrayList<Triangle>();
+    private static final ArrayList<Vector3D> vertices = new ArrayList<>();
+    private static final ArrayList<Triangle> triangles = new ArrayList<>();
     private static Vector3D min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
     private static Vector3D max = new Vector3D(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
 

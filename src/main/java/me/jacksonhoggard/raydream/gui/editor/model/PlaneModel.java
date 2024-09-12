@@ -13,8 +13,12 @@ import static org.lwjgl.opengl.GL30.*;
 
 public class PlaneModel extends EditorModel {
 
-    public PlaneModel() {
+    private final int sizeX, sizeZ;
+
+    public PlaneModel(int sizeX, int sizeZ) {
         super();
+        this.sizeX = sizeX;
+        this.sizeZ = sizeZ;
     }
 
     @Override
@@ -24,8 +28,8 @@ public class PlaneModel extends EditorModel {
 
         ArrayList<Float> vertices = new ArrayList<>();
 
-        for (int x = -500; x < 500; x++) {
-            for (int z = -500; z < 500; z++) {
+        for (int x = -sizeX / 2; x < sizeX / 2; x++) {
+            for (int z = -sizeZ / 2; z < sizeZ / 2; z++) {
                 vertices.add((float) x);
                 vertices.add(0.f);
                 vertices.add((float) z);

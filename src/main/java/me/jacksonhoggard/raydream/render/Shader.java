@@ -7,16 +7,16 @@ import java.nio.file.Paths;
 
 import static org.lwjgl.opengl.GL20.*;
 
-public class ShaderProgram {
+public class Shader {
     private final int programId;
     private int vertexShaderId;
     private int fragmentShaderId;
 
-    public ShaderProgram() {
+    public Shader(String vertexShaderFile, String fragmentShaderFile) {
         // Compile and attach shaders
         try {
-            vertexShaderId = createShader(Paths.get(ClassLoader.getSystemResource("vertex_shader.glsl").toURI()).toString(), GL_VERTEX_SHADER);
-            fragmentShaderId = createShader(Paths.get(ClassLoader.getSystemResource("fragment_shader.glsl").toURI()).toString(), GL_FRAGMENT_SHADER);
+            vertexShaderId = createShader(Paths.get(ClassLoader.getSystemResource(vertexShaderFile).toURI()).toString(), GL_VERTEX_SHADER);
+            fragmentShaderId = createShader(Paths.get(ClassLoader.getSystemResource(fragmentShaderFile).toURI()).toString(), GL_FRAGMENT_SHADER);
         } catch (URISyntaxException e) {
             throw new RuntimeException("Could not load glsl file.");
         }

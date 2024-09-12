@@ -1,7 +1,9 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
+import imgui.ImGui;
 import imgui.extension.imguizmo.ImGuizmo;
-import me.jacksonhoggard.raydream.gui.editor.material.EditorMaterial;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
+import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Transform;
@@ -12,7 +14,7 @@ public abstract class EditorObject implements IEditorObject {
     private static int lastID = 0;
     protected final int id;
     protected final String label;
-    private EditorMaterial material;
+    private EditorObjectMaterial material;
     private final float[] modelMatrix = {
             1.f, 0.f, 0.f, 0.f,
             0.f, 1.f, 0.f, 0.f,
@@ -22,13 +24,25 @@ public abstract class EditorObject implements IEditorObject {
 
     private final EditorModel model;
 
-    public EditorObject(EditorModel model, EditorMaterial material) {
+    public EditorObject(EditorModel model, EditorObjectMaterial material) {
         this.material = material;
         this.model = model;
         this.model.create();
         id = lastID;
         label = "Object " + id;
         lastID++;
+    }
+
+    @Override
+    public void show() {
+        ImGui.pushID(id);
+
+        if(ImGui.selectable(label, id == selected)) {
+            selected = id;
+            EditorLight.setSelected(-1);
+        }
+
+        ImGui.popID();
     }
 
     public EditorModel getModel() {
@@ -51,11 +65,11 @@ public abstract class EditorObject implements IEditorObject {
         );
     }
 
-    public void setMaterial(EditorMaterial material) {
+    public void setMaterial(EditorObjectMaterial material) {
         this.material = material;
     }
 
-    public EditorMaterial getMaterial() {
+    public EditorObjectMaterial getMaterial() {
         return material;
     }
 

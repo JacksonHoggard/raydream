@@ -140,6 +140,10 @@ public class Vector4F {
         return Vector4F.sub(this, v).length();
     }
 
+    public float[] toArray() {
+        return new float[] {x, y, z, w};
+    }
+
     @Override
     public String toString() {
         return "<" + this.x + ", " + this.y + ", " + this.z + ", " + this.w + ">";

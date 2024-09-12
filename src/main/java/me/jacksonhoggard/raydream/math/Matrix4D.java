@@ -232,4 +232,12 @@ public class Matrix4D {
     public double[] getMatrixArray() {
         return matrix;
     }
+
+    @Override
+    public String toString() {
+        return "/ " + matrix[0] + ", " + matrix[1] + ", " + matrix[2] + ", " + matrix[3] + " \\\n" +
+                "| " + matrix[4] + ", " + matrix[5] + ", " + matrix[6] + ", " + matrix[7] + " |\n" +
+                "| " + matrix[8] + ", " + matrix[9] + ", " + matrix[10] + ", " + matrix[11] + " |\n" +
+                "\\ " + matrix[12] + ", " + matrix[13] + ", " + matrix[14] + ", " + matrix[15] + " /\n";
+    }
 }

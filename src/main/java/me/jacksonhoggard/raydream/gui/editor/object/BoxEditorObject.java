@@ -1,7 +1,7 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
 import imgui.ImGui;
-import me.jacksonhoggard.raydream.gui.editor.material.EditorMaterial;
+import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.BoxModel;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.material.Material;
@@ -17,14 +17,14 @@ public class BoxEditorObject extends EditorObject {
 
     private static final EditorModel boxModel = new BoxModel();
 
-    public BoxEditorObject(EditorMaterial material) {
+    public BoxEditorObject(EditorObjectMaterial material) {
         super(boxModel, material);
     }
 
     public BoxEditorObject() {
         super(
                 boxModel,
-                new EditorMaterial(
+                new EditorObjectMaterial(
                         new float[]{1.f, 0.f, 0.f},
                         0.1f,
                         0.4f,
@@ -36,17 +36,6 @@ public class BoxEditorObject extends EditorObject {
                         Material.Type.REFLECT
                 )
         );
-    }
-
-    @Override
-    public void show() {
-        ImGui.pushID(id);
-
-        if(ImGui.selectable(label, id == selected)) {
-            selected = id;
-        }
-
-        ImGui.popID();
     }
 
     @Override

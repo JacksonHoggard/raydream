@@ -5,12 +5,16 @@ import imgui.extension.imguizmo.ImGuizmo;
 import imgui.extension.imguizmo.flag.Mode;
 import imgui.extension.imguizmo.flag.Operation;
 import imgui.flag.ImGuiCond;
-import imgui.flag.ImGuiInputTextFlags;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImFloat;
 import imgui.type.ImInt;
 import me.jacksonhoggard.raydream.gui.MenuBar;
-import me.jacksonhoggard.raydream.gui.editor.material.EditorMaterial;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorPointLight;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
+import me.jacksonhoggard.raydream.gui.editor.material.EditorLightMaterial;
+import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
 import me.jacksonhoggard.raydream.material.Material;
 
@@ -30,8 +34,8 @@ public class PropWindow {
     private static final ImFloat inputFloat = new ImFloat();
     private static final float[] inputSnapValue = new float[]{1f, 1f, 1f};
 
-    private static boolean boundSizingSnap = false;
-
+    private static EditorObject selectedObject;
+    private static EditorLight selectedLight;
     public static final int TRANSFORM_TAB = 0;
     public static final int MATERIAL_TAB = 1;
     private static int selectedTab = 0;
@@ -47,19 +51,25 @@ public class PropWindow {
         ImGui.setNextWindowPos(posX, posY, ImGuiCond.Always);
         ImGui.setNextWindowSize(width, height, ImGuiCond.Always);
         if (ImGui.begin("Properties", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBringToFrontOnFocus)) {
-            if(ImGui.button("Transform"))
-                selectedTab = TRANSFORM_TAB;
-            ImGui.sameLine();
-            if(ImGui.button("Material"))
-                selectedTab = MATERIAL_TAB;
+            selectedObject = ObjectWindow.getSelectedObject();
+            selectedLight = ObjectWindow.getSelectedLight();
+            if(selectedObject != null || selectedLight != null) {
+                if(ImGui.button("Transform"))
+                    selectedTab = TRANSFORM_TAB;
+                ImGui.sameLine();
+                if(ImGui.button("Material"))
+                    selectedTab = MATERIAL_TAB;
 
-            switch(selectedTab) {
-                case TRANSFORM_TAB:
-                    showTransformTab();
-                    break;
-                case MATERIAL_TAB:
-                    showMaterialTab();
-                    break;
+                ImGui.separator();
+
+                switch(selectedTab) {
+                    case TRANSFORM_TAB:
+                        showTransformTab();
+                        break;
+                    case MATERIAL_TAB:
+                        showMaterialTab();
+                        break;
+                }
             }
         }
 
@@ -67,19 +77,12 @@ public class PropWindow {
     }
 
     private static void showTransformTab() {
-        EditorObject selectedObject = ObjectWindow.getSelectedObject();
-        if (selectedObject != null) {
-            if (ImGuizmo.isUsing()) {
-                ImGuizmo.decomposeMatrixToComponents(selectedObject.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
-            }
-
-            ImGui.inputFloat3("Tr", translationMatrix, "%.3f", ImGuiInputTextFlags.ReadOnly);
-            ImGui.inputFloat3("Rt", rotationMatrix, "%.3f", ImGuiInputTextFlags.ReadOnly);
-            ImGui.inputFloat3("Sc", scaleMatrix, "%.3f", ImGuiInputTextFlags.ReadOnly);
-
-            if (ImGuizmo.isUsing()) {
-                ImGuizmo.recomposeMatrixFromComponents(selectedObject.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
-            }
+        if(selectedObject != null) {
+            ImGuizmo.decomposeMatrixToComponents(selectedObject.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
+            ImGui.inputFloat3("Tr", translationMatrix, "%.3f");
+            ImGui.inputFloat3("Rt", rotationMatrix, "%.3f");
+            ImGui.inputFloat3("Sc", scaleMatrix, "%.3f");
+            ImGuizmo.recomposeMatrixFromComponents(selectedObject.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
 
             if (EditorWindow.getCurrentGizmoOperation() != Operation.SCALE) {
                 if (ImGui.radioButton("Local", EditorWindow.getCurrentMode() == Mode.LOCAL)) {
@@ -92,7 +95,6 @@ public class PropWindow {
             }
 
             ImGui.checkbox("Snap", EditorWindow.getUseSnap());
-
             inputFloat.set(inputSnapValue[0]);
             switch (EditorWindow.getCurrentGizmoOperation()) {
                 case Operation.TRANSLATE:
@@ -109,24 +111,33 @@ public class PropWindow {
                     Arrays.fill(inputSnapValue, scaleValue);
                     break;
             }
-
-            ImGui.checkbox("Show Bound Sizing", EditorWindow.getBoundingSize());
-
-            if (EditorWindow.getBoundingSize().get()) {
-                if (ImGui.checkbox("BoundSizingSnap", boundSizingSnap)) {
-                    boundSizingSnap = !boundSizingSnap;
-                }
-                ImGui.sameLine();
-                ImGui.inputFloat3("Snap", EditorWindow.getInputBoundsSnap());
+        }
+        if(selectedLight != null) {
+            ImGuizmo.decomposeMatrixToComponents(selectedLight.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
+            if(selectedLight instanceof EditorSphereLight) {
+                ImGui.inputFloat3("Position", translationMatrix, "%.3f");
+                inputFloat.set(((EditorSphereLight) selectedLight).getRadius());
+                ImGui.inputFloat("Radius", inputFloat);
+                ((EditorSphereLight) selectedLight).setRadius(inputFloat.get());
+                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix, rotationMatrix, new float[]{inputFloat.get(), inputFloat.get(), inputFloat.get()});
+            }
+            if(selectedLight instanceof EditorPointLight) {
+                ImGui.inputFloat3("Position", translationMatrix, "%.3f");
+                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
+            }
+            if(selectedLight instanceof EditorAreaLight) {
+                ImGui.inputFloat3("Tr", translationMatrix, "%.3f");
+                ImGui.inputFloat3("Rt", rotationMatrix, "%.3f");
+                ImGui.inputFloat3("Sc", scaleMatrix, "%.3f");
+                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
             }
         }
+
     }
 
     private static void showMaterialTab() {
-        EditorObject selectedObject = ObjectWindow.getSelectedObject();
         if(selectedObject != null) {
-            EditorMaterial material = selectedObject.getMaterial();
-
+            EditorObjectMaterial material = selectedObject.getMaterial();
             ImGui.inputFloat3("Color", material.getColor());
             inputFloat.set(material.getAmbient());
             ImGui.inputFloat("Ambient", inputFloat);
@@ -149,9 +160,10 @@ public class PropWindow {
             inputFloat.set(material.getMetalness());
             ImGui.inputFloat("Metalness", inputFloat);
             material.setMetalness(inputFloat.get());
+
             selectedMaterialType.set(material.getType().ordinal());
-            if(ImGui.combo("Type", selectedMaterialType, MATERIAL_TYPES)) {
-                switch(selectedMaterialType.get()) {
+            if (ImGui.combo("Type", selectedMaterialType, MATERIAL_TYPES)) {
+                switch (selectedMaterialType.get()) {
                     case 0:
                         material.setType(Material.Type.REFLECT);
                         break;
@@ -160,12 +172,14 @@ public class PropWindow {
                         break;
                 }
             }
-
         }
-    }
-
-    public static boolean isBoundSizingSnap() {
-        return boundSizingSnap;
+        if(selectedLight != null) {
+            EditorLightMaterial material = selectedLight.getMaterial();
+            ImGui.inputFloat3("Color", material.getColor());
+            inputFloat.set(material.getBrightness());
+            ImGui.inputFloat("Brightness", inputFloat);
+            material.setBrightness(inputFloat.get());
+        }
     }
 
     public static float[] getInputSnapValue() {
