@@ -8,7 +8,7 @@ public interface IEditorObject {
 
     void draw();
 
-    void cleanup();
+    void remove();
     
     Object toObject();
 

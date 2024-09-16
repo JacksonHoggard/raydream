@@ -79,6 +79,8 @@ public class ObjectWindow {
                 EditorLight.setSelected(-1);
             }
             if(ImGui.isKeyPressed(GLFW.GLFW_KEY_DELETE)) {
+                if(getSelectedObject() instanceof OBJEditorObject)
+                    getSelectedObject().remove();
                 objects.remove(getSelectedObject());
                 lights.remove(getSelectedLight());
             }

@@ -5,8 +5,11 @@ import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
-import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorPointLight;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
+import me.jacksonhoggard.raydream.gui.editor.object.*;
 import me.jacksonhoggard.raydream.gui.editor.window.*;
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.*;
@@ -65,11 +68,15 @@ public class Window {
         glfwDestroyWindow(windowPtr);
         glfwTerminate();
         for(EditorObject object : ObjectWindow.objects) {
-            object.cleanup();
+            object.remove();
         }
-        for(EditorLight light : ObjectWindow.lights) {
-            light.getModel().remove();
-        }
+        EditorAreaLight.cleanup();
+        EditorPointLight.cleanup();
+        EditorSphereLight.cleanup();
+        BoxEditorObject.cleanup();
+        PlaneEditorObject.cleanup();
+        SphereEditorObject.cleanup();
+        EditorCamera.getModel().remove();
     }
 
     private void initWindow() {

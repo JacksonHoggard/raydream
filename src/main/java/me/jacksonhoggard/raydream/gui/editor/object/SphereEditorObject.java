@@ -1,6 +1,5 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
-import imgui.ImGui;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.SphereModel;
 import me.jacksonhoggard.raydream.material.Material;
@@ -53,5 +52,9 @@ public class SphereEditorObject extends EditorObject {
     @Override
     public Object toObject() {
         return new Sphere(getTransform(), 1.0D, getMaterial().toRayDreamMaterial());
+    }
+
+    public static void cleanup() {
+        sphereModel.remove();
     }
 }

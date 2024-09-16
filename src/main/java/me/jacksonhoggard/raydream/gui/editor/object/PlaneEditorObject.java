@@ -1,6 +1,5 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
-import imgui.ImGui;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.gui.editor.model.PlaneModel;
@@ -56,5 +55,9 @@ public class PlaneEditorObject extends EditorObject {
     public Object toObject() {
         Transform t = getTransform();
         return new Plane(t.translation().y, t.rotation(), getMaterial().toRayDreamMaterial());
+    }
+
+    public static void cleanup() {
+        planeModel.remove();
     }
 }

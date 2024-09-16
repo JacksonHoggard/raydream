@@ -44,4 +44,8 @@ public class EditorPointLight extends EditorLight {
                 getMaterial().getBrightness()
         );
     }
+
+    public static void cleanup() {
+        boxModel.remove();
+    }
 }

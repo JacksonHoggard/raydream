@@ -86,7 +86,7 @@ public abstract class EditorObject implements IEditorObject {
     }
 
     @Override
-    public void cleanup() {
+    public void remove() {
         getModel().remove();
     }
 }

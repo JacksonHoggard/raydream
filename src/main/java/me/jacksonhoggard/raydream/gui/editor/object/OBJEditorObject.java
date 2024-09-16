@@ -71,7 +71,7 @@ public class OBJEditorObject extends EditorObject {
     }
 
     @Override
-    public void cleanup() {
+    public void remove() {
         modelSmooth.remove();
         modelFlat.remove();
     }

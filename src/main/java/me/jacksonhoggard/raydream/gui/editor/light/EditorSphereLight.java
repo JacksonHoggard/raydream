@@ -60,4 +60,8 @@ public class EditorSphereLight extends EditorLight {
     public void setRadius(float radius) {
         this.radius = radius;
     }
+
+    public static void cleanup() {
+        sphereModel.remove();
+    }
 }

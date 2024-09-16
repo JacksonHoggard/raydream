@@ -40,4 +40,8 @@ public class EditorAreaLight extends EditorLight {
                 getMaterial().getBrightness()
         );
     }
+
+    public static void cleanup() {
+        model.remove();
+    }
 }

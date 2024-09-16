@@ -2,7 +2,6 @@ package me.jacksonhoggard.raydream.gui.editor;
 
 import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
-import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
 import me.jacksonhoggard.raydream.math.Matrix4F;
 import me.jacksonhoggard.raydream.math.Vector3D;
 
@@ -159,5 +158,9 @@ public class EditorCamera {
 
     public void setFar(float far) {
         this.far = far;
+    }
+
+    public static OBJModel getModel() {
+        return model;
     }
 }
