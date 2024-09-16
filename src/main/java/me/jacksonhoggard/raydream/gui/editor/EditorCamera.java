@@ -1,12 +1,32 @@
 package me.jacksonhoggard.raydream.gui.editor;
 
+import imgui.extension.imguizmo.ImGuizmo;
+import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
+import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
 import me.jacksonhoggard.raydream.math.Matrix4F;
 import me.jacksonhoggard.raydream.math.Vector3D;
 
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+
+import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
+import static org.lwjgl.opengl.GL11.glDrawArrays;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
+
 public class EditorCamera {
+
+    private static final OBJModel model;
+    static {
+        try {
+            model = new OBJModel(Paths.get(ClassLoader.getSystemResource("camera.obj").toURI()).toString(), false);
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private final Matrix4F viewMatrix;
     private final Matrix4F projectionMatrix;
+    private final Matrix4F modelMatrix;
 
     private float fov;
     private float aspect;
@@ -20,11 +40,18 @@ public class EditorCamera {
                 0.f, 0.f, 1.f, 0.f,
                 0.f, 0.f, 0.f, 1.f
         );
+        modelMatrix = new Matrix4F(
+                1.f, 0.f, 0.f, 0.f,
+                0.f, 1.f, 0.f, 0.f,
+                0.f, 0.f, 1.f, 0.f,
+                0.f, 0.f, 0.f, 1.f
+        );
         projectionMatrix = new Matrix4F(new float[16]);
         this.fov = fov;
         this.aspect = aspect;
         this.near = near;
         this.far = far;
+        model.create();
     }
 
     public void updateProjection() {
@@ -69,12 +96,37 @@ public class EditorCamera {
         );
     }
 
+    public void updateModelMatrix(Vector3D from, Vector3D to) {
+        Vector3D direction = new Vector3D(from).sub(to);
+        Vector3D directionA = new Vector3D(0, 0, 1);
+        Vector3D directionB = new Vector3D(direction).normalize();
+        float rotationAngle = (float) Math.acos(directionA.dot(directionB));
+        Vector3D rotationAxis = directionA.cross(directionB).normalize();
+        float rotX = (float) (rotationAxis.x * rotationAngle);
+        float rotY = (float) (rotationAxis.y * rotationAngle);
+        float rotZ = (float) (rotationAxis.z * rotationAngle);
+        float[] translation = new float[]{(float) from.x, (float) from.y, (float) from.z};
+        float[] rotation = new float[]{(float) (rotX * (180 / Math.PI)), (float) (rotY * (180 / Math.PI)), (float) (rotZ * (180 / Math.PI))};
+        float[] scale = new float[]{0.03f, 0.03f, 0.03f};
+        ImGuizmo.recomposeMatrixFromComponents(modelMatrix.getMatrixArray(), translation, rotation, scale);
+    }
+
+    public void draw() {
+        glBindVertexArray(model.getVertexArrayId());
+        glDrawArrays(GL_TRIANGLES, 0, model.getVertexCount());
+        glBindVertexArray(0);
+    }
+
     public Matrix4F getViewMatrix() {
         return viewMatrix;
     }
 
     public Matrix4F getProjectionMatrix() {
         return projectionMatrix;
+    }
+
+    public Matrix4F getModelMatrix() {
+        return modelMatrix;
     }
 
     public float getFov() {

@@ -7,6 +7,8 @@ public interface IEditorObject {
     void show();
 
     void draw();
+
+    void cleanup();
     
     Object toObject();
 

@@ -5,10 +5,8 @@ import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
-import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
-import me.jacksonhoggard.raydream.gui.editor.object.OBJEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.window.*;
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.*;
@@ -67,7 +65,7 @@ public class Window {
         glfwDestroyWindow(windowPtr);
         glfwTerminate();
         for(EditorObject object : ObjectWindow.objects) {
-            object.getModel().remove();
+            object.cleanup();
         }
         for(EditorLight light : ObjectWindow.lights) {
             light.getModel().remove();
@@ -145,6 +143,7 @@ public class Window {
             editorFrameBuffer.bind();
             glViewport(0, 0, (int) EditorWindow.getWidth(), (int) EditorWindow.getHeight());
             drawLights(EditorWindow.getCamera());
+            drawCamera();
             drawObjects(EditorWindow.getCamera());
             editorFrameBuffer.unbind();
 
@@ -165,6 +164,23 @@ public class Window {
             glfwSwapBuffers(windowPtr);
             glfwPollEvents();
         }
+    }
+
+    private void drawCamera() {
+        objectShader.use();
+        objectShader.setVec3("ambientLight.color", SettingsWindow.getAmbientColor());
+        objectShader.setVec3("material.color", new float[]{1.f, 1.f, 1.f});
+        objectShader.setFloat("material.ambient", 0.5f);
+        objectShader.setFloat("material.diffuse", 0.5f);
+        objectShader.setFloat("material.specular", 0.5f);
+        objectShader.setFloat("material.specularExponent", 32);
+        objectShader.setFloat("material.metalness", 0);
+        objectShader.setFloat("opacity", 1.f);
+        objectShader.setMatrix4("model", PreviewWindow.getCamera().getModelMatrix().getMatrixArray());
+        objectShader.setMatrix4("view", EditorWindow.getCamera().getViewMatrix().getMatrixArray());
+        objectShader.setMatrix4("projection", EditorWindow.getCamera().getProjectionMatrix().getMatrixArray());
+        PreviewWindow.getCamera().draw();
+        objectShader.unuse();
     }
 
     private void drawLights(EditorCamera camera) {
@@ -191,6 +207,11 @@ public class Window {
             objectShader.setVec3("lights[" + n + "].color", light.getMaterial().getColor());
             objectShader.setFloat("lights[" + n + "].brightness", light.getMaterial().getBrightness());
             n++;
+        }
+        if(ObjectWindow.lights.isEmpty()) {
+            for(int i = 0; i < 100; i++) {
+                objectShader.setFloat("lights[" + i + "].brightness", 0.f);
+            }
         }
         objectShader.setVec3("ambientLight.color", SettingsWindow.getAmbientColor());
         Map<Float, EditorObject> transparentObjects = new HashMap<>();
@@ -224,8 +245,6 @@ public class Window {
         objectShader.setFloat("material.diffuse", object.getMaterial().getDiffuse());
         objectShader.setFloat("material.specular", object.getMaterial().getSpecular());
         objectShader.setFloat("material.specularExponent", object.getMaterial().getSpecularExponent());
-        objectShader.setFloat("material.indexOfRefraction", object.getMaterial().getIndexOfRefraction());
-        objectShader.setFloat("material.k", object.getMaterial().getK());
         objectShader.setFloat("material.metalness", object.getMaterial().getMetalness());
         objectShader.setMatrix4("model", object.getModelMatrix());
         objectShader.setMatrix4("view", camera.getViewMatrix().getMatrixArray());

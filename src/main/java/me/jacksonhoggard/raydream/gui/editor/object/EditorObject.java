@@ -84,4 +84,9 @@ public abstract class EditorObject implements IEditorObject {
     public static int getSelected() {
         return selected;
     }
+
+    @Override
+    public void cleanup() {
+        getModel().remove();
+    }
 }

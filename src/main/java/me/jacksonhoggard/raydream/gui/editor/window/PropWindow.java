@@ -6,6 +6,7 @@ import imgui.extension.imguizmo.flag.Mode;
 import imgui.extension.imguizmo.flag.Operation;
 import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiWindowFlags;
+import imgui.type.ImBoolean;
 import imgui.type.ImFloat;
 import imgui.type.ImInt;
 import me.jacksonhoggard.raydream.gui.MenuBar;
@@ -16,6 +17,7 @@ import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorLightMaterial;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
+import me.jacksonhoggard.raydream.gui.editor.object.OBJEditorObject;
 import me.jacksonhoggard.raydream.material.Material;
 
 import java.util.Arrays;
@@ -33,6 +35,7 @@ public class PropWindow {
 
     private static final ImFloat inputFloat = new ImFloat();
     private static final float[] inputSnapValue = new float[]{1f, 1f, 1f};
+    private static final ImBoolean isSmooth = new ImBoolean(true);
 
     private static EditorObject selectedObject;
     private static EditorLight selectedLight;
@@ -171,6 +174,11 @@ public class PropWindow {
                         material.setType(Material.Type.REFLECT_REFRACT);
                         break;
                 }
+            }
+            if(selectedObject instanceof OBJEditorObject) {
+                isSmooth.set(((OBJEditorObject) selectedObject).isSmooth());
+                ImGui.checkbox("Smooth Shading", isSmooth);
+                ((OBJEditorObject) selectedObject).setSmooth(isSmooth.get());
             }
         }
         if(selectedLight != null) {

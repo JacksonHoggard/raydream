@@ -10,8 +10,6 @@ struct Material {
     float diffuse;
     float specular;
     float specularExponent;
-    float indexOfRefraction;
-    float k;
     float metalness;
 };
 

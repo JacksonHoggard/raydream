@@ -28,10 +28,12 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 public class OBJModel extends EditorModel {
 
     private final String path;
+    private final boolean isSmooth;
 
-    public OBJModel(String path) {
+    public OBJModel(String path, boolean isSmooth) {
         super();
         this.path = path;
+        this.isSmooth = isSmooth;
     }
 
     private void loadOBJ(String path) {
@@ -60,14 +62,6 @@ public class OBJModel extends EditorModel {
                             Float.parseFloat(tokens[2])
                     );
                     textures.add(t);
-                    break;
-                case "vn":
-                    Vector3F n = new Vector3F(
-                            Float.parseFloat(tokens[1]),
-                            Float.parseFloat(tokens[2]),
-                            Float.parseFloat(tokens[3])
-                    );
-                    normals.add(n);
                     break;
                 case "f":
                     if(tokens.length > 4) {
@@ -102,6 +96,13 @@ public class OBJModel extends EditorModel {
                     break;
             }
         }
+        if(isSmooth)
+            // Store shared vertices (smooth shading)
+            calculateSmoothNormals(vertices, normals, triangles);
+        else
+            // Store non-shared vertices (flat shading)
+            calculateFlatNormals(vertices, normals, triangles);
+        // Store vertices
         this.vertices = new float[vertices.size() * 6];
         int i = 0;
         for(Vector3F pos : vertices) {
@@ -112,10 +113,7 @@ public class OBJModel extends EditorModel {
         }
         vertexCount = this.vertices.length / 6;
 
-        if(normals.isEmpty()) {
-            calculateNormals(normals, triangles);
-        }
-
+        // Store normals
         i = 0;
         for(Vector3F n : normals) {
             this.vertices[(i * 6) + 3] = n.x;
@@ -124,22 +122,21 @@ public class OBJModel extends EditorModel {
             i++;
         }
 
+        // Store indices
         List<Integer> indices = new ArrayList<>();
-        triangles.forEach((k, v) -> {
+        triangles.forEach((k, _) -> {
             indices.add(k[0]);
             indices.add(k[1]);
             indices.add(k[2]);
         });
-
         this.indices = indices.stream().mapToInt((Integer v) -> v).toArray();
         indicesCount = this.indices.length;
     }
 
-    private void calculateNormals(List<Vector3F> normals, Map<Integer[], Vector3F[]> triangles) {
+    private void calculateSmoothNormals(List<Vector3F> vertices, List<Vector3F> normals, Map<Integer[], Vector3F[]> triangles) {
         // Initialize normals
-        for(int i = 0; i < vertexCount; i++) {
+        for(int i = 0; i < vertices.size(); i++)
             normals.add(new Vector3F());
-        }
         // Compute the cross product and add it to each vertex
         triangles.forEach((i, v) -> {
             Vector3F bMinA = Vector3F.sub(v[1], v[0]);
@@ -152,6 +149,23 @@ public class OBJModel extends EditorModel {
         // Normalize the vertex normals
         for(Vector3F n : normals)
             n.normalize();
+    }
+
+    private void calculateFlatNormals(List<Vector3F> vertices, List<Vector3F> normals, Map<Integer[], Vector3F[]> triangles) {
+        vertices.clear();
+        normals.clear();
+        // Compute the cross product, normalize it, and add it to the list of normals
+        triangles.forEach((_, v) -> {
+            Vector3F bMinA = Vector3F.sub(v[1], v[0]);
+            Vector3F cMinA = Vector3F.sub(v[2], v[0]);
+            Vector3F p = bMinA.cross(cMinA).normalize();
+            vertices.add(v[0]);
+            vertices.add(v[1]);
+            vertices.add(v[2]);
+            normals.add(p);
+            normals.add(p);
+            normals.add(p);
+        });
     }
 
     private static void processFace(String token, List<Vector3F> faces) {

@@ -36,7 +36,7 @@ public class SettingsWindow {
 
         EditorCamera camera = PreviewWindow.getCamera();
         ImGui.inputFloat3("From", lookFrom);
-        ImGui.inputFloat3("At", lookAt);
+        ImGui.inputFloat3("To", lookAt);
         ImGui.inputFloat3("Up", up);
         inputFloat.set(camera.getFov());
         ImGui.inputFloat("Field of View", inputFloat);
@@ -59,6 +59,18 @@ public class SettingsWindow {
                 new Vector3D(lookFrom[0], lookFrom[1], lookFrom[2]),
                 new Vector3D(lookAt[0], lookAt[1], lookAt[2]),
                 new Vector3D(up[0], up[1], up[2])
+        );
+        camera.updateModelMatrix(
+                new Vector3D(
+                        lookFrom[0],
+                        lookFrom[1],
+                        lookFrom[2]
+                ),
+                new Vector3D(
+                        lookAt[0],
+                        lookAt[1],
+                        lookAt[2]
+                )
         );
 
         ImGui.end();
