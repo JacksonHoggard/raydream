@@ -101,7 +101,7 @@ public class Window {
         }
 
         glfwSetWindowAspectRatio(windowPtr, 16, 9);
-        glfwSetWindowSizeLimits(windowPtr, 854, 480, GLFW_DONT_CARE, GLFW_DONT_CARE);
+        glfwSetWindowSizeLimits(windowPtr, (int) (vidMode.width() * 0.5D), (int) ((vidMode.width() * 0.5D) / (16.f/9.f)), GLFW_DONT_CARE, GLFW_DONT_CARE);
 
         glfwMakeContextCurrent(windowPtr);
         glfwSwapInterval(1);
