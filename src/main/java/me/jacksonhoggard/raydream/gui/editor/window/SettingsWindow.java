@@ -10,6 +10,8 @@ import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
 import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.math.Vector3D;
 
+import java.nio.file.Path;
+
 public class SettingsWindow {
 
     private static float width;
@@ -83,6 +85,7 @@ public class SettingsWindow {
         if(ImGui.button("Render")) {
             String path = DialogWindow.openFileSave("output.png");
             if(path != null) {
+                DialogWindow.showProgressBar("Render Progress", 250, 100);
                 SceneManager.renderScene(
                         ObjectWindow.objects,
                         ObjectWindow.lights,
@@ -108,8 +111,10 @@ public class SettingsWindow {
                         sampleDepth,
                         bounces,
                         numShadowRays,
-                        threads
+                        threads,
+                        DialogWindow.getProgressListener()
                 );
+                DialogWindow.openImage(Path.of(path).getFileName().toString(), path, imgWidth, imgHeight);
             }
         }
 

@@ -7,6 +7,7 @@ import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.*;
 import me.jacksonhoggard.raydream.object.Object;
+import me.jacksonhoggard.raydream.util.ProgressListener;
 import me.jacksonhoggard.raydream.util.io.SceneReader;
 import me.jacksonhoggard.raydream.util.io.SceneWriter;
 
@@ -15,7 +16,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -33,6 +33,8 @@ public class Scene {
     private final int width;
     private final int height;
     private int threadCounter;
+    private int renderProgress;
+    private ProgressListener progressListener;
     private static final Lock lock = new ReentrantLock();
 
     public Scene(Camera camera, Light ambient, Light[] lights, Object[] objects, Vector3D skyColor, int width, int height) {
@@ -45,10 +47,12 @@ public class Scene {
         this.width = width;
         this.height = height;
         this.threadCounter = width * height;
+        this.renderProgress = 0;
         this.bvh = new BVH(objects);
     }
 
-    public void render(String filename, int sampleDepth, int bounces, int numShadowRays, int threads) throws IOException {
+    public void render(String filename, int sampleDepth, int bounces, int numShadowRays, int threads, ProgressListener listener) throws IOException {
+        progressListener = listener;
         long startTime = System.nanoTime();
 
         ExecutorService pool = Executors.newFixedThreadPool(threads);
@@ -129,14 +133,17 @@ public class Scene {
             totalColor.add(takeSamples(sampleDepth, 0, 0, 1, -1));
             totalColor.div(samples);
             image.setRGB(i, j, new Color((int) Math.min(totalColor.x * 255, 255), (int) Math.min(totalColor.y * 255, 255), (int) Math.min(totalColor.z * 255, 255)).getRGB());
-            printProgress();
+            updateProgress();
         }
 
-        private void printProgress() {
+        private void updateProgress() {
             lock.lock();
             threadCounter--;
             double progress = (((((width * height) - threadCounter) / (double) (width * height))) * 100);
-            System.out.print("Progress: " + (int) progress + "%\r");
+            if(renderProgress < (int) progress) {
+                renderProgress = (int) progress;
+                progressListener.progressUpdated(renderProgress);
+            }
             lock.unlock();
         }
 
