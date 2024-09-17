@@ -40,7 +40,7 @@ public class OBJLoader {
             e.printStackTrace();
         }
         Triangle[] t = new Triangle[triangles.size()];
-        return new Mesh(path, triangles.toArray(t), min, max);
+        return new Mesh(path, triangles.toArray(t), min, max, false);
     }
 
     private static void parseLine(String line) {

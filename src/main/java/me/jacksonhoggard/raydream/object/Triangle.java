@@ -12,6 +12,8 @@ public class Triangle {
     private final Vector3D normalNotNormal;
     private final double area2;
     private final Vector3D centroid;
+    private final Vector3D min;
+    private final Vector3D max;
 
     public Triangle(Vector3D v0, Vector3D v1, Vector3D v2) {
         this.v0 = v0;
@@ -24,19 +26,25 @@ public class Triangle {
         this.normalNotNormal = edge0.cross(v);
         this.area2 = normalNotNormal.dot(normalNotNormal);
         this.normal = normalNotNormal.normalized();
-        this.centroid = new Vector3D(
-                (v0.x + v1.x + v2.x) / 3D,
-                (v0.y + v1.y + v2.y) / 3D,
-                (v0.z + v1.z + v2.z) / 3D
-        );
+        this.min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+        this.max = new Vector3D(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
+        calcMinMax(v0);
+        calcMinMax(v1);
+        calcMinMax(v2);
+        this.centroid = Vector3D.add(this.min, this.max).div(2.0D);
+    }
+
+    private void calcMinMax(Vector3D v) {
+        min.x = Math.min(min.x, v.x);
+        min.y = Math.min(min.y, v.y);
+        min.z = Math.min(min.z, v.z);
+        max.x = Math.max(max.x, v.x);
+        max.y = Math.max(max.y, v.y);
+        max.z = Math.max(max.z, v.z);
     }
 
     public double intersect(Ray ray) {
-        // Check if ray is parallel to ray
         double nDotRDir = normalNotNormal.dot(ray.getDirection());
-        if(Math.abs(nDotRDir) < 0.00001D)
-            return -1.0D;
-
         // Compute distance to point hit
         double d = -normalNotNormal.dot(v0);
         double t = -(normalNotNormal.dot(ray.getOrigin()) + d) / nDotRDir;
@@ -71,6 +79,14 @@ public class Triangle {
 
     public Vector3D getCentroid() {
         return centroid;
+    }
+
+    public Vector3D getMin() {
+        return min;
+    }
+
+    public Vector3D getMax() {
+        return max;
     }
 
     public Vector2D mapTexture(Vector3D point) {

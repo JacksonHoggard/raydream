@@ -8,12 +8,14 @@ public class Mesh {
     private final Triangle[] triangles;
     private final Vector3D min;
     private final Vector3D max;
+    private final boolean smooth;
 
-    public Mesh(String path, Triangle[] triangles, Vector3D min, Vector3D max) {
+    public Mesh(String path, Triangle[] triangles, Vector3D min, Vector3D max, boolean smooth) {
         this.path = path;
         this.triangles = triangles;
         this.min = min;
         this.max = max;
+        this.smooth = smooth;
     }
 
     public Triangle[] getTriangles() {
@@ -30,5 +32,9 @@ public class Mesh {
 
     public String getPath() {
         return path;
+    }
+
+    public boolean isSmooth() {
+        return smooth;
     }
 }

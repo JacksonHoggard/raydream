@@ -82,33 +82,35 @@ public class SettingsWindow {
         threads = inputInt.get();
         if(ImGui.button("Render")) {
             String path = DialogWindow.openFileSave("output.png");
-            SceneManager.renderScene(
-                    ObjectWindow.objects,
-                    ObjectWindow.lights,
-                    new PointLight(
-                            new Vector3D(),
-                            new Vector3D(
-                                    ambientColor[0],
-                                    ambientColor[1],
-                                    ambientColor[2]
-                            ),
-                            1
-                    ),
-                    new Vector3D(
-                            skyColor[0],
-                            skyColor[1],
-                            skyColor[2]
-                    ),
-                    camera,
-                    imgWidth,
-                    imgHeight,
-                    aperture,
-                    path,
-                    sampleDepth,
-                    bounces,
-                    numShadowRays,
-                    threads
-            );
+            if(path != null) {
+                SceneManager.renderScene(
+                        ObjectWindow.objects,
+                        ObjectWindow.lights,
+                        new PointLight(
+                                new Vector3D(),
+                                new Vector3D(
+                                        ambientColor[0],
+                                        ambientColor[1],
+                                        ambientColor[2]
+                                ),
+                                1
+                        ),
+                        new Vector3D(
+                                skyColor[0],
+                                skyColor[1],
+                                skyColor[2]
+                        ),
+                        camera,
+                        imgWidth,
+                        imgHeight,
+                        aperture,
+                        path,
+                        sampleDepth,
+                        bounces,
+                        numShadowRays,
+                        threads
+                );
+            }
         }
 
         ImGui.end();
