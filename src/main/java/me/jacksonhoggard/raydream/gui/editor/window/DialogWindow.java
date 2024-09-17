@@ -22,10 +22,8 @@ public class DialogWindow {
     private static final ProgressListener progressListener = progress -> {
         DialogWindow.progress = progress;
         progressBar.setValue(progress);
-        if(progress >= 100) {
-            frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-            frame.dispatchEvent(new WindowEvent(frame, WindowEvent.WINDOW_CLOSING));
-        }
+        if(progress >= 100)
+            closeFrame();
     };
 
     public static String openFileChooser(String description, String extension) {
@@ -42,8 +40,10 @@ public class DialogWindow {
         return null;
     }
 
-    public static String openFileSave(String defaultName) {
+    public static String openFileSave(String defaultName, String... extensions) {
         JFileChooser fileChooser = new JFileChooser();
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(defaultName, extensions);
+        fileChooser.setFileFilter(filter);
 
         fileChooser.setSelectedFile(new File(defaultName));
         int result = fileChooser.showSaveDialog(null);
@@ -66,6 +66,7 @@ public class DialogWindow {
     }
 
     public static void showProgressBar(String title, int width, int height) {
+        closeFrame();
         progress = 0;
         frame = new JFrame(title);
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -75,11 +76,13 @@ public class DialogWindow {
         progressBar.setValue(progress);
         progressBar.setStringPainted(true);
         frame.add(progressBar);
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
     }
 
     public static void openImage(String title, String path, int width, int height) {
-        JFrame frame = new JFrame(title);
+        closeFrame();
+        frame = new JFrame(title);
         ImageDisplay panel = new ImageDisplay(path);
         frame.add(panel);
         frame.setSize(width, height);
@@ -90,7 +93,15 @@ public class DialogWindow {
                 panel.repaint();  // Repaint the panel when resized
             }
         });
+        frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+    }
+
+    private static void closeFrame() {
+        if(frame != null) {
+            frame.setVisible(false);
+            frame.dispose();
+        }
     }
 
     public static ProgressListener getProgressListener() {

@@ -6,6 +6,7 @@ import imgui.type.ImFloat;
 import imgui.type.ImInt;
 import me.jacksonhoggard.raydream.SceneManager;
 import me.jacksonhoggard.raydream.gui.MenuBar;
+import me.jacksonhoggard.raydream.gui.Window;
 import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
 import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.math.Vector3D;
@@ -83,8 +84,9 @@ public class SettingsWindow {
         ImGui.inputInt("# of Threads", inputInt);
         threads = inputInt.get();
         if(ImGui.button("Render")) {
-            String path = DialogWindow.openFileSave("output.png");
+            String path = DialogWindow.openFileSave("output.png", "png", "jpg");
             if(path != null) {
+                Window.pause();
                 DialogWindow.showProgressBar("Render Progress", 250, 100);
                 SceneManager.renderScene(
                         ObjectWindow.objects,
@@ -114,6 +116,7 @@ public class SettingsWindow {
                         threads,
                         DialogWindow.getProgressListener()
                 );
+                Window.resume();
                 DialogWindow.openImage(Path.of(path).getFileName().toString(), path, imgWidth, imgHeight);
             }
         }

@@ -38,7 +38,7 @@ public class Window {
     private static float scale;
 
     private String glslVersion = null;
-    private long windowPtr;
+    private static long windowPtr;
 
     public Window() {
         imGuiGlfw = new ImGuiImplGlfw();
@@ -126,6 +126,14 @@ public class Window {
 
     public void close() {
         glfwSetWindowShouldClose(windowPtr, true);
+    }
+
+    public static void pause() {
+        glfwHideWindow(windowPtr);
+    }
+
+    public static void resume() {
+        glfwShowWindow(windowPtr);
     }
 
     public void run() {
