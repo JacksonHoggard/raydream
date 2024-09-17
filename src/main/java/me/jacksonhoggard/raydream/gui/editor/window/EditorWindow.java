@@ -52,7 +52,7 @@ public class EditorWindow {
         height = (ImGui.getMainViewport().getSizeY() - MenuBar.getHeight()) / 2;
 
         if (firstFrame) {
-            camera = new EditorCamera(27, width / height, 0.1f, 100.f);
+            camera = new EditorCamera(60, width / height, 0.1f, 100.f);
             float camYAngle = 165.f / 180.f * (float) Math.PI;
             float camXAngle = 32.f / 180.f * (float) Math.PI;
             Vector3D eye = new Vector3D(
@@ -62,7 +62,10 @@ public class EditorWindow {
             );
             Vector3D at = new Vector3D(0.f, 0.f, 0.f);
             Vector3D up = new Vector3D(0.f, 1.f, 0.f);
-            camera.updateViewMatrix(eye, at, up);
+            camera.setLookFrom((float) eye.x, (float) eye.y, (float) eye.z);
+            camera.setLookAt((float) at.x, (float) at.y, (float) at.z);
+            camera.setUp((float) up.x, (float) up.y, (float) up.z);
+            camera.updateViewMatrix();
             VIEW_MANIPULATE_SIZE[0] *= Window.getScale();
             VIEW_MANIPULATE_SIZE[1] *= Window.getScale();
             firstFrame = false;

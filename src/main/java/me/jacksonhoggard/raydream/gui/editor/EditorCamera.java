@@ -31,6 +31,9 @@ public class EditorCamera {
     private float aspect;
     private float near;
     private float far;
+    private final Vector3D lookFrom;
+    private final Vector3D lookAt;
+    private final Vector3D up;
 
     public EditorCamera(float fov, float aspect, float near, float far) {
         viewMatrix = new Matrix4F(
@@ -50,34 +53,35 @@ public class EditorCamera {
         this.aspect = aspect;
         this.near = near;
         this.far = far;
+        lookFrom = new Vector3D(0, 1, 2);
+        lookAt = new Vector3D(0, 0, 0);
+        up = new Vector3D(0, 1, 0);
         model.create();
     }
 
     public void updateProjection() {
-        float ymax, xmax;
-        ymax = (float) (near * Math.tan(fov * Math.PI / 180.0f));
-        xmax = ymax * aspect;
-        float temp = 2.0f * near;
-        float temp2 = xmax - -xmax;
-        float temp3 = ymax - -ymax;
-        float temp4 = far - near;
+        float t, b, r, l;
+        t = (float) (near * Math.tan((fov * Math.PI / 180.0f) / 2));
+        r = t * aspect;
+        b = -t;
+        l = -r;
         projectionMatrix.set(new Matrix4F(
-                temp / temp2, 0.f, 0.f, 0.f,
-                0.0f, temp / temp3, 0.f, 0.f,
-                (xmax + -xmax) / temp2, (ymax + -ymax) / temp3, (-far - near) / temp4, -1.f,
-                0.f, 0.f, (-temp * far) / temp4, 0.f
+                2*near/(r-l), 0.f, 0.f, 0.f,
+                0.0f, 2*near/(t-b), 0.f, 0.f,
+                (r+l)/(r-l), (t+b)/(t-b), -(far+near) / (far-near), -1.f,
+                0.f, 0.f, -2*far*near/(far-near), 0.f
         ));
     }
 
-    public void updateViewMatrix(Vector3D eye, Vector3D at, Vector3D up) {
+    public void updateViewMatrix() {
         Vector3D x;
         Vector3D y;
         Vector3D z;
         Vector3D temp = new Vector3D();
 
-        temp.x = eye.x - at.x;
-        temp.y = eye.y - at.y;
-        temp.z = eye.z - at.z;
+        temp.x = lookFrom.x - lookAt.x;
+        temp.y = lookFrom.y - lookAt.y;
+        temp.z = lookFrom.z - lookAt.z;
         z = temp.normalized();
         y = up.normalized();
 
@@ -91,12 +95,12 @@ public class EditorCamera {
                 (float) x.x, (float) y.x, (float) z.x, 0.f,
                 (float) x.y, (float) y.y, (float) z.y, 0.f,
                 (float) x.z, (float) y.z, (float) z.z, 0.f,
-                (float) -x.dot(eye), (float) -y.dot(eye), (float) -z.dot(eye), 1.f
+                (float) -x.dot(lookFrom), (float) -y.dot(lookFrom), (float) -z.dot(lookFrom), 1.f
         );
     }
 
-    public void updateModelMatrix(Vector3D from, Vector3D to) {
-        Vector3D direction = new Vector3D(from).sub(to);
+    public void updateModelMatrix() {
+        Vector3D direction = new Vector3D(lookFrom).sub(lookAt);
         Vector3D directionA = new Vector3D(0, 0, 1);
         Vector3D directionB = new Vector3D(direction).normalize();
         float rotationAngle = (float) Math.acos(directionA.dot(directionB));
@@ -104,7 +108,7 @@ public class EditorCamera {
         float rotX = (float) (rotationAxis.x * rotationAngle);
         float rotY = (float) (rotationAxis.y * rotationAngle);
         float rotZ = (float) (rotationAxis.z * rotationAngle);
-        float[] translation = new float[]{(float) from.x, (float) from.y, (float) from.z};
+        float[] translation = new float[]{(float) lookFrom.x, (float) lookFrom.y, (float) lookFrom.z};
         float[] rotation = new float[]{(float) (rotX * (180 / Math.PI)), (float) (rotY * (180 / Math.PI)), (float) (rotZ * (180 / Math.PI))};
         float[] scale = new float[]{0.03f, 0.03f, 0.03f};
         ImGuizmo.recomposeMatrixFromComponents(modelMatrix.getMatrixArray(), translation, rotation, scale);
@@ -158,6 +162,30 @@ public class EditorCamera {
 
     public void setFar(float far) {
         this.far = far;
+    }
+
+    public Vector3D getLookAt() {
+        return lookAt;
+    }
+
+    public Vector3D getLookFrom() {
+        return lookFrom;
+    }
+
+    public void setLookFrom(float x, float y, float z) {
+        lookFrom.set(x, y, z);
+    }
+
+    public void setLookAt(float x, float y, float z) {
+        lookAt.set(x, y, z);
+    }
+
+    public Vector3D getUp() {
+        return up;
+    }
+
+    public void setUp(float x, float y, float z) {
+        up.set(x, y, z);
     }
 
     public static OBJModel getModel() {

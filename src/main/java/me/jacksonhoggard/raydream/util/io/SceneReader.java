@@ -62,7 +62,7 @@ public class SceneReader {
         objArr = objects.toArray(objArr);
         Light[] lightArr = new Light[lights.size()];
         lightArr = lights.toArray(lightArr);
-        return new Scene(camera, ambient, lightArr, objArr, width, height);
+        return new Scene(camera, ambient, lightArr, objArr, new Vector3D(0, 0, 0), width, height);
     }
 
     private void parseObject(BufferedReader reader, String line) throws IOException, UnrecognizedTokenException {

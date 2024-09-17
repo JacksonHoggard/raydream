@@ -9,12 +9,11 @@ import me.jacksonhoggard.raydream.render.FrameBuffer;
 
 public class PreviewWindow {
 
-    private static EditorCamera camera = new EditorCamera(60, 16/9.F, 0.0001F, 1000F);
+    private static EditorCamera camera = new EditorCamera(60, 16/9.f, 0.1f, 100.f);
     private static float posX;
     private static float posY;
     private static float width;
     private static float height;
-    private static float frameScale;
     private static float frameWidth;
     private static float frameHeight;
 

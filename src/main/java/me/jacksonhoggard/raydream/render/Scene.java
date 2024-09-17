@@ -27,6 +27,7 @@ public class Scene {
     private final Light ambient;
     private final Light[] lights;
     private final Object[] objects;
+    private final Vector3D skyColor;
     private final BVH bvh;
     private final BufferedImage image;
     private final int width;
@@ -34,11 +35,12 @@ public class Scene {
     private int threadCounter;
     private static final Lock lock = new ReentrantLock();
 
-    public Scene(Camera camera, Light ambient, Light[] lights, Object[] objects, int width, int height) {
+    public Scene(Camera camera, Light ambient, Light[] lights, Object[] objects, Vector3D skyColor, int width, int height) {
         this.camera = camera;
         this.ambient = ambient;
         this.lights = lights;
         this.objects = objects;
+        this.skyColor = skyColor;
         this.image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         this.width = width;
         this.height = height;
@@ -205,19 +207,27 @@ public class Scene {
             Vector3D pointHit = bvhHit.point();
             Object objectHit = bvhHit.object();
             Vector3D normalHit = bvhHit.normal();
-            // Check if me.jacksonhoggard.raydream.light is hit if no me.jacksonhoggard.raydream.object is hit
-            if(objectHit == null) {
-                double minLightDist = Double.MAX_VALUE;
-                Vector3D minLightColor = null;
-                for(Light light : lights) {
-                    double lightDist = light.intersect(ray);
-                    if(lightDist > 0.0D && lightDist < minLightDist) {
-                        minLightDist = lightDist;
-                        minLightColor = light.getColor();
-                    }
+            double minLightDist = Double.MAX_VALUE;
+            Vector3D minLightColor = null;
+            for(Light light : lights) {
+                double lightDist = light.intersect(ray);
+                if(lightDist > 0.0D && lightDist < minLightDist) {
+                    minLightDist = lightDist;
+                    minLightColor = light.getColor();
                 }
-                // If no me.jacksonhoggard.raydream.light is hit, return sky, else return the color of the me.jacksonhoggard.raydream.light
-                return Objects.requireNonNullElseGet(minLightColor, () -> new Vector3D(0.125, 0.125, 0.125));
+            }
+            // Check if light is hit before an object
+            if(objectHit != null && minLightDist < bvhHit.t()) {
+                // If no light is hit, return sky, else return the color of the light
+                return minLightColor;
+            }
+            // If a light is hit, but no object is hit
+            if(objectHit == null && minLightColor != null) {
+                return minLightColor;
+            }
+            // If no object or light is hit
+            if(objectHit == null) {
+                return skyColor;
             }
             Material material = objectHit.getMaterial();
             Vector3D reflectionColor = new Vector3D();
@@ -279,7 +289,7 @@ public class Scene {
             Vector3D s = Vector3D.mult(objectHit.getMaterial().getColor(objectHit, pointHit), objectHit.getMaterial().getMetalness()).add(new Vector3D(1, 1, 1).mult(1 - objectHit.getMaterial().getMetalness()));
             Vector3D diffuse = new Vector3D(objectHit.getMaterial().getColor(objectHit, pointHit)).mult(kl);
             Vector3D specular = new Vector3D(light.getColor()).mult(s).mult(ks);
-            double brightness = light.getBrightness() / (light.getBrightness() + lightDist);
+            double brightness = light.getBrightness() / lightDist;
             return Vector3D.add(diffuse, specular).mult(brightness);
         }
     }

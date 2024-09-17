@@ -1,5 +1,8 @@
 package me.jacksonhoggard.raydream;
 
+import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
+import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
 import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.material.Reflective;
@@ -10,36 +13,38 @@ import me.jacksonhoggard.raydream.object.Transform;
 import me.jacksonhoggard.raydream.render.Camera;
 import me.jacksonhoggard.raydream.render.Scene;
 
+import java.io.IOException;
+import java.util.List;
+
 public class SceneManager {
 
-    private static Scene currentScene;
-
     public static void newScene() {
-        currentScene = new Scene(
-                new Camera(new Vector3D(0, 0, -2), new Vector3D(0, 0, 0), new Vector3D(0, 1, 0), 60, 100, 800, 600),
-                new PointLight(new Vector3D(0, 2, 0), new Vector3D(1, 1, 1), 1),
-                new Light[]{},
-                new Object[]{
-                        new Box(
-                                new Transform(new Vector3D(0, 0, 0), new Vector3D(0, 0, 0), new Vector3D(1, 1, 1)),
-                                new Vector3D(1, 1, 1),
-                                new Reflective(new Vector3D(1, 0, 0), 0.1, 0.4, 0.5, 32, 0.3, 0.177, 3.638)
-                        )
-                },
-                800,
-                600
-        );
+
     }
 
     public static void saveScene(String path) {
-        currentScene.save(path);
+
     }
 
     public static void loadScene(String path) {
-        currentScene = Scene.read(path);
+
     }
 
-    public static Scene getCurrentScene() {
-        return currentScene;
+    public static void renderScene(List<EditorObject> editorObjects, List<EditorLight> editorLights, Light ambient, Vector3D skyColor, EditorCamera editorCamera, int width, int height, float aperture, String filename, int sampleDepth, int bounces, int numShadowRays, int threads) {
+        Object[] objects = new Object[editorObjects.size()];
+        for(int i = 0; i < objects.length; i++) {
+            objects[i] = editorObjects.get(i).toObject();
+        }
+        Light[] lights = new Light[editorLights.size()];
+        for(int i = 0; i < lights.length; i++) {
+            lights[i] = editorLights.get(i).toLight();
+        }
+        Camera camera = new Camera(editorCamera.getLookFrom(), editorCamera.getLookAt(), editorCamera.getUp(), editorCamera.getFov(), aperture, width, height);
+        Scene scene = new Scene(camera, ambient, lights, objects, skyColor, width, height);
+        try {
+            scene.render(filename, sampleDepth, bounces, numShadowRays, threads);
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to render scene: ", e);
+        }
     }
 }
