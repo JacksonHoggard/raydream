@@ -27,7 +27,7 @@ public class Sphere extends Object {
     }
 
     public Vector3D normalAt(Vector3D point) {
-        return point.normalized(); // Note: point is a point in me.jacksonhoggard.raydream.object space
+        return point.normalized(); // Note: point is a point in object space
     }
 
     @Override

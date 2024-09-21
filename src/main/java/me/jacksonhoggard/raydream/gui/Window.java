@@ -77,6 +77,8 @@ public class Window {
         PlaneEditorObject.cleanup();
         SphereEditorObject.cleanup();
         EditorCamera.getModel().remove();
+
+
     }
 
     private void initWindow() {

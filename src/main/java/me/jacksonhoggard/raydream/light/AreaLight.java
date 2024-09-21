@@ -17,30 +17,8 @@ public class AreaLight extends Light {
 
     public AreaLight(Transform transform, Vector3D color, double brightness) {
         super(new Vector3D(), color, brightness);
-        double rotX = Math.toRadians(transform.rotation().x);
-        double rotY = Math.toRadians(transform.rotation().y);
-        double rotZ = Math.toRadians(transform.rotation().z);
         this.transform = transform;
-        this.transformMatrix = (new Matrix4D(
-                transform.scale().x, 0, 0, 0,
-                0, transform.scale().y, 0, 0,
-                0, 0, transform.scale().z, 0,
-                0, 0, 0, 1
-        ).mult(
-                new Matrix4D(
-                        Math.cos(rotY)*Math.cos(rotZ), Math.sin(rotX)*Math.sin(rotY)*Math.cos(rotZ) - Math.cos(rotX)*Math.sin(rotZ), Math.cos(rotX)*Math.sin(rotY)*Math.cos(rotZ) + Math.sin(rotX)*Math.sin(rotZ), 0,
-                        Math.cos(rotY)*Math.sin(rotZ), Math.sin(rotX)*Math.sin(rotY)*Math.sin(rotZ) + Math.cos(rotX)*Math.cos(rotZ), Math.cos(rotX)*Math.sin(rotY)*Math.sin(rotZ) - Math.sin(rotX)*Math.cos(rotZ), 0,
-                        -Math.sin(rotY), Math.sin(rotX)*Math.cos(rotY), Math.cos(rotX)*Math.cos(rotY), 0,
-                        0, 0, 0, 1
-                )
-        ).mult(
-                new Matrix4D(
-                        1, 0, 0, transform.translation().x,
-                        0, 1, 0, transform.translation().y,
-                        0, 0, 1, transform.translation().z,
-                        0, 0, 0, 1
-                )
-        ));
+        this.transformMatrix = Object.composeModelMatrix(transform);
         this.inverseTransformMatrix = transformMatrix.inverse();
         this.getPosition().set(Object.transformPointToOS(new Vector3D(), transformMatrix));
         this.t0 = new Triangle(

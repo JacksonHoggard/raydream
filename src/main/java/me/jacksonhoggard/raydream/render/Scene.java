@@ -294,7 +294,7 @@ public class Scene {
             double kl = Math.max(0D, normalHit.dot(shadowRay.getDirection().normalized())) * objectHit.getMaterial().getLambertian();
             double ks = Math.pow(Math.max(0, ray.getDirection().normalized().dot(reflectedRay.getDirection().normalized())), objectHit.getMaterial().getSpecularExponent()) * objectHit.getMaterial().getSpecular();
             Vector3D s = Vector3D.mult(objectHit.getMaterial().getColor(objectHit, pointHit), objectHit.getMaterial().getMetalness()).add(new Vector3D(1, 1, 1).mult(1 - objectHit.getMaterial().getMetalness()));
-            Vector3D diffuse = new Vector3D(objectHit.getMaterial().getColor(objectHit, pointHit)).mult(kl);
+            Vector3D diffuse = new Vector3D(objectHit.getMaterial().getColor(objectHit, pointHit)).mult(light.getColor()).mult(kl);
             Vector3D specular = new Vector3D(light.getColor()).mult(s).mult(ks);
             double brightness = light.getBrightness() / lightDist;
             return Vector3D.add(diffuse, specular).mult(brightness);
