@@ -112,3 +112,4 @@ Resources used for this project.
 * [Jacco's Blog](https://jacco.ompf2.com/2022/04/13/how-to-build-a-bvh-part-1-basics/)
 * [The University of Utah CS 6958 Lecture 8](https://my.eng.utah.edu/~cs6958/slides/Lec8_2.pdf)
 * [The University of Utah Advanced Ray Tracing lecture](https://my.eng.utah.edu/~cs4600/lectures/Wk13_AdvancedRayTracing.pdf)
+* [Karadeniz Technical University: Texture Mapping](https://ceng2.ktu.edu.tr/~cakir/files/grafikler/Texture_Mapping.pdf)

@@ -35,7 +35,7 @@ public class BVHTriangle {
                         double temp = triangles[i].intersect(ray);
                         if(temp > 0 && temp < t) {
                             t = temp;
-                            normalHit.set(triangles[i].getNormal());
+                            normalHit.set(triangles[i].getNormal(ray.at(t)));
                         }
                     }
                 }

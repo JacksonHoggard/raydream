@@ -63,6 +63,7 @@ public class OBJEditorObject extends EditorObject {
     @Override
     public Object toObject() {
         Vector3D[] vertices = new Vector3D[modelSmooth.getVertexCount()];
+        Vector3D[] normals = new Vector3D[modelSmooth.getVertexCount()];
         Triangle[] triangles = new Triangle[modelSmooth.getIndicesCount() / 3];
         Vector3D min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
         Vector3D max = new Vector3D(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
@@ -73,6 +74,11 @@ public class OBJEditorObject extends EditorObject {
                     modelSmooth.getVertices()[i],
                     modelSmooth.getVertices()[i + 1],
                     modelSmooth.getVertices()[i + 2]
+            );
+            normals[j] = new Vector3D(
+                    modelSmooth.getVertices()[i + 3],
+                    modelSmooth.getVertices()[i + 4],
+                    modelSmooth.getVertices()[i + 5]
             );
             min.x = Math.min(min.x, vertices[j].x);
             min.y = Math.min(min.y, vertices[j].y);
@@ -85,11 +91,22 @@ public class OBJEditorObject extends EditorObject {
 
         i = 0;
         for(int t = 0; t < triangles.length; t++) {
-            triangles[t] = new Triangle(
-                    vertices[modelSmooth.getIndices()[i]],
-                    vertices[modelSmooth.getIndices()[i+1]],
-                    vertices[modelSmooth.getIndices()[i+2]]
-            );
+            if(smooth) {
+                triangles[t] = new Triangle(
+                        vertices[modelSmooth.getIndices()[i]],
+                        vertices[modelSmooth.getIndices()[i+1]],
+                        vertices[modelSmooth.getIndices()[i+2]],
+                        normals[modelSmooth.getIndices()[i]],
+                        normals[modelSmooth.getIndices()[i+1]],
+                        normals[modelSmooth.getIndices()[i+2]]
+                );
+            } else {
+                triangles[t] = new Triangle(
+                        vertices[modelSmooth.getIndices()[i]],
+                        vertices[modelSmooth.getIndices()[i+1]],
+                        vertices[modelSmooth.getIndices()[i+2]]
+                );
+            }
             i+=3;
         }
 
