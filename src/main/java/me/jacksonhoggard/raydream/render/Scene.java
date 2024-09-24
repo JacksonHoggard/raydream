@@ -8,6 +8,7 @@ import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.*;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.util.ProgressListener;
+import me.jacksonhoggard.raydream.util.Util;
 import me.jacksonhoggard.raydream.util.io.SceneReader;
 import me.jacksonhoggard.raydream.util.io.SceneWriter;
 
@@ -16,6 +17,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -35,6 +38,26 @@ public class Scene {
     private int threadCounter;
     private int renderProgress;
     private ProgressListener progressListener;
+    private static ExecutorService pool;
+    private static final RenderCancelListener renderCancelListener = new RenderCancelListener() {
+        public boolean cancelled = false;
+
+        @Override
+        public void cancel() {
+            cancelled = true;
+            pool.shutdownNow();
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return cancelled;
+        }
+
+        @Override
+        public void setCancelled(boolean cancelled) {
+            this.cancelled = cancelled;
+        }
+    };
     private static final Lock lock = new ReentrantLock();
 
     public Scene(Camera camera, Light ambient, Light[] lights, Object[] objects, Vector3D skyColor, int width, int height) {
@@ -55,18 +78,34 @@ public class Scene {
         progressListener = listener;
         long startTime = System.nanoTime();
 
-        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        renderCancelListener.setCancelled(false);
+        pool = Executors.newFixedThreadPool(threads);
+        List<Vector3D> pixelColors = new ArrayList<>();
 
         for(int j = 0; j < height; j++) {
             for(int i = 0; i < width; i++) {
-                pool.execute(new TraceRayTask(bounces, sampleDepth, numShadowRays, i, j));
+                pixelColors.add(new Vector3D());
+                pool.execute(new TraceRayTask(pixelColors.getLast(), bounces, sampleDepth, numShadowRays, i, j));
             }
         }
         pool.shutdown();
         try {
             pool.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Thread shutdown interrupted:", e);
+        }
+
+        if(renderCancelListener.isCancelled()) {
+            System.out.println("Render cancelled.");
+            return;
+        }
+
+        int k = 0;
+        for(int j = 0; j < height; j++) {
+            for(int i = 0; i < width; i++) {
+                Vector3D pixelColor = pixelColors.get(k++);
+                image.setRGB(i, j, new Color((int) Math.min(pixelColor.x * 255, 255), (int) Math.min(pixelColor.y * 255, 255), (int) Math.min(pixelColor.z * 255, 255)).getRGB());
+            }
         }
         File output = new File(filename);
         ImageIO.write(image, "png", output);
@@ -106,33 +145,32 @@ public class Scene {
         return lights;
     }
 
+    public static RenderCancelListener getRenderCancelListener() {
+        return renderCancelListener;
+    }
+
     private class TraceRayTask implements Runnable {
+        private final Vector3D pixelColor;
         private final int bounces;
         private final int sampleDepth;
         private int samples;
-        private int numShadowRays;
+        private final int numShadowRays;
         private Ray ray;
-        private int reusedRayIdx;
-        private final Vector3D reusedColor;
         private final int i, j;
 
-        public TraceRayTask(int bounces, int sampleDepth, int numShadowRays, int i, int j) {
+        public TraceRayTask(Vector3D pixelColor, int bounces, int sampleDepth, int numShadowRays, int i, int j) {
+            this.pixelColor = pixelColor;
             this.bounces = bounces;
             this.sampleDepth = sampleDepth;
             this.i = i;
             this.j = j;
             this.samples = 0;
             this.numShadowRays = numShadowRays;
-            this.reusedRayIdx = -1;
             this.ray = new Ray(new Vector3D(), new Vector3D());
-            this.reusedColor = new Vector3D();
         }
 
         public void run() {
-            Vector3D totalColor = new Vector3D(0, 0, 0);
-            totalColor.add(takeSamples(sampleDepth, 0, 0, 1, -1));
-            totalColor.div(samples);
-            image.setRGB(i, j, new Color((int) Math.min(totalColor.x * 255, 255), (int) Math.min(totalColor.y * 255, 255), (int) Math.min(totalColor.z * 255, 255)).getRGB());
+            takeSamples();
             updateProgress();
         }
 
@@ -147,68 +185,38 @@ public class Scene {
             lock.unlock();
         }
 
-        private Vector3D takeSamples(int sampleDepth, double tlx, double tly, double brx, double bry) {
-            // Return black if maximum sample depth reached
-            if(sampleDepth <= 0)
-                return new Vector3D(0, 0, 0);
-            double w = brx - tlx;
-            double h = tly - bry;
-            Vector3D colorTL;
-            Vector3D colorTR;
-            Vector3D colorBL;
-            Vector3D colorBR;
-            if(reusedRayIdx != 0) {
-                ray = camera.shootRay(ray, i, j, tlx, tly);
-                colorTL = trace(ray, bounces);
-            } else {
-                colorTL = reusedColor;
-            }
-            if(reusedRayIdx != 1) {
-                ray = camera.shootRay(ray, i, j, tlx + w, bry + h);
-                colorTR = trace(ray, bounces);
-            } else {
-                colorTR = reusedColor;
-            }
-            if(reusedRayIdx != 2) {
-                ray = camera.shootRay(ray, i, j, tlx, bry);
-                colorBL = trace(ray, bounces);
-            } else {
-                colorBL = reusedColor;
-            }
-            if(reusedRayIdx != 3) {
-                ray = camera.shootRay(ray, i, j, brx, bry);
-                colorBR = trace(ray, bounces);
-            } else {
-                colorBR = reusedColor;
-            }
-            Vector3D totalColor = Vector3D.add(colorTL, colorTR).add(colorBL).add(colorBR).div(4);
+        private void takeSamples() {
+            camera.shootRay(ray, i, j, 0, 0);
+            trace(ray, bounces, pixelColor);
+            Vector3D temp = new Vector3D(pixelColor);
+            camera.shootRay(ray, i, j, 1, 0);
+            trace(ray, bounces, pixelColor);
+            camera.shootRay(ray, i, j, 0, -1);
+            trace(ray, bounces, pixelColor);
+            camera.shootRay(ray, i, j, 1, -1);
+            trace(ray, bounces, pixelColor);
+            pixelColor.div(4);
             samples++;
-            if(colorTL.distance(totalColor) > 0.01D || colorTR.distance(totalColor) > 0.01D || colorBL.distance(totalColor) > 0.01D || colorBR.distance(totalColor) > 0.01D) {
-                reusedRayIdx = 0;
-                reusedColor.set(colorTR);
-                totalColor.add(takeSamples(sampleDepth - 1, tlx, tly, brx - (w / 2), bry + (h / 2)));
-                reusedRayIdx = 1;
-                reusedColor.set(colorTR);
-                totalColor.add(takeSamples(sampleDepth - 1, tlx + (w / 2), tly, brx, bry + (h / 2)));
-                reusedRayIdx = 2;
-                reusedColor.set(colorBL);
-                totalColor.add(takeSamples(sampleDepth - 1, tlx, tly - (h / 2), brx - (w / 2), bry));
-                reusedRayIdx = 3;
-                reusedColor.set(colorBR);
-                totalColor.add(takeSamples(sampleDepth - 1, tlx + (w / 2), tly - (h / 2), brx, bry));
+            if(pixelColor.equals(temp))
+                return;
+            for(int k = sampleDepth - samples; k > 0; k--) {
+                camera.shootRay(ray, i, j, Util.randomRange(0, 1), Util.randomRange(-1, 0));
+                trace(ray, bounces, pixelColor);
+                samples++;
             }
-            return totalColor;
+            pixelColor.div(samples);
         }
 
         /**
          * Recursive function that traces the path of a primary ray and returns the color of a given ray
          * @param ray current ray
          * @param bounce current bounce
+         * @param color pointer to the color to be calculated by the function
          */
-        private Vector3D trace(Ray ray, int bounce) {
+        private void trace(Ray ray, int bounce, Vector3D color) {
             // Return if no more bounces
             if(bounce <= 0)
-                return new Vector3D(0, 0, 0);
+                return;
             // Find intersections
             Hit bvhHit = bvh.intersect(ray, objects);
             Vector3D pointHit = bvhHit.point();
@@ -226,15 +234,18 @@ public class Scene {
             // Check if light is hit before an object
             if(objectHit != null && minLightDist < bvhHit.t()) {
                 // If no light is hit, return sky, else return the color of the light
-                return minLightColor;
+                color.add(minLightColor);
+                return;
             }
             // If a light is hit, but no object is hit
             if(objectHit == null && minLightColor != null) {
-                return minLightColor;
+                color.add(minLightColor);
+                return ;
             }
             // If no object or light is hit
             if(objectHit == null) {
-                return skyColor;
+                color.add(skyColor);
+                return;
             }
             Material material = objectHit.getMaterial();
             Vector3D reflectionColor = new Vector3D();
@@ -242,26 +253,30 @@ public class Scene {
             switch(material.getType()) {
                 case REFLECT -> {
                     double kr = material.fresnelMetal(ray, normalHit);
-                    reflectionColor.set(trace(material.reflectRay(ray, pointHit, normalHit), bounce - 1));
-                    if(!material.hasColor())
-                        objectHit.getMaterial().getColor(objectHit, pointHit).set(Vector3D.mult(reflectionColor, kr));
-                    return phong(ray, objectHit, pointHit, normalHit).add(Vector3D.mult(reflectionColor, kr));
+                    trace(material.reflectRay(ray, pointHit, normalHit), bounce - 1, reflectionColor);
+                    if(!material.hasColor()) objectHit.getMaterial().getColor(objectHit, pointHit).set(Vector3D.mult(reflectionColor, kr));
+                    Vector3D phong = new Vector3D();
+                    phong(phong, ray, objectHit, pointHit, normalHit);
+                    color.add(phong.add(Vector3D.mult(reflectionColor, kr)));
+                    return;
                 }
                 case REFLECT_REFRACT -> {
                     double kr = material.fresnelDielectric(ray, normalHit);
                     Ray reflectionRay = material.reflectRay(ray, pointHit, normalHit);
                     Ray refractionRay = material.refractRay(ray, pointHit, normalHit);
-                    reflectionColor.set(trace(reflectionRay, bounce - 1));
-                    refractionColor.set(trace(refractionRay, bounce - 1));
+                    trace(reflectionRay, bounce - 1, reflectionColor);
+                    trace(refractionRay, bounce - 1, refractionColor);
                     if(!material.hasColor()) objectHit.getMaterial().getColor(objectHit, pointHit).set(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr)));
-                    return phong(ray, objectHit, pointHit, normalHit).add(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr)));
+                    Vector3D phong = new Vector3D();
+                    phong(phong, ray, objectHit, pointHit, normalHit);
+                    color.add(phong.add(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr))));
+                    return;
                 }
             }
-            return phong(ray, objectHit, pointHit, normalHit);
         }
 
-        private Vector3D phong(Ray ray, Object objectHit, Vector3D pointHit, Vector3D normalHit) {
-            Vector3D color = Vector3D.mult(objectHit.getMaterial().getColor(objectHit, pointHit), objectHit.getMaterial().getAmbient()).mult(ambient.getColor());
+        private void phong(Vector3D phong, Ray ray, Object objectHit, Vector3D pointHit, Vector3D normalHit) {
+            phong.set(Vector3D.mult(objectHit.getMaterial().getColor(objectHit, pointHit), objectHit.getMaterial().getAmbient()).mult(ambient.getColor()));
             for(Light light : lights) {
                 int maxShadowRays = light.getClass().equals(PointLight.class) ? 1 : numShadowRays;
                 Vector3D tempColor = new Vector3D();
@@ -280,16 +295,15 @@ public class Scene {
                         }
                         if(lightDist < 0)
                             continue;
-                        tempColor.add(shadowPhong(ray, objectHit, shadowRay, pointHit, normalHit, light, lightDist));
+                        shadowPhong(tempColor, ray, objectHit, shadowRay, pointHit, normalHit, light, lightDist);
                     }
                 }
                 tempColor.div(rows * cols);
-                color.add(tempColor);
+                phong.add(tempColor);
             }
-            return color;
         }
 
-        private Vector3D shadowPhong(Ray ray, Object objectHit, Ray shadowRay, Vector3D pointHit, Vector3D normalHit, Light light, double lightDist) {
+        private static void shadowPhong(Vector3D shadowPhong, Ray ray, Object objectHit, Ray shadowRay, Vector3D pointHit, Vector3D normalHit, Light light, double lightDist) {
             Ray reflectedRay = objectHit.getMaterial().reflectRay(shadowRay, pointHit, normalHit);
             double kl = Math.max(0D, normalHit.dot(shadowRay.getDirection().normalized())) * objectHit.getMaterial().getLambertian();
             double ks = Math.pow(Math.max(0, ray.getDirection().normalized().dot(reflectedRay.getDirection().normalized())), objectHit.getMaterial().getSpecularExponent()) * objectHit.getMaterial().getSpecular();
@@ -297,7 +311,8 @@ public class Scene {
             Vector3D diffuse = new Vector3D(objectHit.getMaterial().getColor(objectHit, pointHit)).mult(light.getColor()).mult(kl);
             Vector3D specular = new Vector3D(light.getColor()).mult(s).mult(ks);
             double brightness = light.getBrightness() / lightDist;
-            return Vector3D.add(diffuse, specular).mult(brightness);
+            (diffuse.add(specular)).mult(brightness);
+            shadowPhong.add(diffuse);
         }
     }
 }

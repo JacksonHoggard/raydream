@@ -1,14 +1,13 @@
 package me.jacksonhoggard.raydream.gui.editor.window;
 
+import me.jacksonhoggard.raydream.render.RenderCancelListener;
 import me.jacksonhoggard.raydream.util.ProgressListener;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -65,7 +64,7 @@ public class DialogWindow {
         return result == JOptionPane.YES_OPTION;
     }
 
-    public static void showProgressBar(String title, int width, int height) {
+    public static void showProgressBar(String title, int width, int height, RenderCancelListener renderCancelListener) {
         closeFrame();
         progress = 0;
         frame = new JFrame(title);
@@ -77,6 +76,19 @@ public class DialogWindow {
         progressBar.setStringPainted(true);
         frame.add(progressBar);
         frame.setLocationRelativeTo(null);
+        JButton closeButton = new JButton("Cancel");
+        closeButton.addActionListener(_ -> {
+            renderCancelListener.cancel();
+            closeFrame();
+        });
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                renderCancelListener.cancel();
+                closeFrame();
+            }
+        });
+        frame.getContentPane().add(closeButton);
         frame.setVisible(true);
     }
 

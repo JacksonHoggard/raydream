@@ -130,14 +130,6 @@ public class Window {
         glfwSetWindowShouldClose(windowPtr, true);
     }
 
-    public static void pause() {
-        glfwHideWindow(windowPtr);
-    }
-
-    public static void resume() {
-        glfwShowWindow(windowPtr);
-    }
-
     public void run() {
         while(!glfwWindowShouldClose(windowPtr)) {
             glClearColor(0.1F, 0.09F, 0.1F, 1.0F);
