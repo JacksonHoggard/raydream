@@ -2,6 +2,6 @@ package me.jacksonhoggard.raydream.render;
 
 public interface RenderCancelListener {
     void cancel();
-    boolean isCancelled();
-    void setCancelled(boolean cancelled);
+    boolean isCanceled();
+    void setCanceled(boolean canceled);
 }

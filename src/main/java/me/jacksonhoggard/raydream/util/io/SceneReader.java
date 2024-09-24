@@ -343,14 +343,11 @@ public class SceneReader {
                 case "mesh:":
                     mesh = Util.loadOBJ(line.substring(6));
                     break;
-                case "invert:":
-                    invert = Boolean.parseBoolean(params[1]);
-                    break;
                 default:
                     throw new UnrecognizedTokenException(params[0]);
             }
         }
-        return new Model(transform, material, mesh, invert);
+        return new Model(transform, material, mesh);
     }
 
     private Material createMaterial(BufferedReader reader, String type) throws IOException, UnrecognizedTokenException {

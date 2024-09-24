@@ -2,9 +2,9 @@ package me.jacksonhoggard.raydream.object;
 
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector3D;
-import me.jacksonhoggard.raydream.math.Vector4D;
 
-import java.util.Stack;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BVHTriangle {
 
@@ -21,13 +21,13 @@ public class BVHTriangle {
     }
 
     public double intersect(Ray ray, Triangle[] triangles, Vector3D normalHit) {
-        Stack<Node> stack = new Stack<Node>();
+        List<Node> stack = new ArrayList<>();
         Node currentNode = root;
         double t = Double.MAX_VALUE;
         while(true) {
             if(intersectAABB(ray, currentNode.min, currentNode.max)) {
                 if(!currentNode.isLeaf()) {
-                    stack.push(currentNode.right);
+                    stack.add(currentNode.right);
                     currentNode = currentNode.left;
                     continue;
                 } else {
@@ -40,23 +40,51 @@ public class BVHTriangle {
                     }
                 }
             }
-            if(stack.empty())
+            if(stack.isEmpty())
                 break;
-            currentNode = stack.pop();
+            currentNode = stack.removeLast();
         }
         return t;
     }
 
     private boolean intersectAABB(Ray ray, Vector3D min, Vector3D max) {
-        double tx1 = (min.x - ray.getOrigin().x) / ray.getDirection().x, tx2 = (max.x - ray.getOrigin().x) / ray.getDirection().x;
-        double tmin = Math.min(tx1, tx2), tmax = Math.max(tx1, tx2);
-        double ty1 = (min.y - ray.getOrigin().y) / ray.getDirection().y, ty2 = (max.y - ray.getOrigin().y) / ray.getDirection().y;
-        tmin = Math.max(tmin, Math.min(ty1, ty2));
-        tmax = Math.min(tmax, Math.max(ty1, ty2));
-        double tz1 = (min.z - ray.getOrigin().z) / ray.getDirection().z, tz2 = (max.z - ray.getOrigin().z) / ray.getDirection().z;
-        tmin = Math.max(tmin, Math.min(tz1, tz2));
-        tmax = Math.min(tmax, Math.max(tz1, tz2));
-        return tmax >= tmin;
+        double tMin = (min.x - ray.getOrigin().x) / ray.getDirection().x;
+        double tMax = (max.x - ray.getOrigin().x) / ray.getDirection().x;
+
+        if(tMin > tMax) {
+            double temp = tMin;
+            tMin = tMax;
+            tMax = temp;
+        }
+
+        double tYMin = (min.y - ray.getOrigin().y) / ray.getDirection().y;
+        double tYMax = (max.y - ray.getOrigin().y) / ray.getDirection().y;
+
+        if(tYMin > tYMax) {
+            double temp = tYMin;
+            tYMin = tYMax;
+            tYMax = temp;
+        }
+
+        if((tMin > tYMax) || (tYMin > tMax))
+            return false;
+
+        if(tYMin > tMin)
+            tMin = tYMin;
+
+        if(tYMax < tMax)
+            tMax = tYMax;
+
+        double tZMin = (min.z - ray.getOrigin().z) / ray.getDirection().z;
+        double tZMax = (max.z - ray.getOrigin().z) / ray.getDirection().z;
+
+        if(tZMin > tZMax) {
+            double temp = tZMin;
+            tZMin = tZMax;
+            tZMax = temp;
+        }
+
+        return (!(tMin > tZMax)) && (!(tZMin > tMax));
     }
 
     private void updateNodeBounds(Node node, Triangle[] triangles) {

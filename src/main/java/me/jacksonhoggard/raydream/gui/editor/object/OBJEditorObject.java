@@ -111,7 +111,7 @@ public class OBJEditorObject extends EditorObject {
         }
 
         Mesh mesh = new Mesh(modelSmooth.getPath(), triangles, min, max, false);
-        return new Model(getTransform(), getMaterial().toRayDreamMaterial(), mesh, false);
+        return new Model(getTransform(), getMaterial().toRayDreamMaterial(), mesh);
     }
 
     public void setSmooth(boolean smooth) {

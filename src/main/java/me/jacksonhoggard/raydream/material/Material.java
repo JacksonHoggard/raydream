@@ -38,7 +38,7 @@ public class Material {
 
     public static Vector3D reflect(Ray rayIn, Vector3D normal) {
         Vector3D v = rayIn.getDirection().normalized();
-        return Vector3D.sub(v, (Vector3D.mult(normal, 2*v.dot(normal))));
+        return v.sub((Vector3D.mult(normal, 2*v.dot(normal))));
     }
 
     public static Vector3D refract(Ray rayIn, Vector3D normal, double ratio) {

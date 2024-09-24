@@ -10,6 +10,7 @@ public class Triangle {
     private final Vector3D edge0, edge1, edge2;
     private final Vector3D[] normal;
     private final Vector3D normalNotNormal;
+    private final double d;
     private final double area2;
     private final Vector3D centroid;
     private final Vector3D min;
@@ -22,8 +23,9 @@ public class Triangle {
         this.edge0 = Vector3D.sub(v1, v0);
         this.edge1 = Vector3D.sub(v2, v1);
         this.edge2 = Vector3D.sub(v0, v2);
-        Vector3D v = Vector3D.sub(v2, v0);
-        this.normalNotNormal = edge0.cross(v);
+//        Vector3D v = Vector3D.sub(v2, v0);
+        this.normalNotNormal = Vector3D.sub(v1, v0).cross(Vector3D.sub(v2, v0));
+        this.d = -normalNotNormal.dot(v0);
         this.area2 = normalNotNormal.dot(normalNotNormal);
         this.normal = new Vector3D[3];
         this.normal[0] = normalNotNormal.normalized();
@@ -57,32 +59,31 @@ public class Triangle {
         return (x1 - x2) * (y2 - y3) - (x2 - x3) * (y1 - y2);
     }
 
-    public static Vector3D calcBarycentric(Vector3D a, Vector3D b, Vector3D c, Vector3D p) {
+    private Vector3D calcBarycentric(Vector3D a, Vector3D b, Vector3D c, Vector3D p) {
         // Unnormalized triangle normal
-        Vector3D m = Vector3D.sub(b, a).cross(Vector3D.sub(c, a));
         // Nominators and one-over-denominator for u and v ratios
         double nu, nv, ood;
         // Absolute components for determining projection plane
-        double x = Math.abs(m.x);
-        double y = Math.abs(m.y);
-        double z = Math.abs(m.z);
+        double x = Math.abs(normalNotNormal.x);
+        double y = Math.abs(normalNotNormal.y);
+        double z = Math.abs(normalNotNormal.z);
 
         // Compute areas in plane of largest projection
         if(x >= y && x >= z) {
             // x is largest, project to the yz plane
             nu = calcTriArea(p.y, p.z, b.y, b.z, c.y, c.z);
             nv = calcTriArea(p.y, p.z, c.y, c.z, a.y, a.z);
-            ood = 1.d / m.x;
+            ood = 1.d / normalNotNormal.x;
         } else if(y >= x && y >= z) {
             // y is largest, project to the xz plane
             nu = calcTriArea(p.x, p.z, b.x, b.z, c.x, c.z);
             nv = calcTriArea(p.x, p.z, c.x, c.z, a.x, a.z);
-            ood = 1.d / -m.y;
+            ood = 1.d / -normalNotNormal.y;
         } else {
             // z is largest, project to the xy plane
             nu = calcTriArea(p.x, p.y, b.x, b.y, c.x, c.y);
             nv = calcTriArea(p.x, p.y, c.x, c.y, a.x, a.y);
-            ood = 1.d / m.z;
+            ood = 1.d / normalNotNormal.z;
         }
         double u = nu * ood;
         double v = nv * ood;
@@ -93,31 +94,15 @@ public class Triangle {
     public double intersect(Ray ray) {
         double nDotRDir = normalNotNormal.dot(ray.getDirection());
         // Compute distance to point hit
-        double d = -normalNotNormal.dot(v0);
         double t = -(normalNotNormal.dot(ray.getOrigin()) + d) / nDotRDir;
         if(t < 0) // point is behind ray
             return -1.0D;
-        Vector3D point = ray.at(t); // point hit
 
-        // Edge 0
-        Vector3D vp0 = Vector3D.sub(point, v0);
-        Vector3D c = edge0.cross(vp0); // vector perpendicular to triangle
-        if(normalNotNormal.dot(c) < 0) // point hit is outside the triangle
-            return -1.0D;
+        Vector3D v = calcBarycentric(v0, v1, v2, ray.at(t));
+        if(v.y >= 0.0d && v.z >= 0.0d && (v.y + v.z) <= 1.0d)
+            return t;
 
-        // Edge 1
-        Vector3D vp1 = Vector3D.sub(point, v1);
-        c = edge1.cross(vp1);
-        if(normalNotNormal.dot(c) < 0)
-            return -1.0D;
-
-        // Edge 2
-        Vector3D vp2 = Vector3D.sub(point, v2);
-        c = edge2.cross(vp2);
-        if(normalNotNormal.dot(c) < 0)
-            return -1.0D;
-
-        return t;
+        return -1.0D;
     }
 
     public Vector3D getNormal(Vector3D point) {

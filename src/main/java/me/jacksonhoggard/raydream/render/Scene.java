@@ -40,22 +40,22 @@ public class Scene {
     private ProgressListener progressListener;
     private static ExecutorService pool;
     private static final RenderCancelListener renderCancelListener = new RenderCancelListener() {
-        public boolean cancelled = false;
+        public boolean canceled = false;
 
         @Override
         public void cancel() {
-            cancelled = true;
+            canceled = true;
             pool.shutdownNow();
         }
 
         @Override
-        public boolean isCancelled() {
-            return cancelled;
+        public boolean isCanceled() {
+            return canceled;
         }
 
         @Override
-        public void setCancelled(boolean cancelled) {
-            this.cancelled = cancelled;
+        public void setCanceled(boolean canceled) {
+            this.canceled = canceled;
         }
     };
     private static final Lock lock = new ReentrantLock();
@@ -78,7 +78,7 @@ public class Scene {
         progressListener = listener;
         long startTime = System.nanoTime();
 
-        renderCancelListener.setCancelled(false);
+        renderCancelListener.setCanceled(false);
         pool = Executors.newFixedThreadPool(threads);
         List<Vector3D> pixelColors = new ArrayList<>();
 
@@ -95,7 +95,7 @@ public class Scene {
             throw new RuntimeException("Thread shutdown interrupted:", e);
         }
 
-        if(renderCancelListener.isCancelled()) {
+        if(renderCancelListener.isCanceled()) {
             System.out.println("Render cancelled.");
             return;
         }

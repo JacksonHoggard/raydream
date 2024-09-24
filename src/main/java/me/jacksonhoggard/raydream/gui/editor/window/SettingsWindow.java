@@ -72,7 +72,7 @@ public class SettingsWindow {
 
         ImGui.separator();
         inputInt.set(sampleDepth);
-        ImGui.inputInt("Sample Depth", inputInt);
+        ImGui.inputInt("Samples per Pixel", inputInt);
         sampleDepth = inputInt.get();
         inputInt.set(bounces);
         ImGui.inputInt("Bounces", inputInt);
@@ -115,7 +115,7 @@ public class SettingsWindow {
                         threads,
                         DialogWindow.getProgressListener()
                 );
-                if(!Scene.getRenderCancelListener().isCancelled())
+                if(!Scene.getRenderCancelListener().isCanceled())
                     DialogWindow.openImage(Path.of(path).getFileName().toString(), path, imgWidth, imgHeight);
             }
         }

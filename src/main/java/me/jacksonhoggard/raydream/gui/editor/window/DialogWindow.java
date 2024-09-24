@@ -64,6 +64,19 @@ public class DialogWindow {
         return result == JOptionPane.YES_OPTION;
     }
 
+    public static void showText(String message, int width, int height) {
+        closeFrame();
+        frame = new JFrame("Info");
+        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        frame.setSize(width, height);
+        frame.setLayout(new FlowLayout());
+        frame.setAlwaysOnTop(true);
+        JLabel label = new JLabel(message, JLabel.CENTER);
+        frame.add(label);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
+    }
+
     public static void showProgressBar(String title, int width, int height, RenderCancelListener renderCancelListener) {
         closeFrame();
         progress = 0;

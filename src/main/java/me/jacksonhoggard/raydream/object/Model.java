@@ -8,13 +8,11 @@ import me.jacksonhoggard.raydream.math.Vector3D;
 public class Model extends Object {
 
     private final Mesh mesh;
-    private final boolean invertNormals;
     private final BVHTriangle bvh;
 
-    public Model(Transform transform, Material material, Mesh mesh, boolean invertNormals) {
+    public Model(Transform transform, Material material, Mesh mesh) {
         super(transform, material, mesh.getMin(), mesh.getMax());
         this.mesh = mesh;
-        this.invertNormals = invertNormals;
         bvh = new BVHTriangle(this.mesh.getTriangles());
     }
 
@@ -35,9 +33,5 @@ public class Model extends Object {
 
     public Mesh getMesh() {
         return mesh;
-    }
-
-    public boolean isInvertNormals() {
-        return invertNormals;
     }
 }

@@ -40,12 +40,13 @@ public class Vector4D {
         return this;
     }
 
-    public Vector4D mult(Matrix4D m) {
+    public Vector4D mult(Matrix4D matrix) {
+        double[] m = matrix.getMatrixArray();
         return new Vector4D(
-                x*m.get(0, 0) + y*m.get(0, 1) + z*m.get(0, 2) + w*m.get(0, 3), // x'
-                x*m.get(1, 0) + y*m.get(1, 1) + z*m.get(1, 2) + w*m.get(1, 3), // y'
-                x*m.get(2, 0) + y*m.get(2, 1) + z*m.get(2, 2) + w*m.get(2, 3), // z'
-                x*m.get(3, 0) + y*m.get(3, 1) + z*m.get(3, 2) + w*m.get(3, 3) // w'
+                x*m[0] + y*m[1] + z*m[2] + w*m[3], // x'
+                x*m[4] + y*m[5] + z*m[6] + w*m[7], // y'
+                x*m[8] + y*m[9] + z*m[10] + w*m[11], // z'
+                x*m[12] + y*m[13] + z*m[14] + w*m[15] // w'
         );
     }
 

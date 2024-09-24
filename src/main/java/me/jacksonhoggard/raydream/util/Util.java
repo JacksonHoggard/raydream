@@ -13,11 +13,11 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Util {
     public static double randomRange(double min, double max) {
-        return min + (max - min) * Math.random();
+        return min + (max - min) * ThreadLocalRandom.current().nextDouble();
     }
 
     public static Vector3D randomUnitVector() {
