@@ -44,7 +44,7 @@ public class PropWindow {
     private static int selectedTab = 0;
 
     private static final ImInt selectedMaterialType = new ImInt();
-    private static final String[] MATERIAL_TYPES = new String[] {"Reflect", "Reflect & Refract"};
+    private static final String[] MATERIAL_TYPES = new String[] {"Reflect", "Reflect & Refract", "Non-reflective"};
 
     public static void show() {
         width = ImGui.getMainViewport().getSizeX() / 5;
@@ -172,6 +172,9 @@ public class PropWindow {
                         break;
                     case 1:
                         material.setType(Material.Type.REFLECT_REFRACT);
+                        break;
+                    case 2:
+                        material.setType(Material.Type.OTHER);
                         break;
                 }
             }

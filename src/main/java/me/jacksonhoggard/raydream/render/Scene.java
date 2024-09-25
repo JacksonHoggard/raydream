@@ -273,6 +273,9 @@ public class Scene {
                     return;
                 }
             }
+            Vector3D phong = new Vector3D();
+            phong(phong, ray, objectHit, pointHit, normalHit);
+            color.add(phong);
         }
 
         private void phong(Vector3D phong, Ray ray, Object objectHit, Vector3D pointHit, Vector3D normalHit) {
