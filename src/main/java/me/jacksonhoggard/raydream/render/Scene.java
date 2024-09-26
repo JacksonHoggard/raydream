@@ -290,14 +290,14 @@ public class Scene {
                         Vector3D shadowDir = Vector3D.sub(light.pointOnLight(i, j, cols, rows), pointHit).normalize();
                         Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(shadowDir, 0.00001D)), shadowDir);
                         double lightDist = light.intersect(shadowRay);
+                        if(lightDist < 0)
+                            continue;
                         Hit bvhHit = bvh.intersect(shadowRay, objects);
                         if (bvhHit.object() != null) {
                             if (bvhHit.t() > 0 && bvhHit.t() < lightDist) {
                                 continue;
                             }
                         }
-                        if(lightDist < 0)
-                            continue;
                         shadowPhong(tempColor, ray, objectHit, shadowRay, pointHit, normalHit, light, lightDist);
                     }
                 }
