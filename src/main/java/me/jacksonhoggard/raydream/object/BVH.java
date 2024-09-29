@@ -24,7 +24,7 @@ public class BVH {
     public Hit intersect(Ray ray, Object[] objects) {
         List<Node> stack = new ArrayList<>();
         Node currentNode = root;
-        Hit out = new Hit(null, null, null, Double.MAX_VALUE);
+        Hit out = new Hit(null, null, null, null, Double.MAX_VALUE);
         while(true) {
             if(intersectAABB(ray, currentNode.min, currentNode.max)) {
                 if(!currentNode.isLeaf()) {
@@ -40,7 +40,7 @@ public class BVH {
                         Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
                         Hit hit = objects[i].intersect(rayOS);
                         if(hit.object() != null && hit.t() > 0 && hit.t() < out.t()) {
-                            out = new Hit(hit.object(), ray.at(hit.t()), hit.normal(), hit.t());
+                            out = new Hit(hit.object(), ray.at(hit.t()), hit.normal(), hit.texCoord(), hit.t());
                         }
                     }
                 }

@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
+import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.gui.editor.model.PlaneModel;
 import me.jacksonhoggard.raydream.material.Material;
@@ -8,13 +9,15 @@ import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Plane;
 import me.jacksonhoggard.raydream.object.Transform;
 
-import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
-import static org.lwjgl.opengl.GL11.glDrawArrays;
+import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 public class PlaneEditorObject extends EditorObject {
 
-    private static final EditorModel planeModel = new PlaneModel(1000, 1000);
+    private static final EditorModel planeModel = new PlaneModel(100, 100);
 
     public PlaneEditorObject(EditorObjectMaterial material) {
         super(planeModel, material);
@@ -46,6 +49,10 @@ public class PlaneEditorObject extends EditorObject {
 
     @Override
     public void draw() {
+        if(getMaterial().getTexture() != null) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, getMaterial().getTexture().getId());
+        }
         glBindVertexArray(planeModel.getVertexArrayId());
         glDrawArrays(GL_TRIANGLES, 0, planeModel.getVertexCount());
         glBindVertexArray(0);

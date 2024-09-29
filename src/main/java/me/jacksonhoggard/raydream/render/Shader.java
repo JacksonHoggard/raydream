@@ -1,5 +1,6 @@
 package me.jacksonhoggard.raydream.render;
 
+import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.util.Util;
 
 import java.net.URISyntaxException;
@@ -9,8 +10,8 @@ import static org.lwjgl.opengl.GL20.*;
 
 public class Shader {
     private final int programId;
-    private int vertexShaderId;
-    private int fragmentShaderId;
+    private final int vertexShaderId;
+    private final int fragmentShaderId;
 
     public Shader(String vertexShaderFile, String fragmentShaderFile) {
         // Compile and attach shaders
@@ -106,5 +107,10 @@ public class Shader {
     public void setFloat(String name, float value) {
         int location = glGetUniformLocation(programId, name);
         glUniform1f(location, value);
+    }
+
+    public void setBool(String name, boolean value) {
+        int location = glGetUniformLocation(programId, name);
+        glUniform1i(location, value ? 1 : 0);
     }
 }

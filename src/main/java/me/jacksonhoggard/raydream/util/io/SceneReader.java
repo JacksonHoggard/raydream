@@ -5,9 +5,7 @@ import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.light.SphereLight;
 import me.jacksonhoggard.raydream.material.*;
-import me.jacksonhoggard.raydream.material.texture.BoxPattern;
-import me.jacksonhoggard.raydream.material.texture.Checker;
-import me.jacksonhoggard.raydream.material.texture.Texture;
+import me.jacksonhoggard.raydream.material.Texture;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.*;
 import me.jacksonhoggard.raydream.object.Object;
@@ -341,7 +339,7 @@ public class SceneReader {
                     material = createMaterial(reader, params[1]);
                     break;
                 case "mesh:":
-                    mesh = Util.loadOBJ(line.substring(6));
+                    //mesh = Util.loadOBJ(line.substring(6));
                     break;
                 default:
                     throw new UnrecognizedTokenException(params[0]);
@@ -406,14 +404,7 @@ public class SceneReader {
                     throw new UnrecognizedTokenException(params[1]);
             }
         }
-        return switch (type) {
-            case "colored_glass" -> new ColoredGlass(color, ambient, indexOfRefraction);
-            case "glass" -> new Glass(ambient, indexOfRefraction);
-            case "matte" -> new Matte(color, ambient, lambertian, specular, specularExponent);
-            case "reflective" -> new Reflective(color, ambient, lambertian, specular, specularExponent, metalness, indexOfRefraction, k);
-            case "texture" -> new TexturedMaterial(texture, ambient, lambertian, specular, specularExponent, metalness, indexOfRefraction, k);
-            default -> throw new UnrecognizedTokenException(type);
-        };
+        return null;
     }
 
     private Texture createPattern(BufferedReader reader, String type) throws IOException, UnrecognizedTokenException {
@@ -489,11 +480,7 @@ public class SceneReader {
                     throw new UnrecognizedTokenException(params[1]);
             }
         }
-        return switch (type) {
-            case "checker" -> new Checker(width, height, colorA, colorB);
-            case "box" -> new BoxPattern(main, ul, ur, bl, br);
-            default -> throw new UnrecognizedTokenException(type);
-        };
+        return null;
     }
 
     private Transform createTransform(BufferedReader reader) throws IOException, UnrecognizedTokenException {

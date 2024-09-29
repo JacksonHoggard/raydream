@@ -36,6 +36,8 @@ public class PlaneModel extends EditorModel {
                 vertices.add(0.f);
                 vertices.add(1.f);
                 vertices.add(0.f);
+                vertices.add(0.f);
+                vertices.add(0.f);
 
                 vertices.add((float) x);
                 vertices.add(0.f);
@@ -43,6 +45,8 @@ public class PlaneModel extends EditorModel {
                 vertices.add(0.f);
                 vertices.add(1.f);
                 vertices.add(0.f);
+                vertices.add(0.f);
+                vertices.add(1.f);
 
                 vertices.add((float) (x + 1));
                 vertices.add(0.f);
@@ -50,6 +54,8 @@ public class PlaneModel extends EditorModel {
                 vertices.add(0.f);
                 vertices.add(1.f);
                 vertices.add(0.f);
+                vertices.add(1.f);
+                vertices.add(1.f);
 
 
                 vertices.add((float) x);
@@ -58,10 +64,14 @@ public class PlaneModel extends EditorModel {
                 vertices.add(0.f);
                 vertices.add(1.f);
                 vertices.add(0.f);
+                vertices.add(0.f);
+                vertices.add(0.f);
 
                 vertices.add((float) (x + 1));
                 vertices.add(0.f);
                 vertices.add((float) z);
+                vertices.add(0.f);
+                vertices.add(1.f);
                 vertices.add(0.f);
                 vertices.add(1.f);
                 vertices.add(0.f);
@@ -72,6 +82,8 @@ public class PlaneModel extends EditorModel {
                 vertices.add(0.f);
                 vertices.add(1.f);
                 vertices.add(0.f);
+                vertices.add(1.f);
+                vertices.add(1.f);
             }
         }
 
@@ -80,7 +92,7 @@ public class PlaneModel extends EditorModel {
         for(Float f : vertices) {
             this.vertices[i++] = f;
         }
-        vertexCount = this.vertices.length / 6;
+        vertexCount = this.vertices.length / 8;
 
         FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.size());
         vertexBuffer.put(this.vertices).flip();
@@ -91,11 +103,14 @@ public class PlaneModel extends EditorModel {
         glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
         glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
         // position attribute
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, 6 * Float.BYTES, 0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, 8 * Float.BYTES, 0);
         glEnableVertexAttribArray(0);
         // normal attribute
-        glVertexAttribPointer(1, 3, GL_FLOAT, false, 6 * Float.BYTES, 3 * Float.BYTES);
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, 8 * Float.BYTES, 3 * Float.BYTES);
         glEnableVertexAttribArray(1);
+        // texture attribute
+        glVertexAttribPointer(2, 2, GL_FLOAT, false, 8 * Float.BYTES, 6 * Float.BYTES);
+        glEnableVertexAttribArray(2);
         glBindVertexArray(0);
 
         created = true;

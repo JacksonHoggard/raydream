@@ -1,4 +1,4 @@
-package me.jacksonhoggard.raydream.material.texture;
+package me.jacksonhoggard.raydream.material;
 
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
@@ -20,14 +20,9 @@ public class Texture {
         this.height = height;
     }
 
-    public Vector3D textureAt(Object object, Vector3D point) {
-        Vector2D map = object.mapTexture(Object.transformPointToOS(point, object.getInverseTransformMatrix()));
-        return getColorAt(map.x, map.y);
-    }
-
     protected Vector3D getColorAt(double u, double v) {
         int x = (int) Math.round(u * (width - 1));
-        int y = (int) Math.round((1 - v) * (height - 1));
+        int y = (int) Math.round(v * (height - 1));
         int color = image.getRGB(x, y);
         return new Vector3D(
                 ((color & 0xff0000) >> 16) / 255D,

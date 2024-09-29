@@ -18,12 +18,18 @@ public class Model extends Object {
 
     @Override
     public Hit intersect(Ray ray) {
-        Vector3D normal = new Vector3D();
-        double t = bvh.intersect(ray, mesh.getTriangles(), normal);
+        Triangle triangle = new Triangle(new Vector3D(), new Vector3D(), new Vector3D(), new Vector2D(), new Vector2D(), new Vector2D());
+        double t = bvh.intersect(ray, mesh.getTriangles(), triangle);
         if(t < Double.MAX_VALUE) {
-            return new Hit(this, ray.at(t), transformNormalToWS(normal, getNormalMatrix()), t);
+            Vector3D barycentric = new Vector3D();
+            triangle.calcBarycentric(ray.at(t), barycentric);
+            return new Hit(this, ray.at(t), transformNormalToWS(triangle.getNormal(ray.at(t)), getNormalMatrix()), mapTexture(triangle, barycentric), t);
         }
-        return new Hit(null, null, null, -1.0D);
+        return new Hit(null, null, null, null, -1.0D);
+    }
+
+    private Vector2D mapTexture(Triangle triangle, Vector3D barycentric) {
+        return triangle.mapTexture(barycentric);
     }
 
     @Override

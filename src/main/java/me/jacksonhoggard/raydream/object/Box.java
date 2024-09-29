@@ -41,7 +41,7 @@ public class Box extends Object {
         }
 
         if((tMin > tYMax) || (tYMin > tMax))
-            return new Hit(null, null, null, -1.0D);
+            return new Hit(null, null, null, null, -1.0D);
 
         if(tYMin > tMin)
             tMin = tYMin;
@@ -59,12 +59,12 @@ public class Box extends Object {
         }
 
         if((tMin > tZMax) || (tZMin > tMax))
-            return new Hit(null, null, null, -1.0D);
+            return new Hit(null, null, null, null, -1.0D);
 
         if(tZMin > tMin)
             tMin = tZMin;
 
-        return new Hit(this, ray.at(tMin), transformNormalToWS(normalAt(ray.at(tMin)), getNormalMatrix()), tMin);
+        return new Hit(this, ray.at(tMin), transformNormalToWS(normalAt(ray.at(tMin)), getNormalMatrix()), mapTexture(ray.at(tMin)), tMin);
     }
 
     public Vector3D normalAt(Vector3D point) {
@@ -90,56 +90,44 @@ public class Box extends Object {
     }
 
     private Vector2D uvFront(Vector3D point) {
-        double lengthU = Math.abs(max.x - min.x);
-        double lengthV = Math.abs(max.y - min.y);
         return new Vector2D(
-                (point.x % lengthU) / lengthU,
-                (point.y % lengthV) / lengthV
+                (point.x + 0.5) % 1.0D,
+                (point.y + 0.5) % 1.0D
         );
     }
 
     private Vector2D uvBack(Vector3D point) {
-        double lengthU = Math.abs(max.x - min.x);
-        double lengthV = Math.abs(max.y - min.y);
         return new Vector2D(
-                1 - ((point.x % lengthU) / lengthU),
-                (point.y % lengthV) / lengthV
+                1 - ((point.x + 0.5) % 1.0D),
+                (point.y + 0.5) % 1.0D
         );
     }
 
     private Vector2D uvLeft(Vector3D point) {
-        double lengthU = Math.abs(max.z - min.z);
-        double lengthV = Math.abs(max.y - min.y);
         return new Vector2D(
-                (point.z % lengthU) / lengthU,
-                (point.y % lengthV) / lengthV
+                (point.z + 0.5) % 1.0D,
+                (point.y + 0.5) % 1.0D
         );
     }
 
     private Vector2D uvRight(Vector3D point) {
-        double lengthU = Math.abs(max.z - min.z);
-        double lengthV = Math.abs(max.y - min.y);
         return new Vector2D(
-                1 - ((point.z % lengthU) / lengthU),
-                (point.y % lengthV) / lengthV
+                1 - ((point.z + 0.5) % 1.0D),
+                (point.y + 0.5) % 1.0D
         );
     }
 
     private Vector2D uvUp(Vector3D point) {
-        double lengthU = Math.abs(max.x - min.x);
-        double lengthV = Math.abs(max.z - min.z);
         return new Vector2D(
-                ((point.x % lengthU) / lengthU),
-                1 - ((point.z % lengthV) / lengthV)
+                (point.x + 0.5) % 1.0D,
+                1 - ((point.z + 0.5) % 1.0D)
         );
     }
 
     private Vector2D uvDown(Vector3D point) {
-        double lengthU = Math.abs(max.x - min.x);
-        double lengthV = Math.abs(max.z - min.z);
         return new Vector2D(
-                (point.x % lengthU) / lengthU,
-                (point.z % lengthV) / lengthV
+                (point.x + 0.5) % 1.0D,
+                (point.z + 0.5) % 1.0D
         );
     }
 

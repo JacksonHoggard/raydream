@@ -21,9 +21,9 @@ public class Sphere extends Object {
         double c = oc.dot(oc) - radius * radius;
         double discriminant = b * b - 4 * a * c;
         if(discriminant < 0)
-            return new Hit(null, null, null, -1.0D);
+            return new Hit(null, null, null, null, -1.0D);
         double t = (-b - Math.sqrt(discriminant)) / (2.0D * a);
-        return new Hit(this, ray.at(t), transformNormalToWS(ray.at(t).normalized(), getNormalMatrix()), t);
+        return new Hit(this, ray.at(t), transformNormalToWS(ray.at(t).normalized(), getNormalMatrix()), mapTexture(ray.at(t)), t);
     }
 
     public Vector3D normalAt(Vector3D point) {

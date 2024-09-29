@@ -8,13 +8,10 @@ import org.lwjgl.opengl.GL11;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
 import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
 import static org.lwjgl.opengl.GL15.glBindBuffer;
 import static org.lwjgl.opengl.GL15.glBufferData;
@@ -42,8 +39,8 @@ public class OBJModel extends EditorModel {
         List<Vector3F> vertices = new ArrayList<>();
         List<Vector3F> normals = new ArrayList<>();
         List<Vector2F> textures = new ArrayList<>();
-        List<Vector3F> faces = new ArrayList<>();
-        Map<Integer[], Vector3F[]> triangles = new HashMap<>();
+        Map<Integer[], Vector3F[]> triangles = new LinkedHashMap<>();
+        List<Vector2F[]> triangleTexCoords = new ArrayList<>();
 
         for(String line : lines) {
             String[] tokens = line.split("\\s+");
@@ -72,6 +69,18 @@ public class OBJModel extends EditorModel {
                                     Integer.parseInt(tokens[i + 2].split("/")[0]) - 1,
                                     Integer.parseInt(tokens[i + 3].split("/")[0]) - 1
                             };
+                            if(tokens[1].split("/").length > 1) {
+                                Integer[] texIndices = new Integer[]{
+                                        Integer.parseInt(tokens[1].split("/")[1]) - 1,
+                                        Integer.parseInt(tokens[i + 2].split("/")[1]) - 1,
+                                        Integer.parseInt(tokens[i + 3].split("/")[1]) - 1
+                                };
+                                triangleTexCoords.add(new Vector2F[]{
+                                        textures.get(texIndices[0]),
+                                        textures.get(texIndices[1]),
+                                        textures.get(texIndices[2])
+                                });
+                            }
                             triangles.put(indices, new Vector3F[]{
                                     vertices.get(indices[0]),
                                     vertices.get(indices[1]),
@@ -89,36 +98,53 @@ public class OBJModel extends EditorModel {
                                 vertices.get(indices[1]),
                                 vertices.get(indices[2])
                         });
-                    }
-                    for(int i = 1; i < tokens.length; i++) {
-                        processFace(tokens[i], faces);
+                        if(tokens[1].split("/").length > 1) {
+                            Integer[] texIndices = new Integer[]{
+                                    Integer.parseInt(tokens[1].split("/")[1]) - 1,
+                                    Integer.parseInt(tokens[2].split("/")[1]) - 1,
+                                    Integer.parseInt(tokens[3].split("/")[1]) - 1
+                            };
+                            triangleTexCoords.add(new Vector2F[]{
+                                    textures.get(texIndices[0]),
+                                    textures.get(texIndices[1]),
+                                    textures.get(texIndices[2])
+                            });
+                        }
                     }
                     break;
             }
         }
         if(isSmooth)
             // Store shared vertices (smooth shading)
-            calculateSmoothNormals(vertices, normals, triangles);
+            calculateSmoothNormals(vertices, normals, triangles, textures, triangleTexCoords);
         else
             // Store non-shared vertices (flat shading)
-            calculateFlatNormals(vertices, normals, triangles);
+            calculateFlatNormals(vertices, normals, triangles, textures, triangleTexCoords);
         // Store vertices
-        this.vertices = new float[vertices.size() * 6];
+        this.vertices = new float[vertices.size() * 8];
         int i = 0;
         for(Vector3F pos : vertices) {
-            this.vertices[i * 6] = pos.x;
-            this.vertices[i * 6 + 1] = pos.y;
-            this.vertices[i * 6 + 2] = pos.z;
+            this.vertices[i * 8] = pos.x;
+            this.vertices[(i * 8) + 1] = pos.y;
+            this.vertices[(i * 8) + 2] = pos.z;
             i++;
         }
-        vertexCount = this.vertices.length / 6;
+        vertexCount = this.vertices.length / 8;
 
         // Store normals
         i = 0;
         for(Vector3F n : normals) {
-            this.vertices[(i * 6) + 3] = n.x;
-            this.vertices[(i * 6) + 4] = n.y;
-            this.vertices[(i * 6) + 5] = n.z;
+            this.vertices[(i * 8) + 3] = n.x;
+            this.vertices[(i * 8) + 4] = n.y;
+            this.vertices[(i * 8) + 5] = n.z;
+            i++;
+        }
+
+        // Store texture coords
+        i = 0;
+        for(Vector2F t : textures) {
+            this.vertices[(i * 8) + 6] = t.x;
+            this.vertices[(i * 8) + 7] = 1 - t.y;
             i++;
         }
 
@@ -133,28 +159,49 @@ public class OBJModel extends EditorModel {
         indicesCount = this.indices.length;
     }
 
-    private void calculateSmoothNormals(List<Vector3F> vertices, List<Vector3F> normals, Map<Integer[], Vector3F[]> triangles) {
+    private void calculateSmoothNormals(List<Vector3F> vertices, List<Vector3F> normals, Map<Integer[], Vector3F[]> triangles, List<Vector2F> textures, List<Vector2F[]> triangleTexCoords) {
+        List<Vector3F> newNormals = new ArrayList<>();
         // Initialize normals
         for(int i = 0; i < vertices.size(); i++)
-            normals.add(new Vector3F());
+            newNormals.add(new Vector3F());
+        vertices.clear();
+        normals.clear();
+        textures.clear();
         // Compute the cross product and add it to each vertex
+        AtomicInteger j = new AtomicInteger(0);
         triangles.forEach((i, v) -> {
             Vector3F bMinA = Vector3F.sub(v[1], v[0]);
             Vector3F cMinA = Vector3F.sub(v[2], v[0]);
             Vector3F p = bMinA.cross(cMinA);
-            normals.set(i[0], normals.get(i[0]).add(p));
-            normals.set(i[1], normals.get(i[1]).add(p));
-            normals.set(i[2], normals.get(i[2]).add(p));
+            vertices.add(v[0]);
+            vertices.add(v[1]);
+            vertices.add(v[2]);
+            newNormals.set(i[0], newNormals.get(i[0]).add(p));
+            newNormals.set(i[1], newNormals.get(i[1]).add(p));
+            newNormals.set(i[2], newNormals.get(i[2]).add(p));
+            if(!triangleTexCoords.isEmpty()) {
+                textures.add(triangleTexCoords.get(j.get())[0]);
+                textures.add(triangleTexCoords.get(j.get())[1]);
+                textures.add(triangleTexCoords.get(j.get())[2]);
+            }
+            j.incrementAndGet();
         });
         // Normalize the vertex normals
-        for(Vector3F n : normals)
+        for(Vector3F n : newNormals)
             n.normalize();
+        triangles.forEach((i, _) -> {
+            normals.add(newNormals.get(i[0]));
+            normals.add(newNormals.get(i[1]));
+            normals.add(newNormals.get(i[2]));
+        });
     }
 
-    private void calculateFlatNormals(List<Vector3F> vertices, List<Vector3F> normals, Map<Integer[], Vector3F[]> triangles) {
+    private void calculateFlatNormals(List<Vector3F> vertices, List<Vector3F> normals, Map<Integer[], Vector3F[]> triangles, List<Vector2F> textures, List<Vector2F[]> triangleTexCoords) {
         vertices.clear();
         normals.clear();
+        textures.clear();
         // Compute the cross product, normalize it, and add it to the list of normals
+        AtomicInteger i = new AtomicInteger();
         triangles.forEach((_, v) -> {
             Vector3F bMinA = Vector3F.sub(v[1], v[0]);
             Vector3F cMinA = Vector3F.sub(v[2], v[0]);
@@ -165,23 +212,13 @@ public class OBJModel extends EditorModel {
             normals.add(p);
             normals.add(p);
             normals.add(p);
+            if(!triangleTexCoords.isEmpty()) {
+                textures.add(triangleTexCoords.get(i.get())[0]);
+                textures.add(triangleTexCoords.get(i.get())[1]);
+                textures.add(triangleTexCoords.get(i.get())[2]);
+            }
+            i.getAndIncrement();
         });
-    }
-
-    private static void processFace(String token, List<Vector3F> faces) {
-        String[] lineToken = token.split("/");
-        int length = lineToken.length;
-        int pos = Integer.parseInt(lineToken[0]) - 1;
-        int coords = -1;
-        int normal = -1;
-        if(length > 1) {
-            String texCoord = lineToken[1];
-            coords = !texCoord.isEmpty() ? Integer.parseInt(texCoord) - 1 : -1;
-            if(length > 2)
-                normal = Integer.parseInt(lineToken[2]) - 1;
-        }
-        Vector3F f = new Vector3F(pos, coords, normal);
-        faces.add(f);
     }
 
     @Override
@@ -204,15 +241,18 @@ public class OBJModel extends EditorModel {
         glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
         glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
         // position attribute
-        glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 6 * Float.BYTES, 0);
+        glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 8 * Float.BYTES, 0);
         glEnableVertexAttribArray(0);
         // normal attribute
-        glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, 6 * Float.BYTES, 3 * Float.BYTES);
+        glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, 8 * Float.BYTES, 3 * Float.BYTES);
         glEnableVertexAttribArray(1);
+        // texture attribute
+        glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, 8 * Float.BYTES, 6 * Float.BYTES);
+        glEnableVertexAttribArray(2);
 
-        indicesBufferId = glGenBuffers();
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBufferId);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
+        //indicesBufferId = glGenBuffers();
+        //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBufferId);
+        //glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
         glBindVertexArray(0);
 
         created = true;

@@ -26,12 +26,14 @@ public class Plane extends Object {
     public Hit intersect(Ray ray) {
         double t = (-ray.getOrigin().dot(normal)) / ray.getDirection().dot(normal);
         return new Hit(
-                this, ray.at(t), normal, t
+                this, ray.at(t), normal, mapTexture(ray.at(t)), t
         );
     }
 
     @Override
     public Vector2D mapTexture(Vector3D point) {
-        return new Vector2D(point.x % 1, point.z % 1);
+        if(point.x < 0) point.x = 1+(point.x % 1.0D);
+        if(point.z < 0) point.z = 1+(point.z % 1.0D);
+        return new Vector2D(point.x % 1.0D, point.z % 1.0D);
     }
 }

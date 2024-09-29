@@ -3,16 +3,16 @@ package me.jacksonhoggard.raydream.gui.editor.object;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
 import me.jacksonhoggard.raydream.material.Material;
+import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
-import me.jacksonhoggard.raydream.math.Vector3F;
 import me.jacksonhoggard.raydream.object.Mesh;
 import me.jacksonhoggard.raydream.object.Model;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Triangle;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.GL_ELEMENT_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.glBindBuffer;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 public class OBJEditorObject extends EditorObject {
@@ -49,36 +49,45 @@ public class OBJEditorObject extends EditorObject {
 
     @Override
     public void draw() {
+        if(getMaterial().getTexture() != null) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, getMaterial().getTexture().getId());
+        }
         if(!smooth) {
             glBindVertexArray(modelFlat.getVertexArrayId());
             glDrawArrays(GL_TRIANGLES, 0, modelFlat.getVertexCount());
         } else {
             glBindVertexArray(modelSmooth.getVertexArrayId());
-            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, modelSmooth.getIndicesBufferId());
-            glDrawElements(GL_TRIANGLES, modelFlat.getIndicesCount(), GL_UNSIGNED_INT, 0);
+            glDrawArrays(GL_TRIANGLES, 0, modelSmooth.getVertexCount());
         }
         glBindVertexArray(0);
     }
 
     @Override
     public Object toObject() {
-        Vector3D[] vertices = new Vector3D[modelSmooth.getVertexCount()];
-        Vector3D[] normals = new Vector3D[modelSmooth.getVertexCount()];
-        Triangle[] triangles = new Triangle[modelSmooth.getIndicesCount() / 3];
+        OBJModel model = smooth ? modelSmooth : modelFlat;
+        Vector3D[] vertices = new Vector3D[model.getVertexCount()];
+        Vector3D[] normals = new Vector3D[model.getVertexCount()];
+        Vector2D[] texCoords = new Vector2D[model.getVertexCount()];
+        Triangle[] triangles = new Triangle[model.getIndicesCount() / 3];
         Vector3D min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
         Vector3D max = new Vector3D(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
 
         int i = 0;
         for(int j = 0; j < vertices.length; j++) {
             vertices[j] = new Vector3D(
-                    modelSmooth.getVertices()[i],
-                    modelSmooth.getVertices()[i + 1],
-                    modelSmooth.getVertices()[i + 2]
+                    model.getVertices()[i],
+                    model.getVertices()[i + 1],
+                    model.getVertices()[i + 2]
             );
             normals[j] = new Vector3D(
-                    modelSmooth.getVertices()[i + 3],
-                    modelSmooth.getVertices()[i + 4],
-                    modelSmooth.getVertices()[i + 5]
+                    model.getVertices()[i + 3],
+                    model.getVertices()[i + 4],
+                    model.getVertices()[i + 5]
+            );
+            texCoords[j] = new Vector2D(
+                    model.getVertices()[i + 6],
+                    model.getVertices()[i + 7]
             );
             min.x = Math.min(min.x, vertices[j].x);
             min.y = Math.min(min.y, vertices[j].y);
@@ -86,31 +95,26 @@ public class OBJEditorObject extends EditorObject {
             max.x = Math.max(max.x, vertices[j].x);
             max.y = Math.max(max.y, vertices[j].y);
             max.z = Math.max(max.z, vertices[j].z);
-            i+=6;
+            i+=8;
         }
 
         i = 0;
         for(int t = 0; t < triangles.length; t++) {
-            if(smooth) {
-                triangles[t] = new Triangle(
-                        vertices[modelSmooth.getIndices()[i]],
-                        vertices[modelSmooth.getIndices()[i+1]],
-                        vertices[modelSmooth.getIndices()[i+2]],
-                        normals[modelSmooth.getIndices()[i]],
-                        normals[modelSmooth.getIndices()[i+1]],
-                        normals[modelSmooth.getIndices()[i+2]]
-                );
-            } else {
-                triangles[t] = new Triangle(
-                        vertices[modelSmooth.getIndices()[i]],
-                        vertices[modelSmooth.getIndices()[i+1]],
-                        vertices[modelSmooth.getIndices()[i+2]]
-                );
-            }
+            triangles[t] = new Triangle(
+                    vertices[i],
+                    vertices[i+1],
+                    vertices[i+2],
+                    normals[i],
+                    normals[i+1],
+                    normals[i+2],
+                    texCoords[i],
+                    texCoords[i+1],
+                    texCoords[i+2]
+            );
             i+=3;
         }
 
-        Mesh mesh = new Mesh(modelSmooth.getPath(), triangles, min, max, false);
+        Mesh mesh = new Mesh(model.getPath(), triangles, min, max, smooth);
         return new Model(getTransform(), getMaterial().toRayDreamMaterial(), mesh);
     }
 

@@ -88,5 +88,7 @@ public abstract class EditorObject implements IEditorObject {
     @Override
     public void remove() {
         getModel().remove();
+        if(getMaterial().getTexture() != null)
+            getMaterial().getTexture().remove();
     }
 }

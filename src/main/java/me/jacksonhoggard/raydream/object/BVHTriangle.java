@@ -20,7 +20,7 @@ public class BVHTriangle {
         subdivide(root, triangles);
     }
 
-    public double intersect(Ray ray, Triangle[] triangles, Vector3D normalHit) {
+    public double intersect(Ray ray, Triangle[] triangles, Triangle triangleHit) {
         List<Node> stack = new ArrayList<>();
         Node currentNode = root;
         double t = Double.MAX_VALUE;
@@ -35,7 +35,7 @@ public class BVHTriangle {
                         double temp = triangles[i].intersect(ray);
                         if(temp > 0 && temp < t) {
                             t = temp;
-                            normalHit.set(triangles[i].getNormal(ray.at(t)));
+                            triangleHit.set(triangles[i]);
                         }
                     }
                 }

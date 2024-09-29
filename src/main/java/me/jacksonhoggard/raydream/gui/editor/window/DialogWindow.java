@@ -25,10 +25,10 @@ public class DialogWindow {
             closeFrame();
     };
 
-    public static String openFileChooser(String description, String extension) {
+    public static String openFileChooser(String description, String... extensions) {
         JFileChooser fileChooser = new JFileChooser();
 
-        FileNameExtensionFilter filter = new FileNameExtensionFilter(description, extension);
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(description, extensions);
         fileChooser.setFileFilter(filter);
 
         int result = fileChooser.showOpenDialog(null);

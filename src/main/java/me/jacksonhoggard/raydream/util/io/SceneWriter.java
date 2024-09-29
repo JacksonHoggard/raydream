@@ -5,9 +5,7 @@ import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.light.SphereLight;
 import me.jacksonhoggard.raydream.material.*;
-import me.jacksonhoggard.raydream.material.texture.BoxPattern;
-import me.jacksonhoggard.raydream.material.texture.Checker;
-import me.jacksonhoggard.raydream.material.texture.Texture;
+import me.jacksonhoggard.raydream.material.Texture;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.*;
 import me.jacksonhoggard.raydream.object.Object;
@@ -134,78 +132,78 @@ public class SceneWriter {
 
     private void writeMaterial(Material material) throws IOException {
         String type = null;
-        if(material.getClass() == ColoredGlass.class)
-            type = "colored_glass";
-        if(material.getClass() == Glass.class)
-            type = "glass";
-        if(material.getClass() == Matte.class)
-            type = "matte";
-        if(material.getClass() == Reflective.class)
-            type = "reflective";
-        if(material.getClass() == TexturedMaterial.class)
-            type = "texture";
-        writer.write("material: " + type + "\n");
-        switch(type) {
-            case "colored_glass":
-                writer.write("| color: " + vecToStr(material.getColor(null, null)) + "\n");
-                writer.write("| ambient: " + material.getAmbient() + "\n");
-                writer.write("| ior: " + material.getIndexOfRefraction() + "\n");
-                break;
-            case "glass":
-                writer.write("| ambient: " + material.getAmbient() + "\n");
-                writer.write("| ior: " + material.getIndexOfRefraction() + "\n");
-                break;
-            case "matte":
-                writer.write("| color: " + vecToStr(material.getColor(null, null)) + "\n");
-                writer.write("| ambient: " + material.getAmbient() + "\n");
-                writer.write("| lambertian: " + material.getLambertian() + "\n");
-                writer.write("| specular: " + material.getSpecular() + "\n");
-                writer.write("| exponent: " + material.getSpecularExponent() + "\n");
-                break;
-            case "reflective":
-                writer.write("| color: " + vecToStr(material.getColor(null, null)) + "\n");
-                writer.write("| ambient: " + material.getAmbient() + "\n");
-                writer.write("| lambertian: " + material.getLambertian() + "\n");
-                writer.write("| specular: " + material.getSpecular() + "\n");
-                writer.write("| exponent: " + material.getSpecularExponent() + "\n");
-                writer.write("| metalness: " + material.getMetalness() + "\n");
-                writer.write("| ior: " + material.getIndexOfRefraction() + "\n");
-                writer.write("| k: " + material.getK() + "\n");
-                break;
-            case "texture":
-                writeTexture(((TexturedMaterial) material).getTexture());
-                writer.write("| ambient: " + material.getAmbient() + "\n");
-                writer.write("| lambertian: " + material.getLambertian() + "\n");
-                writer.write("| specular: " + material.getSpecular() + "\n");
-                writer.write("| exponent: " + material.getSpecularExponent() + "\n");
-                writer.write("| metalness: " + material.getMetalness() + "\n");
-                writer.write("| ior: " + material.getIndexOfRefraction() + "\n");
-                writer.write("| k: " + material.getK() + "\n");
-                break;
-        }
+//        if(material.getClass() == ColoredGlass.class)
+//            type = "colored_glass";
+//        if(material.getClass() == Glass.class)
+//            type = "glass";
+//        if(material.getClass() == Matte.class)
+//            type = "matte";
+//        if(material.getClass() == Reflective.class)
+//            type = "reflective";
+//        if(material.getClass() == TexturedMaterial.class)
+//            type = "texture";
+//        writer.write("material: " + type + "\n");
+//        switch(type) {
+//            case "colored_glass":
+//                writer.write("| color: " + vecToStr(material.getColor(null, null)) + "\n");
+//                writer.write("| ambient: " + material.getAmbient() + "\n");
+//                writer.write("| ior: " + material.getIndexOfRefraction() + "\n");
+//                break;
+//            case "glass":
+//                writer.write("| ambient: " + material.getAmbient() + "\n");
+//                writer.write("| ior: " + material.getIndexOfRefraction() + "\n");
+//                break;
+//            case "matte":
+//                writer.write("| color: " + vecToStr(material.getColor(null, null)) + "\n");
+//                writer.write("| ambient: " + material.getAmbient() + "\n");
+//                writer.write("| lambertian: " + material.getLambertian() + "\n");
+//                writer.write("| specular: " + material.getSpecular() + "\n");
+//                writer.write("| exponent: " + material.getSpecularExponent() + "\n");
+//                break;
+//            case "reflective":
+//                writer.write("| color: " + vecToStr(material.getColor(null, null)) + "\n");
+//                writer.write("| ambient: " + material.getAmbient() + "\n");
+//                writer.write("| lambertian: " + material.getLambertian() + "\n");
+//                writer.write("| specular: " + material.getSpecular() + "\n");
+//                writer.write("| exponent: " + material.getSpecularExponent() + "\n");
+//                writer.write("| metalness: " + material.getMetalness() + "\n");
+//                writer.write("| ior: " + material.getIndexOfRefraction() + "\n");
+//                writer.write("| k: " + material.getK() + "\n");
+//                break;
+//            case "texture":
+//                writeTexture(((TexturedMaterial) material).getTexture());
+//                writer.write("| ambient: " + material.getAmbient() + "\n");
+//                writer.write("| lambertian: " + material.getLambertian() + "\n");
+//                writer.write("| specular: " + material.getSpecular() + "\n");
+//                writer.write("| exponent: " + material.getSpecularExponent() + "\n");
+//                writer.write("| metalness: " + material.getMetalness() + "\n");
+//                writer.write("| ior: " + material.getIndexOfRefraction() + "\n");
+//                writer.write("| k: " + material.getK() + "\n");
+//                break;
+//        }
         writer.write("/\n");
     }
 
     private void writeTexture(Texture texture) throws IOException {
-        if(texture.getClass() == Checker.class) {
-            writer.write("| pattern: checker\n");
-            writer.write("    | width: " + ((Checker) texture).getWidth() + "\n");
-            writer.write("    | height: " + ((Checker) texture).getHeight() + "\n");
-            writer.write("    | colorA: " + vecToStr(((Checker) texture).getColorA()) + "\n");
-            writer.write("    | colorB: " + vecToStr(((Checker) texture).getColorB()) + "\n");
-            writer.write("    /\n");
-            return;
-        }
-        if(texture.getClass() == BoxPattern.class) {
-            writer.write("| pattern: box\n");
-            writer.write("    | main: " + ((BoxPattern) texture).getMain() + "\n");
-            writer.write("    | ul: " + ((BoxPattern) texture).getUl() + "\n");
-            writer.write("    | ur: " + ((BoxPattern) texture).getUr() + "\n");
-            writer.write("    | bl: " + ((BoxPattern) texture).getBl() + "\n");
-            writer.write("    | br: " + ((BoxPattern) texture).getBr() + "\n");
-            writer.write("    /\n");
-            return;
-        }
+//        if(texture.getClass() == Checker.class) {
+//            writer.write("| pattern: checker\n");
+//            writer.write("    | width: " + ((Checker) texture).getWidth() + "\n");
+//            writer.write("    | height: " + ((Checker) texture).getHeight() + "\n");
+//            writer.write("    | colorA: " + vecToStr(((Checker) texture).getColorA()) + "\n");
+//            writer.write("    | colorB: " + vecToStr(((Checker) texture).getColorB()) + "\n");
+//            writer.write("    /\n");
+//            return;
+//        }
+//        if(texture.getClass() == BoxPattern.class) {
+//            writer.write("| pattern: box\n");
+//            writer.write("    | main: " + ((BoxPattern) texture).getMain() + "\n");
+//            writer.write("    | ul: " + ((BoxPattern) texture).getUl() + "\n");
+//            writer.write("    | ur: " + ((BoxPattern) texture).getUr() + "\n");
+//            writer.write("    | bl: " + ((BoxPattern) texture).getBl() + "\n");
+//            writer.write("    | br: " + ((BoxPattern) texture).getBr() + "\n");
+//            writer.write("    /\n");
+//            return;
+//        }
         writer.write("| texture: " + texture.getPath() + "\n");
     }
 

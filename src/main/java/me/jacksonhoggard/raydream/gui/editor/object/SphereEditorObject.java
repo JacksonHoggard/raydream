@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
+import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.gui.editor.model.SphereModel;
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.object.Object;
@@ -40,6 +41,10 @@ public class SphereEditorObject extends EditorObject {
 
     @Override
     public void draw() {
+        if(getMaterial().getTexture() != null) {
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, getMaterial().getTexture().getId());
+        }
         glBindVertexArray(sphereModel.getVertexArrayId());
         glEnable(GL_PRIMITIVE_RESTART);
         glPrimitiveRestartIndex(GL_PRIMITIVE_RESTART_FIXED_INDEX);

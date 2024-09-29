@@ -13,49 +13,50 @@ public class BoxModel extends EditorModel {
     public BoxModel() {
         super();
         vertices = new float[]{
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
-                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,
+                // vertices           // normals          // texture coords
+                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.f, 0.f,
+                0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.f, 0.f,
+                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.f, 1.f,
+                0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f,  0.f, 1.f,
+                -0.5f,  0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.f, 1.f,
+                -0.5f, -0.5f, -0.5f,  0.0f,  0.0f, -1.0f, 1.f, 0.f,
 
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,
+                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.f, 0.f,
+                0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.f, 0.f,
+                0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.f, 1.f,
+                0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f,  1.f, 1.f,
+                -0.5f,  0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.f, 1.f,
+                -0.5f, -0.5f,  0.5f,  0.0f,  0.0f,  1.0f, 0.f, 0.f,
 
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
-                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f,
+                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.f, 1.f,
+                -0.5f,  0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.f, 1.f,
+                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.f, 0.f,
+                -0.5f, -0.5f, -0.5f, -1.0f,  0.0f,  0.0f, 0.f, 0.f,
+                -0.5f, -0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.f, 0.f,
+                -0.5f,  0.5f,  0.5f, -1.0f,  0.0f,  0.0f, 1.f, 1.f,
 
-                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f,
+                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 0.f, 1.f,
+                0.5f,  0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 1.f, 1.f,
+                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 1.f, 0.f,
+                0.5f, -0.5f, -0.5f,  1.0f,  0.0f,  0.0f, 1.f, 0.f,
+                0.5f, -0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 0.f, 0.f,
+                0.5f,  0.5f,  0.5f,  1.0f,  0.0f,  0.0f, 0.f, 1.f,
 
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                -0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f,
-                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f,
+                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f, 0.0f, 0.f, 0.f,
+                0.5f, -0.5f, -0.5f,  0.0f, -1.0f,  0.0f, 1.f, 0.f,
+                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.f, 1.f,
+                0.5f, -0.5f,  0.5f,  0.0f, -1.0f,  0.0f, 1.f, 1.f,
+                -0.5f, -0.5f,  0.5f,  0.0f, -1.0f, 0.0f, 0.f, 1.f,
+                -0.5f, -0.5f, -0.5f,  0.0f, -1.0f, 0.0f, 0.f, 0.f,
 
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f,
-                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f
+                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 0.f, 1.f,
+                0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 1.f, 1.f,
+                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 1.f, 0.f,
+                0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 1.f, 0.f,
+                -0.5f,  0.5f,  0.5f,  0.0f,  1.0f,  0.0f, 0.f, 0.f,
+                -0.5f,  0.5f, -0.5f,  0.0f,  1.0f,  0.0f, 0.f, 1.f
         };
-        vertexCount = vertices.length / 6;
+        vertexCount = vertices.length / 8;
     }
 
     @Override
@@ -71,11 +72,14 @@ public class BoxModel extends EditorModel {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vertexBufferId);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, buffer, GL15.GL_STATIC_DRAW);
         // position attribute
-        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 6 * Float.BYTES, 0);
+        GL20.glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 8 * Float.BYTES, 0);
         GL20.glEnableVertexAttribArray(0);
         // normal attribute
-        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, 6 * Float.BYTES, 3 * Float.BYTES);
+        GL20.glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, 8 * Float.BYTES, 3 * Float.BYTES);
         GL20.glEnableVertexAttribArray(1);
+        // texture attribute
+        GL20.glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, 8 * Float.BYTES, 6 * Float.BYTES);
+        GL20.glEnableVertexAttribArray(2);
         GL30.glBindVertexArray(0);
         created = true;
     }

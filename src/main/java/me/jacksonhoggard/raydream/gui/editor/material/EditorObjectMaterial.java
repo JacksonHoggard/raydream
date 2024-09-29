@@ -2,6 +2,7 @@ package me.jacksonhoggard.raydream.gui.editor.material;
 
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Vector3D;
+import me.jacksonhoggard.raydream.util.Util;
 
 public class EditorObjectMaterial {
 
@@ -14,6 +15,7 @@ public class EditorObjectMaterial {
     private float k;
     private float metalness;
     private Material.Type type;
+    private Texture texture;
 
     public EditorObjectMaterial(float[] color, float ambient, float diffuse, float specular, float specularExponent, float indexOfRefraction, float k, float metalness, Material.Type type) {
         this.color = color;
@@ -38,7 +40,7 @@ public class EditorObjectMaterial {
                 indexOfRefraction,
                 k,
                 type,
-                true
+                Util.loadTexture(texture.getPath())
         );
     }
 
@@ -112,5 +114,13 @@ public class EditorObjectMaterial {
 
     public Material.Type getType() {
         return type;
+    }
+
+    public Texture getTexture() {
+        return texture;
+    }
+
+    public void setTexture(Texture texture) {
+        this.texture = texture;
     }
 }

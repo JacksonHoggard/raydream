@@ -4,6 +4,7 @@ import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.material.*;
 import me.jacksonhoggard.raydream.math.Ray;
+import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.*;
 import me.jacksonhoggard.raydream.object.Object;
@@ -254,9 +255,8 @@ public class Scene {
                 case REFLECT -> {
                     double kr = material.fresnelMetal(ray, normalHit);
                     trace(material.reflectRay(ray, pointHit, normalHit), bounce - 1, reflectionColor);
-                    if(!material.hasColor()) objectHit.getMaterial().getColor(objectHit, pointHit).set(Vector3D.mult(reflectionColor, kr));
                     Vector3D phong = new Vector3D();
-                    phong(phong, ray, objectHit, pointHit, normalHit);
+                    phong(phong, ray, objectHit, pointHit, normalHit, bvhHit.texCoord());
                     color.add(phong.add(Vector3D.mult(reflectionColor, kr)));
                     return;
                 }
@@ -266,20 +266,19 @@ public class Scene {
                     Ray refractionRay = material.refractRay(ray, pointHit, normalHit);
                     trace(reflectionRay, bounce - 1, reflectionColor);
                     trace(refractionRay, bounce - 1, refractionColor);
-                    if(!material.hasColor()) objectHit.getMaterial().getColor(objectHit, pointHit).set(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr)));
                     Vector3D phong = new Vector3D();
-                    phong(phong, ray, objectHit, pointHit, normalHit);
+                    phong(phong, ray, objectHit, pointHit, normalHit, bvhHit.texCoord());
                     color.add(phong.add(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr))));
                     return;
                 }
             }
             Vector3D phong = new Vector3D();
-            phong(phong, ray, objectHit, pointHit, normalHit);
+            phong(phong, ray, objectHit, pointHit, normalHit, bvhHit.texCoord());
             color.add(phong);
         }
 
-        private void phong(Vector3D phong, Ray ray, Object objectHit, Vector3D pointHit, Vector3D normalHit) {
-            phong.set(Vector3D.mult(objectHit.getMaterial().getColor(objectHit, pointHit), objectHit.getMaterial().getAmbient()).mult(ambient.getColor()));
+        private void phong(Vector3D phong, Ray ray, Object objectHit, Vector3D pointHit, Vector3D normalHit, Vector2D texCoord) {
+            phong.set(Vector3D.mult(objectHit.getMaterial().getColor(texCoord), objectHit.getMaterial().getAmbient()).mult(ambient.getColor()));
             for(Light light : lights) {
                 int maxShadowRays = light.getClass().equals(PointLight.class) ? 1 : numShadowRays;
                 Vector3D tempColor = new Vector3D();
@@ -298,7 +297,7 @@ public class Scene {
                                 continue;
                             }
                         }
-                        shadowPhong(tempColor, ray, objectHit, shadowRay, pointHit, normalHit, light, lightDist);
+                        shadowPhong(tempColor, ray, objectHit, shadowRay, pointHit, normalHit, light, lightDist, texCoord);
                     }
                 }
                 tempColor.div(rows * cols);
@@ -306,12 +305,12 @@ public class Scene {
             }
         }
 
-        private static void shadowPhong(Vector3D shadowPhong, Ray ray, Object objectHit, Ray shadowRay, Vector3D pointHit, Vector3D normalHit, Light light, double lightDist) {
+        private static void shadowPhong(Vector3D shadowPhong, Ray ray, Object objectHit, Ray shadowRay, Vector3D pointHit, Vector3D normalHit, Light light, double lightDist, Vector2D texCoord) {
             Ray reflectedRay = objectHit.getMaterial().reflectRay(shadowRay, pointHit, normalHit);
             double kl = Math.max(0D, normalHit.dot(shadowRay.getDirection().normalized())) * objectHit.getMaterial().getLambertian();
             double ks = Math.pow(Math.max(0, ray.getDirection().normalized().dot(reflectedRay.getDirection().normalized())), objectHit.getMaterial().getSpecularExponent()) * objectHit.getMaterial().getSpecular();
-            Vector3D s = Vector3D.mult(objectHit.getMaterial().getColor(objectHit, pointHit), objectHit.getMaterial().getMetalness()).add(new Vector3D(1, 1, 1).mult(1 - objectHit.getMaterial().getMetalness()));
-            Vector3D diffuse = new Vector3D(objectHit.getMaterial().getColor(objectHit, pointHit)).mult(light.getColor()).mult(kl);
+            Vector3D s = Vector3D.mult(objectHit.getMaterial().getColor(texCoord), objectHit.getMaterial().getMetalness()).add(new Vector3D(1, 1, 1).mult(1 - objectHit.getMaterial().getMetalness()));
+            Vector3D diffuse = new Vector3D(objectHit.getMaterial().getColor(texCoord)).mult(light.getColor()).mult(kl);
             Vector3D specular = new Vector3D(light.getColor()).mult(s).mult(ks);
             double brightness = light.getBrightness() / lightDist;
             (diffuse.add(specular)).mult(brightness);

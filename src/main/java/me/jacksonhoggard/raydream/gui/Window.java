@@ -26,6 +26,7 @@ import java.util.*;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Window {
@@ -188,6 +189,8 @@ public class Window {
         objectShader.setMatrix4("model", PreviewWindow.getCamera().getModelMatrix().getMatrixArray());
         objectShader.setMatrix4("view", EditorWindow.getCamera().getViewMatrix().getMatrixArray());
         objectShader.setMatrix4("projection", EditorWindow.getCamera().getProjectionMatrix().getMatrixArray());
+        objectShader.setInt("tex", 0);
+        objectShader.setBool("hasTexture", false);
         PreviewWindow.getCamera().draw();
         objectShader.unuse();
     }
@@ -258,6 +261,8 @@ public class Window {
         objectShader.setMatrix4("model", object.getModelMatrix());
         objectShader.setMatrix4("view", camera.getViewMatrix().getMatrixArray());
         objectShader.setMatrix4("projection", camera.getProjectionMatrix().getMatrixArray());
+        objectShader.setInt("tex", 0);
+        objectShader.setBool("hasTexture", object.getMaterial().getTexture() != null);
         object.draw();
     }
 

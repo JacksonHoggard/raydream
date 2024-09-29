@@ -6,23 +6,23 @@ import me.jacksonhoggard.raydream.math.Vector3D;
 
 public class Triangle {
 
-    private final Vector3D v0, v1, v2;
-    private final Vector3D edge0, edge1, edge2;
-    private final Vector3D[] normal;
-    private final Vector3D normalNotNormal;
-    private final double d;
-    private final double area2;
-    private final Vector3D centroid;
-    private final Vector3D min;
-    private final Vector3D max;
+    private Vector3D v0, v1, v2;
+    private Vector2D t0, t1, t2;
+    private Vector3D[] normal;
+    private Vector3D normalNotNormal;
+    private double d;
+    private double area2;
+    private Vector3D centroid;
+    private Vector3D min;
+    private Vector3D max;
 
-    public Triangle(Vector3D v0, Vector3D v1, Vector3D v2) {
+    public Triangle(Vector3D v0, Vector3D v1, Vector3D v2, Vector2D t0, Vector2D t1, Vector2D t2) {
         this.v0 = v0;
         this.v1 = v1;
         this.v2 = v2;
-        this.edge0 = Vector3D.sub(v1, v0);
-        this.edge1 = Vector3D.sub(v2, v1);
-        this.edge2 = Vector3D.sub(v0, v2);
+        this.t0 = t0;
+        this.t1 = t1;
+        this.t2 = t2;
 //        Vector3D v = Vector3D.sub(v2, v0);
         this.normalNotNormal = Vector3D.sub(v1, v0).cross(Vector3D.sub(v2, v0));
         this.d = -normalNotNormal.dot(v0);
@@ -39,8 +39,8 @@ public class Triangle {
         this.centroid = Vector3D.add(this.min, this.max).div(2.0D);
     }
 
-    public Triangle(Vector3D v0, Vector3D v1, Vector3D v2, Vector3D n0, Vector3D n1, Vector3D n2) {
-        this(v0, v1, v2);
+    public Triangle(Vector3D v0, Vector3D v1, Vector3D v2, Vector3D n0, Vector3D n1, Vector3D n2, Vector2D t0, Vector2D t1, Vector2D t2) {
+        this(v0, v1, v2, t0, t1, t2);
         normal[0] = n0;
         normal[1] = n1;
         normal[2] = n2;
@@ -59,7 +59,7 @@ public class Triangle {
         return (x1 - x2) * (y2 - y3) - (x2 - x3) * (y1 - y2);
     }
 
-    private Vector3D calcBarycentric(Vector3D a, Vector3D b, Vector3D c, Vector3D p) {
+    public void calcBarycentric(Vector3D p, Vector3D coords) {
         // Unnormalized triangle normal
         // Nominators and one-over-denominator for u and v ratios
         double nu, nv, ood;
@@ -71,24 +71,24 @@ public class Triangle {
         // Compute areas in plane of largest projection
         if(x >= y && x >= z) {
             // x is largest, project to the yz plane
-            nu = calcTriArea(p.y, p.z, b.y, b.z, c.y, c.z);
-            nv = calcTriArea(p.y, p.z, c.y, c.z, a.y, a.z);
+            nu = calcTriArea(p.y, p.z, v1.y, v1.z, v2.y, v2.z);
+            nv = calcTriArea(p.y, p.z, v2.y, v2.z, v0.y, v0.z);
             ood = 1.d / normalNotNormal.x;
         } else if(y >= x && y >= z) {
             // y is largest, project to the xz plane
-            nu = calcTriArea(p.x, p.z, b.x, b.z, c.x, c.z);
-            nv = calcTriArea(p.x, p.z, c.x, c.z, a.x, a.z);
+            nu = calcTriArea(p.x, p.z, v1.x, v1.z, v2.x, v2.z);
+            nv = calcTriArea(p.x, p.z, v2.x, v2.z, v0.x, v0.z);
             ood = 1.d / -normalNotNormal.y;
         } else {
             // z is largest, project to the xy plane
-            nu = calcTriArea(p.x, p.y, b.x, b.y, c.x, c.y);
-            nv = calcTriArea(p.x, p.y, c.x, c.y, a.x, a.y);
+            nu = calcTriArea(p.x, p.y, v1.x, v1.y, v2.x, v2.y);
+            nv = calcTriArea(p.x, p.y, v2.x, v2.y, v0.x, v0.y);
             ood = 1.d / normalNotNormal.z;
         }
         double u = nu * ood;
         double v = nv * ood;
         double w = 1.d - u - v;
-        return new Vector3D(u, v, w);
+        coords.set(u, v, w);
     }
 
     public double intersect(Ray ray) {
@@ -98,7 +98,8 @@ public class Triangle {
         if(t < 0) // point is behind ray
             return -1.0D;
 
-        Vector3D v = calcBarycentric(v0, v1, v2, ray.at(t));
+        Vector3D v = new Vector3D();
+        calcBarycentric(ray.at(t), v);
         if(v.y >= 0.0d && v.z >= 0.0d && (v.y + v.z) <= 1.0d)
             return t;
 
@@ -109,7 +110,8 @@ public class Triangle {
         if(normal[0].equals(normal[1]) && normal[1].equals(normal[2])) {
             return normal[0];
         }
-        Vector3D temp = calcBarycentric(v0, v1, v2, point);
+        Vector3D temp = new Vector3D();
+        calcBarycentric(point, temp);
         double u = temp.x;
         double v = temp.y;
         double w = temp.z;
@@ -128,13 +130,26 @@ public class Triangle {
         return max;
     }
 
-    public Vector2D mapTexture(Vector3D point) {
-        Vector3D vp1 = Vector3D.sub(point, v1);
-        Vector3D perp = edge1.cross(vp1);
-        double u = normalNotNormal.dot(perp) / area2;
-        Vector3D vp2 = Vector3D.sub(point, v2);
-        perp = edge2.cross(vp2);
-        double v = normalNotNormal.dot(perp) / area2;
-        return new Vector2D(u, v);
+    public Vector2D mapTexture(Vector3D barycentric) {
+        double u = barycentric.x;
+        double v = barycentric.y;
+        double w = barycentric.z;
+        return Vector2D.add(Vector2D.mult(u, t0), Vector2D.mult(v, t1)).add(Vector2D.mult(w, t2));
+    }
+
+    public void set(Triangle triangle) {
+        this.v0 = triangle.v0;
+        this.v1 = triangle.v1;
+        this.v2 = triangle.v2;
+        this.t0 = triangle.t0;
+        this.t1 = triangle.t1;
+        this.t2 = triangle.t2;
+        this.normal = triangle.normal;
+        this.normalNotNormal = triangle.normalNotNormal;
+        this.d = triangle.d;
+        this.area2 = triangle.area2;
+        this.centroid = triangle.centroid;
+        this.min = triangle.min;
+        this.max = triangle.max;
     }
 }

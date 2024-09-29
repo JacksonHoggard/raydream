@@ -1,9 +1,6 @@
 package me.jacksonhoggard.raydream.light;
 
-import me.jacksonhoggard.raydream.math.Matrix4D;
-import me.jacksonhoggard.raydream.math.Ray;
-import me.jacksonhoggard.raydream.math.Vector3D;
-import me.jacksonhoggard.raydream.math.Vector4D;
+import me.jacksonhoggard.raydream.math.*;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Transform;
 import me.jacksonhoggard.raydream.object.Triangle;
@@ -24,12 +21,18 @@ public class AreaLight extends Light {
         this.t0 = new Triangle(
                 new Vector3D(-0.5, 0.5, 0),
                 new Vector3D(-0.5, -0.5, 0),
-                new Vector3D(0.5, -0.5, 0)
+                new Vector3D(0.5, -0.5, 0),
+                null,
+                null,
+                null
         );
         this.t1 = new Triangle(
                 new Vector3D(0.5, -0.5, 0),
                 new Vector3D(0.5, 0.5, 0),
-                new Vector3D(-0.5, 0.5, 0)
+                new Vector3D(-0.5, 0.5, 0),
+                null,
+                null,
+                null
         );
     }
 

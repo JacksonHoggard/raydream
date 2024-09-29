@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.material;
 
 import me.jacksonhoggard.raydream.math.Ray;
+import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Object;
 
@@ -21,9 +22,9 @@ public class Material {
     private double specularExponent;
     private final double metalness;
     private final Type type;
-    private final boolean hasColor;
+    private final Texture texture;
 
-    public Material(Vector3D color, double ambient, double lambertian, double specular, double specularExponent, double metalness, double indexOfRefraction, double k, Type type, boolean hasColor) {
+    public Material(Vector3D color, double ambient, double lambertian, double specular, double specularExponent, double metalness, double indexOfRefraction, double k, Type type, Texture texture) {
         this.color = color;
         this.ambient = ambient;
         this.lambertian = lambertian;
@@ -33,7 +34,7 @@ public class Material {
         this.k = k;
         this.metalness = metalness;
         this.type = type;
-        this.hasColor = hasColor;
+        this.texture = texture;
     }
 
     public static Vector3D reflect(Ray rayIn, Vector3D normal) {
@@ -110,7 +111,9 @@ public class Material {
         return type;
     }
 
-    public Vector3D getColor(Object object, Vector3D point) {
+    public Vector3D getColor(Vector2D texCoord) {
+        if(texture != null)
+            return texture.getColorAt(texCoord.x, texCoord.y);
         return color;
     }
 
@@ -142,8 +145,7 @@ public class Material {
         return k;
     }
 
-    public boolean hasColor() {
-        return hasColor;
+    public Texture getTexture() {
+        return texture;
     }
-
 }

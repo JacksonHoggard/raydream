@@ -16,6 +16,7 @@ import me.jacksonhoggard.raydream.gui.editor.light.EditorPointLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorLightMaterial;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
+import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
 import me.jacksonhoggard.raydream.gui.editor.object.OBJEditorObject;
 import me.jacksonhoggard.raydream.material.Material;
@@ -182,6 +183,18 @@ public class PropWindow {
                 isSmooth.set(((OBJEditorObject) selectedObject).isSmooth());
                 ImGui.checkbox("Smooth Shading", isSmooth);
                 ((OBJEditorObject) selectedObject).setSmooth(isSmooth.get());
+            }
+            if(ImGui.button("Choose texture")) {
+                String path = DialogWindow.openFileChooser("Image files", "png", "jpg");
+                if(path != null) {
+                    material.setTexture(new Texture(path));
+                }
+            }
+            if(material.getTexture() != null) {
+                ImGui.text(material.getTexture().getPath());
+                if(ImGui.button("Remove texture")) {
+                    material.setTexture(null);
+                }
             }
         }
         if(selectedLight != null) {
