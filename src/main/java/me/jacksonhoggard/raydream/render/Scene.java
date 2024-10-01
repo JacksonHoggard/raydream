@@ -224,23 +224,27 @@ public class Scene {
             Vector3D normalHit = bvhHit.normal();
             double minLightDist = Double.MAX_VALUE;
             Vector3D minLightColor = null;
+            double minLightBrightness = Double.MAX_VALUE;
             for(Light light : lights) {
                 double lightDist = light.intersect(ray);
                 if(lightDist > 0.0D && lightDist < minLightDist) {
                     minLightDist = lightDist;
                     minLightColor = light.getColor();
+                    minLightBrightness = light.getBrightness();
                 }
             }
             // Check if light is hit before an object
             if(objectHit != null && minLightDist < bvhHit.t()) {
-                // If no light is hit, return sky, else return the color of the light
-                color.add(minLightColor);
+                // If light is hit return the color of the light
+                double brightness = minLightBrightness / minLightDist;
+                color.add(Vector3D.mult(minLightColor, brightness));
                 return;
             }
             // If a light is hit, but no object is hit
             if(objectHit == null && minLightColor != null) {
-                color.add(minLightColor);
-                return ;
+                double brightness = minLightBrightness / minLightDist;
+                color.add(Vector3D.mult(minLightColor, brightness));
+                return;
             }
             // If no object or light is hit
             if(objectHit == null) {
