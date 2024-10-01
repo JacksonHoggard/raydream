@@ -117,6 +117,59 @@ public class BVH {
         return Double.MAX_VALUE;
     }
 
+    public boolean intersectShadowRay(Ray ray, Object[] objects, double lightDistance) {
+        List<Node> stack = new ArrayList<>();
+        Node currentNode = root;
+        double t = lightDistance;
+        while(true) {
+            if(currentNode.isLeaf()) {
+                for(int i = currentNode.firstObject; i < currentNode.firstObject + currentNode.objectCount; i++) {
+                    Vector4D rOriginOS = new Vector4D(ray.origin().x, ray.origin().y, ray.origin().z, 1);
+                    Vector4D rDirOS = new Vector4D(ray.direction().x, ray.direction().y, ray.direction().z, 0);
+                    rOriginOS = rOriginOS.mult(objects[i].getInverseTransformMatrix());
+                    rDirOS = rDirOS.mult(objects[i].getInverseTransformMatrix());
+                    Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
+                    if(objects[i] instanceof Model) {
+                        if(((Model) objects[i]).intersectShadowRay(rayOS, t)) {
+                            return true;
+                        }
+                        continue;
+                    }
+                    Hit hit = objects[i].intersect(rayOS);
+                    if (hit.object() != null && hit.t() > 0 && hit.t() < t) {
+                        return true; // Early out
+                    }
+                }
+                if(stack.isEmpty())
+                    break;
+                else currentNode = stack.removeLast();
+                continue;
+            }
+            Node left = currentNode.left;
+            Node right = currentNode.right;
+            double distL = intersectAABB(ray, left.min, left.max, t);
+            double distR = intersectAABB(ray, right.min, right.max, t);
+            if(distL > distR) {
+                double temp = distL;
+                distL = distR;
+                distR = temp;
+                Node tempNode = new Node();
+                tempNode.set(left);
+                left = right;
+                right = tempNode;
+            }
+            if(distL == Double.MAX_VALUE) {
+                if (stack.isEmpty())
+                    break;
+                currentNode = stack.removeLast();
+            } else {
+                currentNode = left;
+                if(distR != Double.MAX_VALUE) stack.add(right);
+            }
+        }
+        return false;
+    }
+
     private void updateNodeBounds(Node node, Object[] objects) {
         node.min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
         node.max = new Vector3D(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);

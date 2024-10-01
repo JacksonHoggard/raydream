@@ -60,27 +60,49 @@ public class BVHTriangle {
                 if(distR != Double.MAX_VALUE) stack.add(right);
             }
         }
-//        while(true) {
-//            if(intersectAABB(ray, currentNode.min, currentNode.max)) {
-//                if(!currentNode.isLeaf()) {
-//                    stack.add(currentNode.right);
-//                    currentNode = currentNode.left;
-//                    continue;
-//                } else {
-//                    for(int i = currentNode.firstObject; i < currentNode.firstObject + currentNode.objectCount; i++) {
-//                        double temp = triangles[i].intersect(ray);
-//                        if(temp > 0 && temp < t) {
-//                            t = temp;
-//                            triangleHit.set(triangles[i]);
-//                        }
-//                    }
-//                }
-//            }
-//            if(stack.isEmpty())
-//                break;
-//            currentNode = stack.removeLast();
-//        }
         return t;
+    }
+
+    public boolean intersectShadowRay(Ray ray, Triangle[] triangles, double lightDistance) {
+        List<Node> stack = new ArrayList<>();
+        Node currentNode = root;
+        double t = lightDistance;
+        while(true) {
+            if(currentNode.isLeaf()) {
+                for(int i = currentNode.firstObject; i < currentNode.firstObject + currentNode.objectCount; i++) {
+                    double temp = triangles[i].intersect(ray);
+                    if(temp > 0 && temp < t) {
+                        return true; // Early out
+                    }
+                }
+                if(stack.isEmpty())
+                    break;
+                else currentNode = stack.removeLast();
+                continue;
+            }
+            Node left = currentNode.left;
+            Node right = currentNode.right;
+            double distL = intersectAABB(ray, left.min, left.max, t);
+            double distR = intersectAABB(ray, right.min, right.max, t);
+            if(distL > distR) {
+                double temp = distL;
+                distL = distR;
+                distR = temp;
+                Node tempNode = new Node();
+                tempNode.set(left);
+                left = right;
+                right = tempNode;
+            }
+            if(distL == Double.MAX_VALUE) {
+                if (stack.isEmpty())
+                    break;
+                currentNode = stack.removeLast();
+            } else {
+                currentNode = left;
+                if(distR != Double.MAX_VALUE) stack.add(right);
+            }
+        }
+        return false;
     }
 
     private double intersectAABB(Ray ray, Vector3D min, Vector3D max, double t) {

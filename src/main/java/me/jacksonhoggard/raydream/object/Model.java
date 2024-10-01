@@ -28,6 +28,10 @@ public class Model extends Object {
         return new Hit(null, null, null, null, -1.0D);
     }
 
+    public boolean intersectShadowRay(Ray ray, double lightDistance) {
+        return bvh.intersectShadowRay(ray, mesh.triangles(), lightDistance);
+    }
+
     private Vector2D mapTexture(Triangle triangle, Vector3D barycentric) {
         return triangle.mapTexture(barycentric);
     }

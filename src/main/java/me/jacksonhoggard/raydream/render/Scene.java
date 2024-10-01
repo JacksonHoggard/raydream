@@ -290,13 +290,9 @@ public class Scene {
                         double lightDist = light.intersect(shadowRay);
                         if(lightDist < 0)
                             continue;
-                        Hit bvhHit = bvh.intersect(shadowRay, objects);
-                        if (bvhHit.object() != null) {
-                            if (bvhHit.t() != Double.MAX_VALUE && bvhHit.t() < lightDist) {
-                                continue;
-                            }
+                        if(!bvh.intersectShadowRay(shadowRay, objects, lightDist)) {
+                            shadowPhong(tempColor, ray, objectHit, shadowRay, pointHit, normalHit, light, lightDist, texCoord);
                         }
-                        shadowPhong(tempColor, ray, objectHit, shadowRay, pointHit, normalHit, light, lightDist, texCoord);
                     }
                 }
                 tempColor.div(rows * cols);
