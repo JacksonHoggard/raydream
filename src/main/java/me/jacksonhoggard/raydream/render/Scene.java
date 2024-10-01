@@ -187,19 +187,18 @@ public class Scene {
         }
 
         private void takeSamples() {
-            camera.shootRay(ray, i, j, 0, 0);
+            camera.shootRay(ray, i, j, 0.5D, -0.5D);
             trace(ray, bounces, pixelColor);
-            Vector3D temp = new Vector3D(pixelColor);
-            camera.shootRay(ray, i, j, 1, 0);
-            trace(ray, bounces, pixelColor);
-            camera.shootRay(ray, i, j, 0, -1);
-            trace(ray, bounces, pixelColor);
-            camera.shootRay(ray, i, j, 1, -1);
-            trace(ray, bounces, pixelColor);
-            pixelColor.div(4);
-            samples++;
-            if(pixelColor.equals(temp))
+            if(sampleDepth == 1)
                 return;
+            Vector3D temp = new Vector3D(pixelColor);
+            camera.shootRay(ray, i, j, Util.randomRange(0, 1), Util.randomRange(-1, 0));
+            trace(ray, bounces, pixelColor);
+            samples = 2;
+            if(Vector3D.div(pixelColor, samples).equals(temp)) {
+                pixelColor.div(samples);
+                return;
+            }
             for(int k = sampleDepth - samples; k > 0; k--) {
                 camera.shootRay(ray, i, j, Util.randomRange(0, 1), Util.randomRange(-1, 0));
                 trace(ray, bounces, pixelColor);
@@ -293,7 +292,7 @@ public class Scene {
                             continue;
                         Hit bvhHit = bvh.intersect(shadowRay, objects);
                         if (bvhHit.object() != null) {
-                            if (bvhHit.t() > 0 && bvhHit.t() < lightDist) {
+                            if (bvhHit.t() != Double.MAX_VALUE && bvhHit.t() < lightDist) {
                                 continue;
                             }
                         }
@@ -307,8 +306,8 @@ public class Scene {
 
         private static void shadowPhong(Vector3D shadowPhong, Ray ray, Object objectHit, Ray shadowRay, Vector3D pointHit, Vector3D normalHit, Light light, double lightDist, Vector2D texCoord) {
             Ray reflectedRay = objectHit.getMaterial().reflectRay(shadowRay, pointHit, normalHit);
-            double kl = Math.max(0D, normalHit.dot(shadowRay.getDirection().normalized())) * objectHit.getMaterial().getLambertian();
-            double ks = Math.pow(Math.max(0, ray.getDirection().normalized().dot(reflectedRay.getDirection().normalized())), objectHit.getMaterial().getSpecularExponent()) * objectHit.getMaterial().getSpecular();
+            double kl = Math.max(0D, normalHit.dot(shadowRay.direction().normalized())) * objectHit.getMaterial().getLambertian();
+            double ks = Math.pow(Math.max(0, ray.direction().normalized().dot(reflectedRay.direction().normalized())), objectHit.getMaterial().getSpecularExponent()) * objectHit.getMaterial().getSpecular();
             Vector3D s = Vector3D.mult(objectHit.getMaterial().getColor(texCoord), objectHit.getMaterial().getMetalness()).add(new Vector3D(1, 1, 1).mult(1 - objectHit.getMaterial().getMetalness()));
             Vector3D diffuse = new Vector3D(objectHit.getMaterial().getColor(texCoord)).mult(light.getColor()).mult(kl);
             Vector3D specular = new Vector3D(light.getColor()).mult(s).mult(ks);

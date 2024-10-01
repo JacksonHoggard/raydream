@@ -40,7 +40,7 @@ public class EditorObjectMaterial {
                 indexOfRefraction,
                 k,
                 type,
-                Util.loadTexture(texture.getPath())
+                texture != null ? Util.loadTexture(texture.getPath()) : null
         );
     }
 

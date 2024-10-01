@@ -22,8 +22,8 @@ public class Box extends Object {
 
     @Override
     public Hit intersect(Ray ray) {
-        double tMin = (min.x - ray.getOrigin().x) / ray.getDirection().x;
-        double tMax = (max.x - ray.getOrigin().x) / ray.getDirection().x;
+        double tMin = (min.x - ray.origin().x) / ray.direction().x;
+        double tMax = (max.x - ray.origin().x) / ray.direction().x;
 
         if(tMin > tMax) {
             double temp = tMin;
@@ -31,8 +31,8 @@ public class Box extends Object {
             tMax = temp;
         }
 
-        double tYMin = (min.y - ray.getOrigin().y) / ray.getDirection().y;
-        double tYMax = (max.y - ray.getOrigin().y) / ray.getDirection().y;
+        double tYMin = (min.y - ray.origin().y) / ray.direction().y;
+        double tYMax = (max.y - ray.origin().y) / ray.direction().y;
 
         if(tYMin > tYMax) {
             double temp = tYMin;
@@ -49,8 +49,8 @@ public class Box extends Object {
         if(tYMax < tMax)
             tMax = tYMax;
 
-        double tZMin = (min.z - ray.getOrigin().z) / ray.getDirection().z;
-        double tZMax = (max.z - ray.getOrigin().z) / ray.getDirection().z;
+        double tZMin = (min.z - ray.origin().z) / ray.direction().z;
+        double tZMax = (max.z - ray.origin().z) / ray.direction().z;
 
         if(tZMin > tZMax) {
             double temp = tZMin;

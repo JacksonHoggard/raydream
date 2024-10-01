@@ -69,7 +69,7 @@ public class OBJModel extends EditorModel {
                                     Integer.parseInt(tokens[i + 2].split("/")[0]) - 1,
                                     Integer.parseInt(tokens[i + 3].split("/")[0]) - 1
                             };
-                            if(tokens[1].split("/").length > 1) {
+                            if(tokens[1].split("/").length > 1 && !tokens[1].split("/")[1].isEmpty()) {
                                 Integer[] texIndices = new Integer[]{
                                         Integer.parseInt(tokens[1].split("/")[1]) - 1,
                                         Integer.parseInt(tokens[i + 2].split("/")[1]) - 1,
@@ -98,7 +98,7 @@ public class OBJModel extends EditorModel {
                                 vertices.get(indices[1]),
                                 vertices.get(indices[2])
                         });
-                        if(tokens[1].split("/").length > 1) {
+                        if(tokens[1].split("/").length > 1 && !tokens[1].split("/")[1].isEmpty()) {
                             Integer[] texIndices = new Integer[]{
                                     Integer.parseInt(tokens[1].split("/")[1]) - 1,
                                     Integer.parseInt(tokens[2].split("/")[1]) - 1,

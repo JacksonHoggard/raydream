@@ -25,31 +25,67 @@ public class BVHTriangle {
         Node currentNode = root;
         double t = Double.MAX_VALUE;
         while(true) {
-            if(intersectAABB(ray, currentNode.min, currentNode.max)) {
-                if(!currentNode.isLeaf()) {
-                    stack.add(currentNode.right);
-                    currentNode = currentNode.left;
-                    continue;
-                } else {
-                    for(int i = currentNode.firstObject; i < currentNode.firstObject + currentNode.objectCount; i++) {
-                        double temp = triangles[i].intersect(ray);
-                        if(temp > 0 && temp < t) {
-                            t = temp;
-                            triangleHit.set(triangles[i]);
-                        }
+            if(currentNode.isLeaf()) {
+                for(int i = currentNode.firstObject; i < currentNode.firstObject + currentNode.objectCount; i++) {
+                    double temp = triangles[i].intersect(ray);
+                    if(temp > 0 && temp < t) {
+                        t = temp;
+                        triangleHit.set(triangles[i]);
                     }
                 }
+                if(stack.isEmpty())
+                    break;
+                else currentNode = stack.removeLast();
+                continue;
             }
-            if(stack.isEmpty())
-                break;
-            currentNode = stack.removeLast();
+            Node left = currentNode.left;
+            Node right = currentNode.right;
+            double distL = intersectAABB(ray, left.min, left.max, t);
+            double distR = intersectAABB(ray, right.min, right.max, t);
+            if(distL > distR) {
+                double temp = distL;
+                distL = distR;
+                distR = temp;
+                Node tempNode = new Node();
+                tempNode.set(left);
+                left = right;
+                right = tempNode;
+            }
+            if(distL == Double.MAX_VALUE) {
+                if (stack.isEmpty())
+                    break;
+                currentNode = stack.removeLast();
+            } else {
+                currentNode = left;
+                if(distR != Double.MAX_VALUE) stack.add(right);
+            }
         }
+//        while(true) {
+//            if(intersectAABB(ray, currentNode.min, currentNode.max)) {
+//                if(!currentNode.isLeaf()) {
+//                    stack.add(currentNode.right);
+//                    currentNode = currentNode.left;
+//                    continue;
+//                } else {
+//                    for(int i = currentNode.firstObject; i < currentNode.firstObject + currentNode.objectCount; i++) {
+//                        double temp = triangles[i].intersect(ray);
+//                        if(temp > 0 && temp < t) {
+//                            t = temp;
+//                            triangleHit.set(triangles[i]);
+//                        }
+//                    }
+//                }
+//            }
+//            if(stack.isEmpty())
+//                break;
+//            currentNode = stack.removeLast();
+//        }
         return t;
     }
 
-    private boolean intersectAABB(Ray ray, Vector3D min, Vector3D max) {
-        double tMin = (min.x - ray.getOrigin().x) / ray.getDirection().x;
-        double tMax = (max.x - ray.getOrigin().x) / ray.getDirection().x;
+    private double intersectAABB(Ray ray, Vector3D min, Vector3D max, double t) {
+        double tMin = (min.x - ray.origin().x) / ray.direction().x;
+        double tMax = (max.x - ray.origin().x) / ray.direction().x;
 
         if(tMin > tMax) {
             double temp = tMin;
@@ -57,8 +93,8 @@ public class BVHTriangle {
             tMax = temp;
         }
 
-        double tYMin = (min.y - ray.getOrigin().y) / ray.getDirection().y;
-        double tYMax = (max.y - ray.getOrigin().y) / ray.getDirection().y;
+        double tYMin = (min.y - ray.origin().y) / ray.direction().y;
+        double tYMax = (max.y - ray.origin().y) / ray.direction().y;
 
         if(tYMin > tYMax) {
             double temp = tYMin;
@@ -67,7 +103,7 @@ public class BVHTriangle {
         }
 
         if((tMin > tYMax) || (tYMin > tMax))
-            return false;
+            return Double.MAX_VALUE;
 
         if(tYMin > tMin)
             tMin = tYMin;
@@ -75,8 +111,8 @@ public class BVHTriangle {
         if(tYMax < tMax)
             tMax = tYMax;
 
-        double tZMin = (min.z - ray.getOrigin().z) / ray.getDirection().z;
-        double tZMax = (max.z - ray.getOrigin().z) / ray.getDirection().z;
+        double tZMin = (min.z - ray.origin().z) / ray.direction().z;
+        double tZMax = (max.z - ray.origin().z) / ray.direction().z;
 
         if(tZMin > tZMax) {
             double temp = tZMin;
@@ -84,7 +120,16 @@ public class BVHTriangle {
             tZMax = temp;
         }
 
-        return (!(tMin > tZMax)) && (!(tZMin > tMax));
+        if((tMin > tZMax) || (tZMin > tMax))
+            return Double.MAX_VALUE;
+
+        if(tZMin > tMin)
+            tMin = tZMin;
+
+        if(tMin < t)
+            return tMin;
+
+        return Double.MAX_VALUE;
     }
 
     private void updateNodeBounds(Node node, Triangle[] triangles) {
@@ -154,6 +199,15 @@ public class BVHTriangle {
         private int objectCount;
         private Vector3D min;
         private Vector3D max;
+
+        public void set(Node node) {
+            this.left = node.left;
+            this.right = node.right;
+            this.firstObject = node.firstObject;
+            this.objectCount = node.objectCount;
+            this.min = node.min;
+            this.max = node.max;
+        }
 
         private boolean isLeaf() {
             return left == null && right == null;

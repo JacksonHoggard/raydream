@@ -3,7 +3,6 @@ package me.jacksonhoggard.raydream.material;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
-import me.jacksonhoggard.raydream.object.Object;
 
 public class Material {
 
@@ -38,12 +37,12 @@ public class Material {
     }
 
     public static Vector3D reflect(Ray rayIn, Vector3D normal) {
-        Vector3D v = rayIn.getDirection().normalized();
+        Vector3D v = rayIn.direction().normalized();
         return v.sub((Vector3D.mult(normal, 2*v.dot(normal))));
     }
 
     public static Vector3D refract(Ray rayIn, Vector3D normal, double ratio) {
-        Vector3D v = rayIn.getDirection().normalized();
+        Vector3D v = rayIn.direction().normalized();
         double cosi = Math.clamp(v.dot(normal), -1, 1);
         double etai = 1;
         double etat = ratio;
@@ -63,7 +62,7 @@ public class Material {
 
     // Fresnel for dielectrics
     public double fresnelDielectric(Ray rayIn, Vector3D normal) {
-        Vector3D v = rayIn.getDirection().normalized();
+        Vector3D v = rayIn.direction().normalized();
         double cosi = Math.clamp(v.dot(normal), -1, 1);
         double etai = 1;
         double etat = indexOfRefraction;
@@ -84,7 +83,7 @@ public class Material {
 
     // Fresnel for metals
     public double fresnelMetal(Ray rayIn, Vector3D normal) {
-        Vector3D v = rayIn.getDirection().normalized();
+        Vector3D v = rayIn.direction().normalized();
         double cosi = Math.abs(Math.clamp(v.dot(normal), -1, 1));
         double top = Math.pow(indexOfRefraction - 1, 2) + ((4 * indexOfRefraction) * Math.pow(1 - cosi, 5)) + k*k;
         double bottom = Math.pow(indexOfRefraction + 1, 2) + k*k;

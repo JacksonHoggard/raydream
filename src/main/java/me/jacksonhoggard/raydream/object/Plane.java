@@ -24,7 +24,7 @@ public class Plane extends Object {
 
     @Override
     public Hit intersect(Ray ray) {
-        double t = (-ray.getOrigin().dot(normal)) / ray.getDirection().dot(normal);
+        double t = (-ray.origin().dot(normal)) / ray.direction().dot(normal);
         return new Hit(
                 this, ray.at(t), normal, mapTexture(ray.at(t)), t
         );

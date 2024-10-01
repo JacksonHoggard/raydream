@@ -11,15 +11,15 @@ public class Model extends Object {
     private final BVHTriangle bvh;
 
     public Model(Transform transform, Material material, Mesh mesh) {
-        super(transform, material, mesh.getMin(), mesh.getMax());
+        super(transform, material, mesh.min(), mesh.max());
         this.mesh = mesh;
-        bvh = new BVHTriangle(this.mesh.getTriangles());
+        bvh = new BVHTriangle(this.mesh.triangles());
     }
 
     @Override
     public Hit intersect(Ray ray) {
         Triangle triangle = new Triangle(new Vector3D(), new Vector3D(), new Vector3D(), new Vector2D(), new Vector2D(), new Vector2D());
-        double t = bvh.intersect(ray, mesh.getTriangles(), triangle);
+        double t = bvh.intersect(ray, mesh.triangles(), triangle);
         if(t < Double.MAX_VALUE) {
             Vector3D barycentric = new Vector3D();
             triangle.calcBarycentric(ray.at(t), barycentric);

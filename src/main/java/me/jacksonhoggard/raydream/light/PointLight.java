@@ -11,9 +11,9 @@ public class PointLight extends Light {
 
     @Override
     public double intersect(Ray ray) {
-        Vector3D oc = Vector3D.sub(ray.getOrigin(), getPosition());
-        double a = ray.getDirection().dot(ray.getDirection());
-        double b = 2.0D * oc.dot(ray.getDirection());
+        Vector3D oc = Vector3D.sub(ray.origin(), getPosition());
+        double a = ray.direction().dot(ray.direction());
+        double b = 2.0D * oc.dot(ray.direction());
         double c = oc.dot(oc) - 0.1D * 0.1D;
         double discriminant = b*b - 4*a*c;
         if(discriminant < 0.0D) {

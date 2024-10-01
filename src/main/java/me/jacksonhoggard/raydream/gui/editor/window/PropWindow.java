@@ -185,7 +185,7 @@ public class PropWindow {
                 ((OBJEditorObject) selectedObject).setSmooth(isSmooth.get());
             }
             if(ImGui.button("Choose texture")) {
-                String path = DialogWindow.openFileChooser("Image files", "png", "jpg");
+                String path = DialogWindow.openFileChooser("Image files", "png", "jpg", "bmp");
                 if(path != null) {
                     material.setTexture(new Texture(path));
                 }

@@ -92,9 +92,9 @@ public class Triangle {
     }
 
     public double intersect(Ray ray) {
-        double nDotRDir = normalNotNormal.dot(ray.getDirection());
+        double nDotRDir = normalNotNormal.dot(ray.direction());
         // Compute distance to point hit
-        double t = -(normalNotNormal.dot(ray.getOrigin()) + d) / nDotRDir;
+        double t = -(normalNotNormal.dot(ray.origin()) + d) / nDotRDir;
         if(t < 0) // point is behind ray
             return -1.0D;
 

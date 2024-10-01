@@ -109,7 +109,7 @@ public class SceneWriter {
             case "model":
                 writeTransform(object.getTransform());
                 writeMaterial(object.getMaterial());
-                writer.write("mesh: " + ((Model) object).getMesh().getPath() + "\n");
+                writer.write("mesh: " + ((Model) object).getMesh().path() + "\n");
                 break;
             case "plane":
                 writer.write("offset: " + object.getTransform().translation().y + "\n");

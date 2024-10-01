@@ -15,9 +15,9 @@ public class Sphere extends Object {
 
     @Override
     public Hit intersect(Ray ray) {
-        Vector3D oc = ray.getOrigin();
-        double a = ray.getDirection().dot(ray.getDirection());
-        double b = 2.0D * oc.dot(ray.getDirection());
+        Vector3D oc = ray.origin();
+        double a = ray.direction().dot(ray.direction());
+        double b = 2.0D * oc.dot(ray.direction());
         double c = oc.dot(oc) - radius * radius;
         double discriminant = b * b - 4 * a * c;
         if(discriminant < 0)
