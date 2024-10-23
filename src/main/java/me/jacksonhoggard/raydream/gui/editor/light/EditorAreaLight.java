@@ -16,6 +16,7 @@ public class EditorAreaLight extends EditorLight {
 
     public EditorAreaLight(EditorLightMaterial material) {
         super(model, material);
+        label.set("Area Light");
     }
 
     public EditorAreaLight() {

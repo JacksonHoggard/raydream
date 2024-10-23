@@ -2,6 +2,9 @@ package me.jacksonhoggard.raydream.gui.editor.light;
 
 import imgui.ImGui;
 import imgui.extension.imguizmo.ImGuizmo;
+import imgui.flag.ImGuiInputTextFlags;
+import imgui.flag.ImGuiSelectableFlags;
+import imgui.type.ImString;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorLightMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
@@ -13,7 +16,9 @@ public abstract class EditorLight implements IEditorLight {
     protected static int selected = -1;
     private static int lastID = 0;
     protected final int id;
-    protected final String label;
+    protected ImString label;
+    private boolean wasDoubleClicked = false;
+    private boolean isEditingLabel = false;
     private EditorLightMaterial material;
     private final float[] modelMatrix = {
             1.f, 0.f, 0.f, 0.f,
@@ -29,7 +34,7 @@ public abstract class EditorLight implements IEditorLight {
         this.model.create();
         this.material = material;
         id = lastID;
-        label = "Light " + id;
+        label = new ImString("Light", 128);
         lastID++;
     }
 
@@ -37,9 +42,27 @@ public abstract class EditorLight implements IEditorLight {
     public void show() {
         ImGui.pushID(id);
 
-        if(ImGui.selectable(label, id == selected)) {
-            selected = id;
-            EditorObject.setSelected(-1);
+        if(!isEditingLabel) {
+            if (ImGui.selectable(label.get(), id == selected, ImGuiSelectableFlags.AllowDoubleClick)) {
+                selected = id;
+                EditorObject.setSelected(-1);
+                if (ImGui.isMouseDoubleClicked(0)) {
+                    wasDoubleClicked = true;
+                }
+            }
+        }
+
+        if(wasDoubleClicked) {
+            ImGui.sameLine();
+            isEditingLabel = true;
+            wasDoubleClicked = false;
+        }
+
+        if(isEditingLabel) {
+            ImGui.inputText("##edit", label, ImGuiInputTextFlags.EnterReturnsTrue);
+            if(ImGui.isItemDeactivated()) {
+                isEditingLabel = false;
+            }
         }
 
         ImGui.popID();

@@ -24,6 +24,7 @@ public class EditorPointLight extends EditorLight {
         getModelMatrix()[0] = 0.1f;
         getModelMatrix()[5] = 0.1f;
         getModelMatrix()[10] = 0.1f;
+        label.set("Point Light");
     }
 
     public EditorPointLight() {

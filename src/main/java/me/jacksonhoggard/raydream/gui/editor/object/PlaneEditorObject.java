@@ -21,11 +21,11 @@ public class PlaneEditorObject extends EditorObject {
 
     public PlaneEditorObject(EditorObjectMaterial material) {
         super(planeModel, material);
+        label.set("Plane");
     }
 
     public PlaneEditorObject() {
-        super(
-                planeModel,
+        this(
                 new EditorObjectMaterial(
                         new float[] {0.8f, 0.8f, 0.8f},
                         0.1f,

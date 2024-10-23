@@ -20,11 +20,11 @@ public class SphereEditorObject extends EditorObject {
 
     public SphereEditorObject(EditorObjectMaterial material) {
         super(sphereModel, material);
+        label.set("Sphere");
     }
 
     public SphereEditorObject() {
-        super(
-                sphereModel,
+        this(
                 new EditorObjectMaterial(
                         new float[]{0.f, 1.f, 1.f},
                         0.1f,

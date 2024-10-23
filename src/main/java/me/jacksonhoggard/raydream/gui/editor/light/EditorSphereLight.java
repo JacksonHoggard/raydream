@@ -25,6 +25,7 @@ public class EditorSphereLight extends EditorLight {
         getModelMatrix()[0] = radius;
         getModelMatrix()[5] = radius;
         getModelMatrix()[10] = radius;
+        label.set("Sphere Light");
     }
 
     public EditorSphereLight() {

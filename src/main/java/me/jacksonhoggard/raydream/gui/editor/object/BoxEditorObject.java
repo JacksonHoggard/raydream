@@ -20,11 +20,11 @@ public class BoxEditorObject extends EditorObject {
 
     public BoxEditorObject(EditorObjectMaterial material) {
         super(boxModel, material);
+        label.set("Box");
     }
 
     public BoxEditorObject() {
-        super(
-                boxModel,
+        this(
                 new EditorObjectMaterial(
                         new float[]{1.f, 0.f, 0.f},
                         0.1f,
