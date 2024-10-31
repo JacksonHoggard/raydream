@@ -10,6 +10,9 @@ import me.jacksonhoggard.raydream.object.Model;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Triangle;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13.glActiveTexture;
@@ -17,20 +20,12 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 public class OBJEditorObject extends EditorObject {
 
-    private final OBJModel modelSmooth;
-    private final OBJModel modelFlat;
-    private boolean smooth;
-
     public OBJEditorObject(String path, EditorObjectMaterial material) {
-        super(new OBJModel(path, true), material);
-        modelSmooth = (OBJModel) this.getModel();
-        modelFlat = new OBJModel(modelSmooth.getPath(), false);
-        modelFlat.create();
-        this.smooth = true;
+        super(new OBJModel(path), material);
     }
 
     public OBJEditorObject(String path) {
-        super(new OBJModel(path, true), new EditorObjectMaterial(
+        super(new OBJModel(path), new EditorObjectMaterial(
                 new float[] {0.f, 1.f, 0.f},
                 0.1f,
                 0.4f,
@@ -41,31 +36,27 @@ public class OBJEditorObject extends EditorObject {
                 0.3f,
                 Material.Type.REFLECT
         ));
-        modelSmooth = (OBJModel) this.getModel();
-        modelFlat = new OBJModel(modelSmooth.getPath(), false);
-        modelFlat.create();
-        this.smooth = true;
     }
 
     @Override
     public void draw() {
-        if(getMaterial().getTexture() != null) {
-            glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, getMaterial().getTexture().getId());
+    }
+
+    @Override
+    public EditorObjectMaterial getMaterial() {
+        if(!getSubIds().isEmpty()) {
+            for(Integer i : getSubIds()) {
+                if(i.intValue() == selected) {
+                    return ((OBJModel) getModel()).getMeshes().get(getSubIds().indexOf(i)).getMaterial();
+                }
+            }
         }
-        if(!smooth) {
-            glBindVertexArray(modelFlat.getVertexArrayId());
-            glDrawArrays(GL_TRIANGLES, 0, modelFlat.getVertexCount());
-        } else {
-            glBindVertexArray(modelSmooth.getVertexArrayId());
-            glDrawArrays(GL_TRIANGLES, 0, modelSmooth.getVertexCount());
-        }
-        glBindVertexArray(0);
+        return null;
     }
 
     @Override
     public Object toObject() {
-        OBJModel model = smooth ? modelSmooth : modelFlat;
+        OBJModel model = (OBJModel) getModel();
         Vector3D[] vertices = new Vector3D[model.getVertexCount()];
         Vector3D[] normals = new Vector3D[model.getVertexCount()];
         Vector2D[] texCoords = new Vector2D[model.getVertexCount()];
@@ -114,21 +105,74 @@ public class OBJEditorObject extends EditorObject {
             i+=3;
         }
 
-        Mesh mesh = new Mesh(model.getPath(), triangles, min, max, smooth);
+        Mesh mesh = new Mesh(model.getPath(), triangles, min, max);
         return new Model(getTransform(), getMaterial().toRayDreamMaterial(), mesh);
     }
 
-    public void setSmooth(boolean smooth) {
-        this.smooth = smooth;
-    }
+    public Model[] toObjects() {
+        Model[] models = new Model[getSubIds().size()];
 
-    public boolean isSmooth() {
-        return smooth;
+        int mIndex = 0;
+        OBJModel model = (OBJModel) getModel();
+        for(OBJModel.Mesh m : model.getMeshes()) {
+
+            Vector3D[] vertices = new Vector3D[m.getVertexCount()];
+            Vector3D[] normals = new Vector3D[m.getVertexCount()];
+            Vector2D[] texCoords = new Vector2D[m.getVertexCount()];
+            Triangle[] triangles = new Triangle[m.getVertexCount() / 3];
+            Vector3D min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
+            Vector3D max = new Vector3D(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
+
+            int i = 0;
+            for(int j = 0; j < vertices.length; j++) {
+                vertices[j] = new Vector3D(
+                        m.getVertices()[i],
+                        m.getVertices()[i + 1],
+                        m.getVertices()[i + 2]
+                );
+                normals[j] = new Vector3D(
+                        m.getVertices()[i + 3],
+                        m.getVertices()[i + 4],
+                        m.getVertices()[i + 5]
+                );
+                texCoords[j] = new Vector2D(
+                        m.getVertices()[i + 6],
+                        m.getVertices()[i + 7]
+                );
+                min.x = Math.min(min.x, vertices[j].x);
+                min.y = Math.min(min.y, vertices[j].y);
+                min.z = Math.min(min.z, vertices[j].z);
+                max.x = Math.max(max.x, vertices[j].x);
+                max.y = Math.max(max.y, vertices[j].y);
+                max.z = Math.max(max.z, vertices[j].z);
+                i+=8;
+            }
+
+            i = 0;
+            for(int t = 0; t < triangles.length; t++) {
+                triangles[t] = new Triangle(
+                        vertices[i],
+                        vertices[i+1],
+                        vertices[i+2],
+                        normals[i],
+                        normals[i+1],
+                        normals[i+2],
+                        texCoords[i],
+                        texCoords[i+1],
+                        texCoords[i+2]
+                );
+                i+=3;
+            }
+
+            Mesh mesh = new Mesh(model.getPath(), triangles, min, max);
+            models[mIndex] = new Model(getTransform(), m.getMaterial().toRayDreamMaterial(), mesh);
+            mIndex++;
+        }
+        return models;
     }
 
     @Override
     public void remove() {
-        modelSmooth.remove();
-        modelFlat.remove();
+        super.remove();
     }
 }

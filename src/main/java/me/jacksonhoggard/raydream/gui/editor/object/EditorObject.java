@@ -8,17 +8,22 @@ import imgui.type.ImString;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
+import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Transform;
+
+import java.util.ArrayList;
 
 public abstract class EditorObject implements IEditorObject {
 
     protected static int selected = -1;
     private static int lastID = 0;
     protected final int id;
+    private final ArrayList<Integer> subIds;
     protected ImString label;
     private boolean wasDoubleClicked = false;
     private boolean isEditingLabel = false;
+    private boolean isExpanded = false;
     private EditorObjectMaterial material;
     private final float[] modelMatrix = {
             1.f, 0.f, 0.f, 0.f,
@@ -36,11 +41,25 @@ public abstract class EditorObject implements IEditorObject {
         id = lastID;
         label = new ImString("Object", 128);
         lastID++;
+        subIds = new ArrayList<>();
+        if(model instanceof OBJModel) {
+            for(OBJModel.Mesh _ : ((OBJModel) model).getMeshes()) {
+                subIds.add(lastID);
+                lastID++;
+            }
+        }
     }
 
     @Override
     public void show() {
         ImGui.pushID(id);
+
+        if(!subIds.isEmpty()) {
+            if(ImGui.button(isExpanded ? "-" : "+")) {
+                isExpanded = !isExpanded;
+            }
+            ImGui.sameLine();
+        }
 
         if(!isEditingLabel) {
             if (ImGui.selectable(label.get(), id == selected, ImGuiSelectableFlags.AllowDoubleClick)) {
@@ -63,6 +82,23 @@ public abstract class EditorObject implements IEditorObject {
             if(ImGui.isItemDeactivated()) {
                 isEditingLabel = false;
             }
+        }
+
+        if(isExpanded) {
+            ImGui.indent();
+            int i = 0;
+            for(OBJModel.Mesh mesh : ((OBJModel) model).getMeshes()) {
+                ImGui.pushID(subIds.get(i).intValue());
+
+                if(ImGui.selectable(mesh.getLabel(), subIds.get(i).intValue() == selected)) {
+                    selected = subIds.get(i).intValue();
+                    EditorLight.setSelected(-1);
+                }
+
+                ImGui.popID();
+                i++;
+            }
+            ImGui.unindent();
         }
 
         ImGui.popID();
@@ -98,6 +134,10 @@ public abstract class EditorObject implements IEditorObject {
 
     public int getId() {
         return id;
+    }
+
+    public ArrayList<Integer> getSubIds() {
+        return subIds;
     }
 
     public static void setSelected(int selected) {

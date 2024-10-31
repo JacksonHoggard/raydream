@@ -7,6 +7,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import java.util.Objects;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
@@ -70,5 +71,17 @@ public class Texture {
 
     public void remove() {
         glDeleteTextures(id);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Texture texture)) return false;
+        return id == texture.id && Objects.equals(path, texture.path);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(path, id);
     }
 }

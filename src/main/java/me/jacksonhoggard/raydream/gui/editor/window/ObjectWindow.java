@@ -7,6 +7,7 @@ import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorPointLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
+import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
 import me.jacksonhoggard.raydream.gui.editor.object.*;
 import org.lwjgl.glfw.GLFW;
 
@@ -117,6 +118,12 @@ public class ObjectWindow {
         for(EditorObject object : objects) {
             if(object.getId() == EditorObject.getSelected())
                 return object;
+            if(!object.getSubIds().isEmpty()) {
+                for(Integer i : object.getSubIds()) {
+                    if(i.intValue() == EditorObject.getSelected())
+                        return object;
+                }
+            }
         }
         return null;
     }

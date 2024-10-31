@@ -3,14 +3,18 @@ package me.jacksonhoggard.raydream;
 import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
+import me.jacksonhoggard.raydream.gui.editor.object.OBJEditorObject;
 import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.math.Vector3D;
+import me.jacksonhoggard.raydream.object.Model;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.render.Camera;
 import me.jacksonhoggard.raydream.util.ProgressListener;
 import me.jacksonhoggard.raydream.render.Scene;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class SceneManager {
@@ -28,9 +32,18 @@ public class SceneManager {
     }
 
     public static void renderScene(List<EditorObject> editorObjects, List<EditorLight> editorLights, Light ambient, Vector3D skyColor, EditorCamera editorCamera, int width, int height, float aperture, String filename, int sampleDepth, int bounces, int numShadowRays, int threads, ProgressListener progressListener) {
-        Object[] objects = new Object[editorObjects.size()];
+        List<Object> listObj = new ArrayList<>();
+        for (EditorObject editorObject : editorObjects) {
+            if (editorObject instanceof OBJEditorObject obj) {
+                Model[] models = obj.toObjects();
+                listObj.addAll(Arrays.asList(models));
+                continue;
+            }
+            listObj.add(editorObject.toObject());
+        }
+        Object[] objects = new Object[listObj.size()];
         for(int i = 0; i < objects.length; i++) {
-            objects[i] = editorObjects.get(i).toObject();
+            objects[i] = listObj.get(i);
         }
         Light[] lights = new Light[editorLights.size()];
         for(int i = 0; i < lights.length; i++) {

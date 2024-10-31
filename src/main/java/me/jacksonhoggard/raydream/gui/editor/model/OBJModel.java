@@ -1,50 +1,159 @@
 package me.jacksonhoggard.raydream.gui.editor.model;
 
+import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
+import me.jacksonhoggard.raydream.gui.editor.material.Texture;
+import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Vector2F;
 import me.jacksonhoggard.raydream.math.Vector3F;
 import me.jacksonhoggard.raydream.util.Util;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
+import java.io.File;
+import java.io.IOException;
 import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.lwjgl.opengl.GL15.GL_ARRAY_BUFFER;
-import static org.lwjgl.opengl.GL15.GL_STATIC_DRAW;
-import static org.lwjgl.opengl.GL15.glBindBuffer;
-import static org.lwjgl.opengl.GL15.glBufferData;
-import static org.lwjgl.opengl.GL15.glDeleteBuffers;
-import static org.lwjgl.opengl.GL15.glGenBuffers;
+import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
 import static org.lwjgl.opengl.GL20.glVertexAttribPointer;
 import static org.lwjgl.opengl.GL30.*;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 public class OBJModel extends EditorModel {
 
     private final String path;
-    private final boolean isSmooth;
+    private final List<Mesh> meshes = new ArrayList<>();
 
-    public OBJModel(String path, boolean isSmooth) {
+    public OBJModel(String path) {
         super();
         this.path = path;
-        this.isSmooth = isSmooth;
     }
 
-    private void loadOBJ(String path) {
-        List<String> lines = Util.readAllLines(path);
+    private void loadMTL(String path, Map<String, EditorObjectMaterial> materials) throws IOException {
+        path = path.trim();
+        if(path.startsWith("./")) path = path.substring(2);
+        String parentDir = Paths.get(this.path).getParent().toAbsolutePath().toString() + File.separator;
+        List<String> lines;
+        try {
+            lines = Util.readAllLines(parentDir + path);
+        } catch (RuntimeException e) {
+            throw new IOException(e);
+        }
+
+        EditorObjectMaterial currentMaterial = null;
+        String mtlName = null;
+
+        for(String line : lines) {
+            line = line.trim();
+            String[] tokens = line.split("\\s+");
+            switch(tokens[0]) {
+                case "newmtl":
+                    if(currentMaterial != null)
+                        materials.put(mtlName, currentMaterial);
+                    currentMaterial = new EditorObjectMaterial(
+                        new float[3],
+                        0.3f,
+                        0.6f,
+                        0.5f,
+                        32,
+                        1.0f,
+                        0.5f,
+                        0.f,
+                        Material.Type.OTHER
+                    );
+                    mtlName = tokens[1];
+                    break;
+                case "Kd":
+                    currentMaterial.setColor(parseColor(tokens));
+                    break;
+                case "Ns":
+                    currentMaterial.setSpecularExponent(Float.parseFloat(tokens[1]));
+                    break;
+                case "Ni":
+                    currentMaterial.setIndexOfRefraction(Float.parseFloat(tokens[1]));
+                    if(currentMaterial.getType() == Material.Type.OTHER)
+                        currentMaterial.setType(Material.Type.REFLECT);
+                    break;
+                case "d":
+                    float d = Float.parseFloat(tokens[1]);
+                    if(d < 1.f)
+                        currentMaterial.setType(Material.Type.REFLECT_REFRACT);
+                    break;
+                case "map_Kd":
+                    String texturePath = line.substring(line.indexOf(tokens[1]));
+                    for(int i = tokens.length - 1; i >= 0; i--) {
+                        if(tokens[i].startsWith("-")) {
+                            i += 4;
+                            texturePath = line.substring(line.indexOf(tokens[i]));
+                            break;
+                        }
+                    }
+                    currentMaterial.setTexture(new Texture(parentDir + texturePath.replace("\\\\", File.separator)));
+                    break;
+            }
+        }
+        if(currentMaterial != null)
+            materials.put(mtlName, currentMaterial);
+    }
+
+    private float[] parseColor(String[] tokens) {
+        return new float[] {
+                Float.parseFloat(tokens[1]),
+                Float.parseFloat(tokens[2]),
+                Float.parseFloat(tokens[3])
+        };
+    }
+
+    private void makeMesh(String label, List<Vector3F> vertices, List<Vector3F> normals, List<Vector2F> textures, EditorObjectMaterial material, Map<Integer[], Vector3F[]> triangles, List<Vector3F[]> triangleNormals, List<Vector2F[]> triangleTexCoords) {
+        List<Vector3F> tempNormals = new ArrayList<>(normals);
+        List<Vector2F> tempTextures = new ArrayList<>(textures);
+        List<Vector3F> tempVertices = new ArrayList<>(vertices);
+        if(!normals.isEmpty())
+            formatLists(tempVertices, tempNormals, triangles, tempTextures, triangleTexCoords, triangleNormals);
+        else
+            calculateSmoothNormals(tempVertices, tempNormals, triangles, tempTextures, triangleTexCoords);
+        meshes.add(new Mesh(label, material, tempVertices, tempNormals, tempTextures));
+    }
+
+    private void loadOBJ(String path) throws IOException {
+        List<String> lines;
+        try {
+            lines = Util.readAllLines(path);
+        } catch (RuntimeException e) {
+            throw new IOException(e);
+        }
 
         List<Vector3F> vertices = new ArrayList<>();
         List<Vector3F> normals = new ArrayList<>();
         List<Vector2F> textures = new ArrayList<>();
         Map<Integer[], Vector3F[]> triangles = new LinkedHashMap<>();
         List<Vector2F[]> triangleTexCoords = new ArrayList<>();
+        List<Vector3F[]> triangleNormals = new ArrayList<>();
+        Map<String, EditorObjectMaterial> materials = new LinkedHashMap<>();
+        EditorObjectMaterial currentMaterial = null;
 
         for(String line : lines) {
             String[] tokens = line.split("\\s+");
             switch(tokens[0]) {
+                case "mtllib":
+                    loadMTL(line.substring(tokens[0].length()), materials);
+                    break;
+                case "usemtl":
+                    if(!triangles.isEmpty()) {
+                        EditorObjectMaterial finalCurrentMaterial = new EditorObjectMaterial(currentMaterial);
+                        makeMesh(materials.entrySet().stream()
+                                .filter(entry -> finalCurrentMaterial.equals(entry.getValue()))
+                                .map(Map.Entry::getKey)
+                                .findFirst()
+                                .orElse("Mesh"), vertices, normals, textures, finalCurrentMaterial, triangles, triangleNormals, triangleTexCoords);
+                        triangles.clear();
+                        triangleNormals.clear();
+                        triangleTexCoords.clear();
+                    }
+                    currentMaterial = materials.get(tokens[1]);
+                    break;
                 case "v":
                     Vector3F v = new Vector3F(
                             Float.parseFloat(tokens[1]),
@@ -52,6 +161,14 @@ public class OBJModel extends EditorModel {
                             Float.parseFloat(tokens[3])
                     );
                     vertices.add(v);
+                    break;
+                case "vn":
+                    Vector3F n = new Vector3F(
+                            Float.parseFloat(tokens[1]),
+                            Float.parseFloat(tokens[2]),
+                            Float.parseFloat(tokens[3])
+                    );
+                    normals.add(n);
                     break;
                 case "vt":
                     Vector2F t = new Vector2F(
@@ -79,6 +196,18 @@ public class OBJModel extends EditorModel {
                                         textures.get(texIndices[0]),
                                         textures.get(texIndices[1]),
                                         textures.get(texIndices[2])
+                                });
+                            }
+                            if(tokens[1].split("/").length > 2 && !tokens[1].split("/")[2].isEmpty()) {
+                                Integer[] normalIndices = new Integer[]{
+                                        Integer.parseInt(tokens[1].split("/")[2]) - 1,
+                                        Integer.parseInt(tokens[i + 2].split("/")[2]) - 1,
+                                        Integer.parseInt(tokens[i + 3].split("/")[2]) - 1
+                                };
+                                triangleNormals.add(new Vector3F[]{
+                                        normals.get(normalIndices[0]),
+                                        normals.get(normalIndices[1]),
+                                        normals.get(normalIndices[2])
                                 });
                             }
                             triangles.put(indices, new Vector3F[]{
@@ -110,53 +239,67 @@ public class OBJModel extends EditorModel {
                                     textures.get(texIndices[2])
                             });
                         }
+                        if(tokens[1].split("/").length > 2 && !tokens[1].split("/")[2].isEmpty()) {
+                            Integer[] normalIndices = new Integer[]{
+                                    Integer.parseInt(tokens[1].split("/")[2]) - 1,
+                                    Integer.parseInt(tokens[2].split("/")[2]) - 1,
+                                    Integer.parseInt(tokens[3].split("/")[2]) - 1
+                            };
+                            triangleNormals.add(new Vector3F[]{
+                                    normals.get(normalIndices[0]),
+                                    normals.get(normalIndices[1]),
+                                    normals.get(normalIndices[2])
+                            });
+                        }
                     }
                     break;
             }
         }
-        if(isSmooth)
-            // Store shared vertices (smooth shading)
-            calculateSmoothNormals(vertices, normals, triangles, textures, triangleTexCoords);
-        else
-            // Store non-shared vertices (flat shading)
-            calculateFlatNormals(vertices, normals, triangles, textures, triangleTexCoords);
-        // Store vertices
-        this.vertices = new float[vertices.size() * 8];
-        int i = 0;
-        for(Vector3F pos : vertices) {
-            this.vertices[i * 8] = pos.x;
-            this.vertices[(i * 8) + 1] = pos.y;
-            this.vertices[(i * 8) + 2] = pos.z;
-            i++;
-        }
-        vertexCount = this.vertices.length / 8;
 
-        // Store normals
-        i = 0;
-        for(Vector3F n : normals) {
-            this.vertices[(i * 8) + 3] = n.x;
-            this.vertices[(i * 8) + 4] = n.y;
-            this.vertices[(i * 8) + 5] = n.z;
-            i++;
+        if(currentMaterial == null)
+            currentMaterial = new EditorObjectMaterial(
+                    new float[3],
+                    0.3f,
+                    0.6f,
+                    0.5f,
+                    32,
+                    1.0f,
+                    0.5f,
+                    0.f,
+                    Material.Type.OTHER
+            );
+        if(!triangles.isEmpty()) {
+            EditorObjectMaterial finalCurrentMaterial = new EditorObjectMaterial(currentMaterial);
+            makeMesh(materials.entrySet().stream()
+                    .filter(entry -> finalCurrentMaterial.equals(entry.getValue()))
+                    .map(Map.Entry::getKey)
+                    .findFirst()
+                    .orElse("Group"), vertices, normals, textures, finalCurrentMaterial, triangles, triangleNormals, triangleTexCoords);
         }
 
-        // Store texture coords
-        i = 0;
-        for(Vector2F t : textures) {
-            this.vertices[(i * 8) + 6] = t.x;
-            this.vertices[(i * 8) + 7] = 1 - t.y;
-            i++;
-        }
+    }
 
-        // Store indices
-        List<Integer> indices = new ArrayList<>();
-        triangles.forEach((k, _) -> {
-            indices.add(k[0]);
-            indices.add(k[1]);
-            indices.add(k[2]);
+    private void formatLists(List<Vector3F> vertices, List<Vector3F> normals, Map<Integer[], Vector3F[]> triangles, List<Vector2F> textures, List<Vector2F[]> triangleTexCoords, List<Vector3F[]> triangleNormals) {
+        vertices.clear();
+        normals.clear();
+        textures.clear();
+        AtomicInteger j = new AtomicInteger(0);
+        AtomicInteger k = new AtomicInteger(0);
+        triangles.forEach((_, v) -> {
+            vertices.add(v[0]);
+            vertices.add(v[1]);
+            vertices.add(v[2]);
+            normals.add(triangleNormals.get(k.get())[0]);
+            normals.add(triangleNormals.get(k.get())[1]);
+            normals.add(triangleNormals.get(k.get())[2]);
+            if (!triangleTexCoords.isEmpty()) {
+                textures.add(triangleTexCoords.get(j.get())[0]);
+                textures.add(triangleTexCoords.get(j.get())[1]);
+                textures.add(triangleTexCoords.get(j.get())[2]);
+            }
+            j.incrementAndGet();
+            k.incrementAndGet();
         });
-        this.indices = indices.stream().mapToInt((Integer v) -> v).toArray();
-        indicesCount = this.indices.length;
     }
 
     private void calculateSmoothNormals(List<Vector3F> vertices, List<Vector3F> normals, Map<Integer[], Vector3F[]> triangles, List<Vector2F> textures, List<Vector2F[]> triangleTexCoords) {
@@ -196,78 +339,131 @@ public class OBJModel extends EditorModel {
         });
     }
 
-    private void calculateFlatNormals(List<Vector3F> vertices, List<Vector3F> normals, Map<Integer[], Vector3F[]> triangles, List<Vector2F> textures, List<Vector2F[]> triangleTexCoords) {
-        vertices.clear();
-        normals.clear();
-        textures.clear();
-        // Compute the cross product, normalize it, and add it to the list of normals
-        AtomicInteger i = new AtomicInteger();
-        triangles.forEach((_, v) -> {
-            Vector3F bMinA = Vector3F.sub(v[1], v[0]);
-            Vector3F cMinA = Vector3F.sub(v[2], v[0]);
-            Vector3F p = bMinA.cross(cMinA).normalize();
-            vertices.add(v[0]);
-            vertices.add(v[1]);
-            vertices.add(v[2]);
-            normals.add(p);
-            normals.add(p);
-            normals.add(p);
-            if(!triangleTexCoords.isEmpty()) {
-                textures.add(triangleTexCoords.get(i.get())[0]);
-                textures.add(triangleTexCoords.get(i.get())[1]);
-                textures.add(triangleTexCoords.get(i.get())[2]);
-            }
-            i.getAndIncrement();
-        });
-    }
-
     @Override
     public void create() {
         if(created)
             return;
 
-        loadOBJ(path);
+        try {
+            loadOBJ(path);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.length);
-        vertexBuffer.put(vertices).flip();
-
-        IntBuffer indexBuffer = BufferUtils.createIntBuffer(indices.length);
-        indexBuffer.put(indices).flip();
-
-        vertexArrayId = glGenVertexArrays();
-        glBindVertexArray(vertexArrayId);
-
-        vertexBufferId = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
-        glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
-        // position attribute
-        glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 8 * Float.BYTES, 0);
-        glEnableVertexAttribArray(0);
-        // normal attribute
-        glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, 8 * Float.BYTES, 3 * Float.BYTES);
-        glEnableVertexAttribArray(1);
-        // texture attribute
-        glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, 8 * Float.BYTES, 6 * Float.BYTES);
-        glEnableVertexAttribArray(2);
-
-        //indicesBufferId = glGenBuffers();
-        //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indicesBufferId);
-        //glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexBuffer, GL_STATIC_DRAW);
-        glBindVertexArray(0);
+        for(Mesh mesh : meshes) {
+            mesh.create();
+        }
 
         created = true;
     }
 
     @Override
     public void remove() {
-        if(!created)
-            return;
-        glDeleteBuffers(vertexBufferId);
-        glDeleteBuffers(indicesBufferId);
-        glDeleteVertexArrays(vertexArrayId);
+        for(Mesh mesh : meshes)
+            mesh.delete();
     }
 
     public String getPath() {
         return path;
     }
+
+    public List<Mesh> getMeshes() {
+        return meshes;
+    }
+
+    public class Mesh {
+
+        private final String label;
+        private final EditorObjectMaterial material;
+        private final float[] vertices;
+        private int vertexArrayId;
+        private int vertexBufferId;
+        private int vertexCount;
+
+        public Mesh(String label, EditorObjectMaterial material, List<Vector3F> vertices, List<Vector3F> normals, List<Vector2F> texCoords) {
+            this.label = label;
+            this.material = material;
+            // Store vertices
+            this.vertices = new float[vertices.size() * 8];
+            int i = 0;
+            for(Vector3F pos : vertices) {
+                this.vertices[i * 8] = pos.x;
+                this.vertices[(i * 8) + 1] = pos.y;
+                this.vertices[(i * 8) + 2] = pos.z;
+                i++;
+            }
+            vertexCount = this.vertices.length / 8;
+
+            // Store normals
+            i = 0;
+            for(Vector3F n : normals) {
+                this.vertices[(i * 8) + 3] = n.x;
+                this.vertices[(i * 8) + 4] = n.y;
+                this.vertices[(i * 8) + 5] = n.z;
+                i++;
+            }
+
+            // Store texture coords
+            i = 0;
+            for(Vector2F t : texCoords) {
+                this.vertices[(i * 8) + 6] = t.x;
+                this.vertices[(i * 8) + 7] = 1 - t.y;
+                i++;
+            }
+        }
+
+        public void create() {
+            FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.length);
+            vertexBuffer.put(vertices).flip();
+
+            vertexArrayId = glGenVertexArrays();
+            glBindVertexArray(vertexArrayId);
+
+            vertexBufferId = glGenBuffers();
+            glBindBuffer(GL_ARRAY_BUFFER, vertexBufferId);
+            glBufferData(GL_ARRAY_BUFFER, vertexBuffer, GL_STATIC_DRAW);
+            // position attribute
+            glVertexAttribPointer(0, 3, GL11.GL_FLOAT, false, 8 * Float.BYTES, 0);
+            glEnableVertexAttribArray(0);
+            // normal attribute
+            glVertexAttribPointer(1, 3, GL11.GL_FLOAT, false, 8 * Float.BYTES, 3 * Float.BYTES);
+            glEnableVertexAttribArray(1);
+            // texture attribute
+            glVertexAttribPointer(2, 2, GL11.GL_FLOAT, false, 8 * Float.BYTES, 6 * Float.BYTES);
+            glEnableVertexAttribArray(2);
+
+            glBindVertexArray(0);
+        }
+
+        public void draw() {
+            if(material.getTexture() != null) {
+                glActiveTexture(GL_TEXTURE0);
+                glBindTexture(GL_TEXTURE_2D, getMaterial().getTexture().getId());
+            }
+            glBindVertexArray(vertexArrayId);
+            glDrawArrays(GL_TRIANGLES, 0, vertexCount);
+        }
+
+        public void delete() {
+            glDeleteBuffers(vertexBufferId);
+            glDeleteVertexArrays(vertexArrayId);
+        }
+
+        public int getVertexCount() {
+            return vertexCount;
+        }
+
+        public float[] getVertices() {
+            return vertices;
+        }
+
+        public EditorObjectMaterial getMaterial() {
+            return material;
+        }
+
+        public String getLabel() {
+            return label;
+        }
+    }
+
 }

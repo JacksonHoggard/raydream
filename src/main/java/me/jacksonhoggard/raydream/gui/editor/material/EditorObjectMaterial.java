@@ -4,6 +4,9 @@ import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.util.Util;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 public class EditorObjectMaterial {
 
     private float[] color;
@@ -27,6 +30,23 @@ public class EditorObjectMaterial {
         this.k = k;
         this.metalness = metalness;
         this.type = type;
+    }
+
+    public EditorObjectMaterial(EditorObjectMaterial material) {
+        this.color = new float[] {
+                material.color[0],
+                material.color[1],
+                material.color[2]
+        };
+        this.ambient = material.ambient;
+        this.diffuse = material.diffuse;
+        this.specular = material.specular;
+        this.specularExponent = material.specularExponent;
+        this.indexOfRefraction = material.indexOfRefraction;
+        this.k = material.k;
+        this.metalness = material.metalness;
+        this.type = material.type;
+        this.texture = material.texture;
     }
 
     public Material toRayDreamMaterial() {
@@ -122,5 +142,17 @@ public class EditorObjectMaterial {
 
     public void setTexture(Texture texture) {
         this.texture = texture;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof EditorObjectMaterial that)) return false;
+        return Float.compare(ambient, that.ambient) == 0 && Float.compare(diffuse, that.diffuse) == 0 && Float.compare(specular, that.specular) == 0 && Float.compare(specularExponent, that.specularExponent) == 0 && Float.compare(indexOfRefraction, that.indexOfRefraction) == 0 && Float.compare(k, that.k) == 0 && Float.compare(metalness, that.metalness) == 0 && Objects.deepEquals(color, that.color) && type == that.type && Objects.equals(texture, that.texture);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(Arrays.hashCode(color), ambient, diffuse, specular, specularExponent, indexOfRefraction, k, metalness, type, texture);
     }
 }

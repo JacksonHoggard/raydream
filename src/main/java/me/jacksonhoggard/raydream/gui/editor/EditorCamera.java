@@ -5,6 +5,7 @@ import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
 import me.jacksonhoggard.raydream.math.Matrix4F;
 import me.jacksonhoggard.raydream.math.Vector3D;
 
+import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 
@@ -17,7 +18,7 @@ public class EditorCamera {
     private static final OBJModel model;
     static {
         try {
-            model = new OBJModel(Paths.get(ClassLoader.getSystemResource("camera.obj").toURI()).toString(), false);
+            model = new OBJModel(Paths.get(ClassLoader.getSystemResource("camera.obj").toURI()).toString());
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
         }
@@ -115,9 +116,7 @@ public class EditorCamera {
     }
 
     public void draw() {
-        glBindVertexArray(model.getVertexArrayId());
-        glDrawArrays(GL_TRIANGLES, 0, model.getVertexCount());
-        glBindVertexArray(0);
+        model.getMeshes().getFirst().draw();
     }
 
     public Matrix4F getViewMatrix() {
