@@ -30,9 +30,14 @@ uniform Light lights[MAX_LIGHTS];
 uniform float opacity;
 uniform sampler2D tex;
 uniform bool hasTexture;
+uniform bool isSelected;
 
 void main()
 {
+    if(isSelected) {
+        FragColor = vec4(1, 0.301, 0, 1);
+        return;
+    }
     vec3 objColor = material.color;
     if(hasTexture) {
         objColor = vec3(texture(tex, TexCoord));

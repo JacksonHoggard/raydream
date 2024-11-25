@@ -148,6 +148,10 @@ public abstract class EditorObject implements IEditorObject {
         return selected;
     }
 
+    public boolean isSelected() {
+        return selected == id;
+    }
+
     @Override
     public void remove() {
         getModel().remove();

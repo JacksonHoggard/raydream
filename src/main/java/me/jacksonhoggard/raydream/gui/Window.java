@@ -210,6 +210,7 @@ public class Window {
         objectShader.setMatrix4("projection", EditorWindow.getCamera().getProjectionMatrix().getMatrixArray());
         objectShader.setInt("tex", 0);
         objectShader.setBool("hasTexture", false);
+        objectShader.setBool("isSelected", false);
         PreviewWindow.getCamera().draw();
         objectShader.unuse();
     }
@@ -219,6 +220,18 @@ public class Window {
         lightShader.setMatrix4("view", camera.getViewMatrix().getMatrixArray());
         lightShader.setMatrix4("projection", camera.getProjectionMatrix().getMatrixArray());
         for(EditorLight light : ObjectWindow.lights) {
+            if(light.isSelected()) {
+                glDisable(GL_DEPTH_TEST);
+                lightShader.setBool("isSelected", true);
+                float[] matrix = light.getModelMatrix().clone();
+                matrix[0] *= 1.02F;
+                matrix[5] *= 1.02F;
+                matrix[10] *= 1.02F;
+                lightShader.setMatrix4("model", matrix);
+                light.draw();
+                glEnable(GL_DEPTH_TEST);
+            }
+            lightShader.setBool("isSelected", false);
             lightShader.setMatrix4("model", light.getModelMatrix());
             lightShader.setVec3("color", light.getMaterial().getColor());
             light.draw();
@@ -275,9 +288,21 @@ public class Window {
     }
 
     private void drawObject(EditorObject object, EditorCamera camera) {
-        objectShader.setMatrix4("model", object.getModelMatrix());
         objectShader.setMatrix4("view", camera.getViewMatrix().getMatrixArray());
         objectShader.setMatrix4("projection", camera.getProjectionMatrix().getMatrixArray());
+        if(object.isSelected()) {
+            glDisable(GL_DEPTH_TEST);
+            objectShader.setBool("isSelected", true);
+            float[] matrix = object.getModelMatrix().clone();
+            matrix[0] *= 1.02F;
+            matrix[5] *= 1.02F;
+            matrix[10] *= 1.02F;
+            objectShader.setMatrix4("model", matrix);
+            object.draw();
+            glEnable(GL_DEPTH_TEST);
+        }
+        objectShader.setBool("isSelected", false);
+        objectShader.setMatrix4("model", object.getModelMatrix());
         if(object instanceof OBJEditorObject) {
             for(OBJModel.Mesh mesh : ((OBJModel) object.getModel()).getMeshes()) {
                 updateObjectShader(mesh.getMaterial());

@@ -23,6 +23,8 @@ public class Sphere extends Object {
         if(discriminant < 0)
             return new Hit(null, null, null, null, -1.0D);
         double t = (-b - Math.sqrt(discriminant)) / (2.0D * a);
+        if(t < 0)
+            t = (-b + Math.sqrt(discriminant)) / (2.0D * a);
         return new Hit(this, ray.at(t), transformNormalToWS(ray.at(t).normalized(), getNormalMatrix()), mapTexture(ray.at(t)), t);
     }
 

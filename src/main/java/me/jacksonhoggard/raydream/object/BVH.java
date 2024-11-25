@@ -69,40 +69,35 @@ public class BVH {
     }
 
     private double intersectAABB(Ray ray, Vector3D min, Vector3D max, double t) {
-        double tMin = (min.x - ray.origin().x) / ray.direction().x;
-        double tMax = (max.x - ray.origin().x) / ray.direction().x;
-
-        if(tMin > tMax) {
-            double temp = tMin;
-            tMin = tMax;
-            tMax = temp;
+        double tMin, tMax, tYMin, tYMax, tZMin, tZMax;
+        if(ray.direction().x >= 0) {
+            tMin = (min.x - ray.origin().x) / ray.direction().x;
+            tMax = (max.x - ray.origin().x) / ray.direction().x;
+        } else {
+            tMin = (max.x - ray.origin().x) / ray.direction().x;
+            tMax = (min.x - ray.origin().x) / ray.direction().x;
         }
-
-        double tYMin = (min.y - ray.origin().y) / ray.direction().y;
-        double tYMax = (max.y - ray.origin().y) / ray.direction().y;
-
-        if(tYMin > tYMax) {
-            double temp = tYMin;
-            tYMin = tYMax;
-            tYMax = temp;
+        if(ray.direction().y >= 0) {
+            tYMin = (min.y - ray.origin().y) / ray.direction().y;
+            tYMax = (max.y - ray.origin().y) / ray.direction().y;
+        } else {
+            tYMin = (max.y - ray.origin().y) / ray.direction().y;
+            tYMax = (min.y - ray.origin().y) / ray.direction().y;
         }
-
         if((tMin > tYMax) || (tYMin > tMax))
             return Double.MAX_VALUE;
 
-        if(tYMin > tMin)
+        if (tYMin > tMin)
             tMin = tYMin;
-
-        if(tYMax < tMax)
+        if (tYMax < tMax)
             tMax = tYMax;
 
-        double tZMin = (min.z - ray.origin().z) / ray.direction().z;
-        double tZMax = (max.z - ray.origin().z) / ray.direction().z;
-
-        if(tZMin > tZMax) {
-            double temp = tZMin;
-            tZMin = tZMax;
-            tZMax = temp;
+        if(ray.direction().z >= 0) {
+            tZMin = (min.z - ray.origin().z) / ray.direction().z;
+            tZMax = (max.z - ray.origin().z) / ray.direction().z;
+        } else {
+            tZMin = (max.z - ray.origin().z) / ray.direction().z;
+            tZMax = (min.z - ray.origin().z) / ray.direction().z;
         }
 
         if((tMin > tZMax) || (tZMin > tMax))
@@ -110,8 +105,13 @@ public class BVH {
 
         if(tZMin > tMin)
             tMin = tZMin;
+        if(tZMax < tMax)
+            tMax = tZMax;
 
-        if(tMin < t)
+        if(tMin < 0 && tMax >= 0 && tMax < t)
+            return tMax;
+
+        if(tMin >= 0 && tMin < t)
             return tMin;
 
         return Double.MAX_VALUE;

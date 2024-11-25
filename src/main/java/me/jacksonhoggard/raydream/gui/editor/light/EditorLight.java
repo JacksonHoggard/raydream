@@ -107,4 +107,8 @@ public abstract class EditorLight implements IEditorLight {
     public static int getSelected() {
         return selected;
     }
+
+    public boolean isSelected() {
+        return selected == id;
+    }
 }

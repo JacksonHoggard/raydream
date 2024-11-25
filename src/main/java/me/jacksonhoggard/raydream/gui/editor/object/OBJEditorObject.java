@@ -55,6 +55,16 @@ public class OBJEditorObject extends EditorObject {
     }
 
     @Override
+    public boolean isSelected() {
+        for(Integer i : getSubIds()) {
+            if(i.intValue() == selected) {
+                return true;
+            }
+        }
+        return super.isSelected();
+    }
+
+    @Override
     public Object toObject() {
         OBJModel model = (OBJModel) getModel();
         Vector3D[] vertices = new Vector3D[model.getVertexCount()];
@@ -173,6 +183,8 @@ public class OBJEditorObject extends EditorObject {
 
     @Override
     public void remove() {
-        super.remove();
+        getModel().remove();
+        if(getMaterial() != null && getMaterial().getTexture() != null)
+            getMaterial().getTexture().remove();
     }
 }
