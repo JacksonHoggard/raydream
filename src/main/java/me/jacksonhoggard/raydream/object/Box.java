@@ -38,7 +38,7 @@ public class Box extends Object {
             tYMax = (min.y - ray.origin().y) / ray.direction().y;
         }
         if((tMin > tYMax) || (tYMin > tMax))
-            return new Hit(null, null, null, null, -1.0D);
+            return new Hit(null, null, null, null, null, -1.0D);
 
         if (tYMin > tMin)
             tMin = tYMin;
@@ -54,7 +54,7 @@ public class Box extends Object {
         }
 
         if((tMin > tZMax) || (tZMin > tMax))
-            return new Hit(null, null, null, null, -1.0D);
+            return new Hit(null, null, null, null, null, -1.0D);
 
         if(tZMin > tMin)
             tMin = tZMin;
@@ -62,12 +62,12 @@ public class Box extends Object {
             tMax = tZMax;
 
         if(tMin < 0 && tMax >= 0)
-            return new Hit(this, ray.at(tMax), transformNormalToWS(normalAt(ray.at(tMax)), getNormalMatrix()), mapTexture(ray.at(tMax)), tMax);
+            return new Hit(this, null, ray.at(tMax), normalAt(ray.at(tMax)), mapTexture(ray.at(tMax)), tMax);
 
         if(tMin >= 0)
-            return new Hit(this, ray.at(tMin), transformNormalToWS(normalAt(ray.at(tMin)), getNormalMatrix()), mapTexture(ray.at(tMin)), tMin);
+            return new Hit(this, null, ray.at(tMin), normalAt(ray.at(tMin)), mapTexture(ray.at(tMin)), tMin);
 
-        return new Hit(null, null, null, null, -1.0D);
+        return new Hit(null, null, null, null, null, -1.0D);
     }
 
     public Vector3D normalAt(Vector3D point) {
@@ -79,6 +79,31 @@ public class Box extends Object {
                 (int) (p.y / Math.abs(d.y) * bias),
                 (int) (p.z / Math.abs(d.z) * bias)
         ).normalize();
+    }
+
+    @Override
+    public Vector3D calcTangent(Vector3D normal) {
+        if(normal.equals(new Vector3D(1, 0, 0))) {
+            return new Vector3D(0, 0, -1);
+        }
+        if(normal.equals(new Vector3D(-1, 0, 0))) {
+            return new Vector3D(0, 0, 1);
+        }
+        if(normal.equals(new Vector3D(0, 1, 0))) {
+            return new Vector3D(1, 0, 0);
+        }
+        if(normal.equals(new Vector3D(0, -1, 0))) {
+            return new Vector3D(1, 0, 0);
+        }
+        if(normal.equals(new Vector3D(0, 0, 1))) {
+            return new Vector3D(1, 0, 0);
+        }
+        return new Vector3D(-1, 0, 0);
+    }
+
+    @Override
+    public Vector3D calcBitangent(Vector3D normal, Vector3D tangent) {
+        return normal.cross(tangent).normalize();
     }
 
     @Override

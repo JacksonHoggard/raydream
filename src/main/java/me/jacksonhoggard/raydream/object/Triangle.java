@@ -8,6 +8,7 @@ public class Triangle {
 
     private Vector3D v0, v1, v2;
     private Vector2D t0, t1, t2;
+    private Vector3D tangent, bitangent;
     private Vector3D[] normal;
     private Vector3D normalNotNormal;
     private double d;
@@ -23,8 +24,26 @@ public class Triangle {
         this.t0 = t0;
         this.t1 = t1;
         this.t2 = t2;
-//        Vector3D v = Vector3D.sub(v2, v0);
-        this.normalNotNormal = Vector3D.sub(v1, v0).cross(Vector3D.sub(v2, v0));
+        Vector3D edge1 = Vector3D.sub(v1, v0);
+        Vector3D edge2 = Vector3D.sub(v2, v1);
+        if(t0 != null && t1 != null && t2 != null) {
+            double du1 = t1.x - t0.x;
+            double dv1 = t1.y - t0.y;
+            double du2 = t2.x - t1.x;
+            double dv2 = t2.y - t1.y;
+            double f = 1.d / (du1 * dv2 - du2 * dv1);
+            this.tangent = new Vector3D(
+                    f * (dv2 * edge1.x - dv1 * edge2.x),
+                    f * (dv2 * edge1.y - dv1 * edge2.y),
+                    f * (dv2 * edge1.z - dv1 * edge2.z)
+            ).normalize();
+            this.bitangent = new Vector3D(
+                    f * (-du2 * edge1.x + du1 * edge2.x),
+                    f * (-du2 * edge1.y + du1 * edge2.y),
+                    f * (-du2 * edge1.z + du1 * edge2.z)
+            ).normalize();
+        }
+        this.normalNotNormal = edge1.cross(edge2);
         this.d = -normalNotNormal.dot(v0);
         this.area2 = normalNotNormal.dot(normalNotNormal);
         this.normal = new Vector3D[3];
@@ -91,6 +110,14 @@ public class Triangle {
         coords.set(u, v, w);
     }
 
+    public Vector3D getTangent() {
+        return tangent;
+    }
+
+    public Vector3D getBitangent() {
+        return bitangent;
+    }
+
     public double intersect(Ray ray) {
         double nDotRDir = normalNotNormal.dot(ray.direction());
         // Compute distance to point hit
@@ -151,5 +178,7 @@ public class Triangle {
         this.centroid = triangle.centroid;
         this.min = triangle.min;
         this.max = triangle.max;
+        this.tangent = triangle.tangent;
+        this.bitangent = triangle.bitangent;
     }
 }

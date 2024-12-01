@@ -252,31 +252,47 @@ public class Scene {
                 return;
             }
             Material material = objectHit.getMaterial();
+            Vector3D phongNormal = new Vector3D(normalHit);
+            // apply bump map if exists
+            if(material.getBumpMap() != null) {
+                Vector3D tangent;
+                Vector3D bitangent;
+                if(bvhHit.triangle() != null) {
+                    tangent = bvhHit.triangle().getTangent();
+                    bitangent = bvhHit.triangle().getBitangent();
+                } else {
+                    tangent = objectHit.calcTangent(normalHit);
+                    bitangent = objectHit.calcBitangent(normalHit, tangent);
+                }
+                phongNormal.set(material.getBumpMap().apply(normalHit, tangent, bitangent, bvhHit.texCoord()));
+                phongNormal.set(Object.transformNormalToWS(phongNormal, objectHit.getNormalMatrix()));
+            }
+            normalHit.set(Object.transformNormalToWS(normalHit, objectHit.getNormalMatrix()));
             Vector3D reflectionColor = new Vector3D();
             Vector3D refractionColor = new Vector3D();
             switch(material.getType()) {
                 case REFLECT -> {
-                    double kr = material.fresnelMetal(ray, normalHit);
+                    double kr = material.fresnelMetal(ray, phongNormal);
                     trace(material.reflectRay(ray, pointHit, normalHit), bounce - 1, reflectionColor);
                     Vector3D phong = new Vector3D();
-                    phong(phong, ray, objectHit, pointHit, normalHit, bvhHit.texCoord());
+                    phong(phong, ray, objectHit, pointHit, phongNormal, bvhHit.texCoord());
                     color.add(phong.add(Vector3D.mult(reflectionColor, kr)));
                     return;
                 }
                 case REFLECT_REFRACT -> {
-                    double kr = material.fresnelDielectric(ray, normalHit);
+                    double kr = material.fresnelDielectric(ray, phongNormal);
                     Ray reflectionRay = material.reflectRay(ray, pointHit, normalHit);
                     Ray refractionRay = material.refractRay(ray, pointHit, normalHit);
                     trace(reflectionRay, bounce - 1, reflectionColor);
                     trace(refractionRay, bounce - 1, refractionColor);
                     Vector3D phong = new Vector3D();
-                    phong(phong, ray, objectHit, pointHit, normalHit, bvhHit.texCoord());
+                    phong(phong, ray, objectHit, pointHit, phongNormal, bvhHit.texCoord());
                     color.add(phong.add(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr))));
                     return;
                 }
             }
             Vector3D phong = new Vector3D();
-            phong(phong, ray, objectHit, pointHit, normalHit, bvhHit.texCoord());
+            phong(phong, ray, objectHit, pointHit, phongNormal, bvhHit.texCoord());
             color.add(phong);
         }
 

@@ -142,7 +142,9 @@ public class PropWindow {
     private static void showMaterialTab() {
         if(selectedObject != null && selectedObject.getMaterial() != null) {
             EditorObjectMaterial material = selectedObject.getMaterial();
-            ImGui.inputFloat3("Color", material.getColor());
+            if(material.getTexture() == null) {
+                ImGui.inputFloat3("Color", material.getColor());
+            }
             inputFloat.set(material.getAmbient());
             ImGui.inputFloat("Ambient", inputFloat);
             material.setAmbient(inputFloat.get());
@@ -155,15 +157,24 @@ public class PropWindow {
             inputFloat.set(material.getSpecularExponent());
             ImGui.inputFloat("Specular Exponent", inputFloat);
             material.setSpecularExponent(inputFloat.get());
-            inputFloat.set(material.getIndexOfRefraction());
-            ImGui.inputFloat("Index of Refraction", inputFloat);
-            material.setIndexOfRefraction(inputFloat.get());
-            inputFloat.set(material.getK());
-            ImGui.inputFloat("K", inputFloat);
-            material.setK(inputFloat.get());
+            if(material.getType().ordinal() != 2) {
+                inputFloat.set(material.getIndexOfRefraction());
+                ImGui.inputFloat("Index of Refraction", inputFloat);
+                material.setIndexOfRefraction(inputFloat.get());
+            }
+            if(material.getType().ordinal() == 0) {
+                inputFloat.set(material.getK());
+                ImGui.inputFloat("K", inputFloat);
+                material.setK(inputFloat.get());
+            }
             inputFloat.set(material.getMetalness());
             ImGui.inputFloat("Metalness", inputFloat);
             material.setMetalness(inputFloat.get());
+            if(material.getBumpMap() != null) {
+                inputFloat.set(material.getBumpScale());
+                ImGui.inputFloat("Bump Scale", inputFloat);
+                material.setBumpScale(inputFloat.get());
+            }
 
             selectedMaterialType.set(material.getType().ordinal());
             if (ImGui.combo("Type", selectedMaterialType, MATERIAL_TYPES)) {
@@ -182,13 +193,31 @@ public class PropWindow {
             if(ImGui.button("Choose texture")) {
                 String path = DialogWindow.openFileChooser("Image files", "png", "jpg", "bmp");
                 if(path != null) {
+                    if(material.getTexture() != null)
+                        material.getTexture().remove();
                     material.setTexture(new Texture(path));
                 }
             }
             if(material.getTexture() != null) {
                 ImGui.text(material.getTexture().getPath());
                 if(ImGui.button("Remove texture")) {
+                    material.getTexture().remove();
                     material.setTexture(null);
+                }
+            }
+            if(ImGui.button("Choose bump map")) {
+                String path = DialogWindow.openFileChooser("Image files", "png", "jpg", "bmp");
+                if(path != null) {
+                    if(material.getBumpMap() != null)
+                        material.getBumpMap().remove();
+                    material.setBumpMap(new Texture(path));
+                }
+            }
+            if(material.getBumpMap() != null) {
+                ImGui.text(material.getBumpMap().getPath());
+                if(ImGui.button("Remove bump map")) {
+                    material.getBumpMap().remove();
+                    material.setBumpMap(null);
                 }
             }
         }

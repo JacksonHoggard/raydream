@@ -61,7 +61,8 @@ public class OBJModel extends EditorModel {
                         1.0f,
                         0.5f,
                         0.f,
-                        Material.Type.OTHER
+                        Material.Type.OTHER,
+                        1.f
                     );
                     mtlName = tokens[1];
                     break;
@@ -266,7 +267,8 @@ public class OBJModel extends EditorModel {
                     1.0f,
                     0.5f,
                     0.f,
-                    Material.Type.OTHER
+                    Material.Type.OTHER,
+                    1.f
             );
         if(!triangles.isEmpty()) {
             EditorObjectMaterial finalCurrentMaterial = new EditorObjectMaterial(currentMaterial);

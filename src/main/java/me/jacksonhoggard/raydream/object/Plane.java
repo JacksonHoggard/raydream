@@ -26,7 +26,7 @@ public class Plane extends Object {
     public Hit intersect(Ray ray) {
         double t = (-ray.origin().dot(normal)) / ray.direction().dot(normal);
         return new Hit(
-                this, ray.at(t), normal, mapTexture(ray.at(t)), t
+                this, null, ray.at(t), normal, mapTexture(ray.at(t)), t
         );
     }
 
@@ -35,5 +35,15 @@ public class Plane extends Object {
         if(point.x < 0) point.x = 1+(point.x % 1.0D);
         if(point.z < 0) point.z = 1+(point.z % 1.0D);
         return new Vector2D(point.x % 1.0D, point.z % 1.0D);
+    }
+
+    @Override
+    public Vector3D calcTangent(Vector3D normal) {
+        return new Vector3D(-1, 0, 0);
+    }
+
+    @Override
+    public Vector3D calcBitangent(Vector3D normal, Vector3D tangent) {
+        return new Vector3D(0, 0, -1);
     }
 }

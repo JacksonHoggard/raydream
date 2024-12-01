@@ -34,7 +34,8 @@ public class SphereEditorObject extends EditorObject {
                         3.638f,
                         0.177f,
                         0.3f,
-                        Material.Type.REFLECT
+                        Material.Type.REFLECT,
+                        1.f
                 )
         );
     }

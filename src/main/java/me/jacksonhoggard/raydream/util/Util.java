@@ -1,5 +1,6 @@
 package me.jacksonhoggard.raydream.util;
 
+import me.jacksonhoggard.raydream.material.BumpMap;
 import me.jacksonhoggard.raydream.material.Texture;
 import me.jacksonhoggard.raydream.math.Vector3D;
 
@@ -35,6 +36,16 @@ public class Util {
             throw new RuntimeException("Failed to load texture file:" + path, e);
         }
         return new Texture(image, path, image.getWidth(), image.getHeight());
+    }
+
+    public static BumpMap loadBumpMap(String path, double bumpScale) {
+        BufferedImage image = null;
+        try {
+            image = ImageIO.read(new File(path));
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load bump map file:" + path, e);
+        }
+        return new BumpMap(image, path, image.getWidth(), image.getHeight(), bumpScale);
     }
 
     public static String loadShader(String path) {

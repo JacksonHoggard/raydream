@@ -10,4 +10,8 @@ public interface IObject {
 
     Vector2D mapTexture(Vector3D point);
 
+    Vector3D calcTangent(Vector3D normal);
+
+    Vector3D calcBitangent(Vector3D normal, Vector3D tangent);
+
 }

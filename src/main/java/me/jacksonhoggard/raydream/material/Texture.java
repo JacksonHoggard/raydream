@@ -1,8 +1,6 @@
 package me.jacksonhoggard.raydream.material;
 
-import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
-import me.jacksonhoggard.raydream.object.Object;
 
 import java.awt.image.BufferedImage;
 
@@ -33,5 +31,17 @@ public class Texture {
 
     public String getPath() {
         return path;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public BufferedImage getImage() {
+        return image;
     }
 }

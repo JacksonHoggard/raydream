@@ -19,8 +19,10 @@ public class EditorObjectMaterial {
     private float metalness;
     private Material.Type type;
     private Texture texture;
+    private Texture bumpMap;
+    private float bumpScale;
 
-    public EditorObjectMaterial(float[] color, float ambient, float diffuse, float specular, float specularExponent, float indexOfRefraction, float k, float metalness, Material.Type type) {
+    public EditorObjectMaterial(float[] color, float ambient, float diffuse, float specular, float specularExponent, float indexOfRefraction, float k, float metalness, Material.Type type, float bumpScale) {
         this.color = color;
         this.ambient = ambient;
         this.diffuse = diffuse;
@@ -30,6 +32,7 @@ public class EditorObjectMaterial {
         this.k = k;
         this.metalness = metalness;
         this.type = type;
+        this.bumpScale = bumpScale;
     }
 
     public EditorObjectMaterial(EditorObjectMaterial material) {
@@ -47,6 +50,8 @@ public class EditorObjectMaterial {
         this.metalness = material.metalness;
         this.type = material.type;
         this.texture = material.texture;
+        this.bumpMap = material.bumpMap;
+        this.bumpScale = material.bumpScale;
     }
 
     public Material toRayDreamMaterial() {
@@ -60,7 +65,8 @@ public class EditorObjectMaterial {
                 indexOfRefraction,
                 k,
                 type,
-                texture != null ? Util.loadTexture(texture.getPath()) : null
+                texture != null ? Util.loadTexture(texture.getPath()) : null,
+                bumpMap != null ? Util.loadBumpMap(bumpMap.getPath(), bumpScale) : null
         );
     }
 
@@ -142,6 +148,22 @@ public class EditorObjectMaterial {
 
     public void setTexture(Texture texture) {
         this.texture = texture;
+    }
+
+    public Texture getBumpMap() {
+        return bumpMap;
+    }
+
+    public void setBumpMap(Texture bumpMap) {
+        this.bumpMap = bumpMap;
+    }
+
+    public float getBumpScale() {
+        return bumpScale;
+    }
+
+    public void setBumpScale(float bumpScale) {
+        this.bumpScale = bumpScale;
     }
 
     @Override

@@ -22,8 +22,9 @@ public class Material {
     private final double metalness;
     private final Type type;
     private final Texture texture;
+    private final BumpMap bumpMap;
 
-    public Material(Vector3D color, double ambient, double lambertian, double specular, double specularExponent, double metalness, double indexOfRefraction, double k, Type type, Texture texture) {
+    public Material(Vector3D color, double ambient, double lambertian, double specular, double specularExponent, double metalness, double indexOfRefraction, double k, Type type, Texture texture, BumpMap bumpMap) {
         this.color = color;
         this.ambient = ambient;
         this.lambertian = lambertian;
@@ -34,6 +35,7 @@ public class Material {
         this.metalness = metalness;
         this.type = type;
         this.texture = texture;
+        this.bumpMap = bumpMap;
     }
 
     public static Vector3D reflect(Ray rayIn, Vector3D normal) {
@@ -146,5 +148,9 @@ public class Material {
 
     public Texture getTexture() {
         return texture;
+    }
+
+    public BumpMap getBumpMap() {
+        return bumpMap;
     }
 }

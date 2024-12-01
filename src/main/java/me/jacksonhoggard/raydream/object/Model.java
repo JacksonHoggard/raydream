@@ -23,9 +23,9 @@ public class Model extends Object {
         if(t < Double.MAX_VALUE) {
             Vector3D barycentric = new Vector3D();
             triangle.calcBarycentric(ray.at(t), barycentric);
-            return new Hit(this, ray.at(t), transformNormalToWS(triangle.getNormal(ray.at(t)), getNormalMatrix()), mapTexture(triangle, barycentric), t);
+            return new Hit(this, triangle, ray.at(t), triangle.getNormal(ray.at(t)), mapTexture(triangle, barycentric), t);
         }
-        return new Hit(null, null, null, null, -1.0D);
+        return new Hit(null, null, null, null, null, -1.0D);
     }
 
     public boolean intersectShadowRay(Ray ray, double lightDistance) {
@@ -38,6 +38,16 @@ public class Model extends Object {
 
     @Override
     public Vector2D mapTexture(Vector3D point) {
+        return null;
+    }
+
+    @Override
+    public Vector3D calcTangent(Vector3D normal) {
+        return null;
+    }
+
+    @Override
+    public Vector3D calcBitangent(Vector3D normal, Vector3D tangent) {
         return null;
     }
 
