@@ -111,4 +111,9 @@ public abstract class EditorLight implements IEditorLight {
     public boolean isSelected() {
         return selected == id;
     }
+
+    public static void reset() {
+        selected = -1;
+        lastID = 0;
+    }
 }

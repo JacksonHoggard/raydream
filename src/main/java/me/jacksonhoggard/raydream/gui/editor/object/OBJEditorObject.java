@@ -187,5 +187,7 @@ public class OBJEditorObject extends EditorObject {
         getModel().remove();
         if(getMaterial() != null && getMaterial().getTexture() != null)
             getMaterial().getTexture().remove();
+        if(getMaterial() != null && getMaterial().getBumpMap() != null)
+            getMaterial().getBumpMap().remove();
     }
 }

@@ -259,7 +259,7 @@ public class Scene {
                 Vector3D bitangent;
                 if(bvhHit.triangle() != null) {
                     tangent = bvhHit.triangle().getTangent();
-                    bitangent = bvhHit.triangle().getBitangent();
+                    bitangent = bvhHit.triangle().getBitangent(normalHit);
                 } else {
                     tangent = objectHit.calcTangent(normalHit);
                     bitangent = objectHit.calcBitangent(normalHit, tangent);

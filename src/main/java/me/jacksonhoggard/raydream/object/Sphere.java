@@ -60,11 +60,16 @@ public class Sphere extends Object {
         double phi = Math.atan2(temp.z, temp.x);
         double theta = Math.acos(temp.y / radius);
 
-        return new Vector3D(
+        Vector3D bitangent = new Vector3D(
                 Math.PI * temp.y * Math.cos(phi),
                 -radius * Math.PI * Math.sin(theta),
                 Math.PI * temp.y * Math.sin(phi)
         ).normalize();
+
+        if(tangent.cross(bitangent).dot(normal) > 0.0d)
+            tangent.negate();
+
+        return bitangent;
     }
 
     public double getRadius() {

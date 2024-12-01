@@ -83,27 +83,32 @@ public class Box extends Object {
 
     @Override
     public Vector3D calcTangent(Vector3D normal) {
-        if(normal.equals(new Vector3D(1, 0, 0))) {
-            return new Vector3D(0, 0, -1);
-        }
-        if(normal.equals(new Vector3D(-1, 0, 0))) {
-            return new Vector3D(0, 0, 1);
-        }
-        if(normal.equals(new Vector3D(0, 1, 0))) {
-            return new Vector3D(1, 0, 0);
-        }
-        if(normal.equals(new Vector3D(0, -1, 0))) {
-            return new Vector3D(1, 0, 0);
-        }
-        if(normal.equals(new Vector3D(0, 0, 1))) {
-            return new Vector3D(1, 0, 0);
-        }
-        return new Vector3D(-1, 0, 0);
+//        if(normal.equals(new Vector3D(1, 0, 0))) {
+//            return new Vector3D(0, 0, -1);
+//        }
+//        if(normal.equals(new Vector3D(-1, 0, 0))) {
+//            return new Vector3D(0, 0, 1);
+//        }
+//        if(normal.equals(new Vector3D(0, 1, 0))) {
+//            return new Vector3D(1, 0, 0);
+//        }
+//        if(normal.equals(new Vector3D(0, -1, 0))) {
+//            return new Vector3D(1, 0, 0);
+//        }
+//        if(normal.equals(new Vector3D(0, 0, 1))) {
+//            return new Vector3D(1, 0, 0);
+//        }
+//        return new Vector3D(-1, 0, 0);
+        Vector3D arbitraryVector = Math.abs(normal.x) < 0.5d ? new Vector3D(1, 0, 0) : new Vector3D(0, 1, 0);
+        return arbitraryVector.cross(normal).normalize();
     }
 
     @Override
     public Vector3D calcBitangent(Vector3D normal, Vector3D tangent) {
-        return normal.cross(tangent).normalize();
+        Vector3D bitangent = normal.cross(tangent).normalize();
+        if(tangent.cross(bitangent).dot(normal) > 0.0d)
+            tangent.negate();
+        return bitangent;
     }
 
     @Override

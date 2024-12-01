@@ -114,7 +114,9 @@ public class Triangle {
         return tangent;
     }
 
-    public Vector3D getBitangent() {
+    public Vector3D getBitangent(Vector3D normal) {
+        if(tangent.cross(bitangent).dot(normal) > 0.0d)
+            tangent.negate();
         return bitangent;
     }
 

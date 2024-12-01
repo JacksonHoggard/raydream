@@ -35,9 +35,9 @@ public class EditorWindow {
     private static int currentGizmoOperation;
 
     private static boolean firstFrame = true;
+    private static boolean shouldReset = true;
     private static final ImBoolean useSnap = new ImBoolean(false);
     private static boolean isHovering = false;
-    private static boolean isFocused = false;
 
     private static float width;
     private static float height;
@@ -53,6 +53,11 @@ public class EditorWindow {
         height = (ImGui.getMainViewport().getSizeY() - MenuBar.getHeight()) / 2;
 
         if (firstFrame) {
+            VIEW_MANIPULATE_SIZE[0] *= Window.getScale();
+            VIEW_MANIPULATE_SIZE[1] *= Window.getScale();
+            firstFrame = false;
+        }
+        if(shouldReset) {
             camera = new EditorCamera(60, width / height, 0.1f, 100.f);
             float camYAngle = 165.f / 180.f * (float) Math.PI;
             float camXAngle = 32.f / 180.f * (float) Math.PI;
@@ -67,9 +72,7 @@ public class EditorWindow {
             camera.setLookAt((float) at.x, (float) at.y, (float) at.z);
             camera.setUp((float) up.x, (float) up.y, (float) up.z);
             camera.updateViewMatrix();
-            VIEW_MANIPULATE_SIZE[0] *= Window.getScale();
-            VIEW_MANIPULATE_SIZE[1] *= Window.getScale();
-            firstFrame = false;
+            shouldReset = false;
         }
 
         if(PropWindow.getSelectedTab() == PropWindow.TRANSFORM_TAB) {
@@ -102,7 +105,6 @@ public class EditorWindow {
                 posX, posY,
                 posX + windowWidth, posY + windowHeight
         );
-        isFocused = ImGui.isWindowFocused();
         ImGuizmo.setRect(ImGui.getWindowPosX(), ImGui.getWindowPosY(), windowWidth, windowHeight);
         ImGuizmo.setId(0);
         ImGuizmo.drawGrid(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), IDENTITY_MATRIX, 100);
@@ -194,6 +196,11 @@ public class EditorWindow {
         camera.getLookAt().add(right).add(up);
         camera.updateViewMatrix();
 
+    }
+
+    public static void reset() {
+        camDistance = 8;
+        shouldReset = true;
     }
 
     private static float[] getEye() {

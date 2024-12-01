@@ -4,6 +4,9 @@ import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
 import me.jacksonhoggard.raydream.gui.editor.object.OBJEditorObject;
+import me.jacksonhoggard.raydream.gui.editor.window.EditorWindow;
+import me.jacksonhoggard.raydream.gui.editor.window.ObjectWindow;
+import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
 import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Model;
@@ -20,7 +23,11 @@ import java.util.List;
 public class SceneManager {
 
     public static void newScene() {
-
+        ObjectWindow.reset();
+        EditorObject.reset();
+        EditorLight.reset();
+        SettingsWindow.reset();
+        EditorWindow.reset();
     }
 
     public static void saveScene(String path) {

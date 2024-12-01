@@ -21,11 +21,11 @@ public class SettingsWindow {
     private static float posY;
     private static final ImFloat inputFloat = new ImFloat();
     private static final ImInt inputInt = new ImInt();
-    private static final float[] lookFrom = new float[] {0, 1, 2};
-    private static final float[] lookAt = new float[] {0, 0, 0};
-    private static final float[] up = new float[] {0, 1, 0};
-    private static final float[] skyColor = new float[] {0, 0, 0, 1.f};
-    private static final float[] ambientColor = new float[] {1.f, 1.f, 1.f};
+    private static float[] lookFrom = new float[] {0, 1, 2};
+    private static float[] lookAt = new float[] {0, 0, 0};
+    private static float[] up = new float[] {0, 1, 0};
+    private static float[] skyColor = new float[] {0, 0, 0, 1.f};
+    private static float[] ambientColor = new float[] {1.f, 1.f, 1.f};
     private static float aperture = 100;
     private static int imgWidth = 1280;
     private static int imgHeight = 720;
@@ -121,6 +121,21 @@ public class SettingsWindow {
         }
 
         ImGui.end();
+    }
+
+    public static void reset() {
+        lookFrom = new float[] {0, 1, 2};
+        lookAt = new float[] {0, 0, 0};
+        up = new float[] {0, 1, 0};
+        skyColor = new float[] {0, 0, 0, 1.f};
+        ambientColor = new float[] {1.f, 1.f, 1.f};
+        aperture = 100;
+        imgWidth = 1280;
+        imgHeight = 720;
+        sampleDepth = 2;
+        bounces = 8;
+        numShadowRays = 8;
+        threads = 4;
     }
 
     public static float getWidth() {

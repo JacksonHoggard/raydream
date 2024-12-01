@@ -157,5 +157,12 @@ public abstract class EditorObject implements IEditorObject {
         getModel().remove();
         if(getMaterial().getTexture() != null)
             getMaterial().getTexture().remove();
+        if(getMaterial().getBumpMap() != null)
+            getMaterial().getBumpMap().remove();
+    }
+
+    public static void reset() {
+        selected = -1;
+        lastID = 0;
     }
 }

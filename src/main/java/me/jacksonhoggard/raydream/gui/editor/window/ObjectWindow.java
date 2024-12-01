@@ -98,6 +98,11 @@ public class ObjectWindow {
         ImGui.end();
     }
 
+    public static void reset() {
+        objects.clear();
+        lights.clear();
+    }
+
     public static float getWidth() {
         return width;
     }
