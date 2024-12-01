@@ -20,7 +20,7 @@ import static org.lwjgl.glfw.GLFW.*;
 
 public class EditorWindow {
     private static EditorCamera camera;
-    private static final int CAM_DISTANCE = 8;
+    private static float camDistance = 8;
 
     private static final float[] IDENTITY_MATRIX = {
             1.f, 0.f, 0.f, 0.f,
@@ -36,6 +36,8 @@ public class EditorWindow {
 
     private static boolean firstFrame = true;
     private static final ImBoolean useSnap = new ImBoolean(false);
+    private static boolean isHovering = false;
+    private static boolean isFocused = false;
 
     private static float width;
     private static float height;
@@ -55,9 +57,9 @@ public class EditorWindow {
             float camYAngle = 165.f / 180.f * (float) Math.PI;
             float camXAngle = 32.f / 180.f * (float) Math.PI;
             Vector3D eye = new Vector3D(
-                    (float) (Math.cos(camYAngle) * Math.cos(camXAngle) * CAM_DISTANCE),
-                    (float) (Math.sin(camXAngle) * CAM_DISTANCE),
-                    (float) (Math.sin(camYAngle) * Math.cos(camXAngle) * CAM_DISTANCE)
+                    (float) (Math.cos(camYAngle) * Math.cos(camXAngle) * camDistance),
+                    (float) (Math.sin(camXAngle) * camDistance),
+                    (float) (Math.sin(camYAngle) * Math.cos(camXAngle) * camDistance)
             );
             Vector3D at = new Vector3D(0.f, 0.f, 0.f);
             Vector3D up = new Vector3D(0.f, 1.f, 0.f);
@@ -96,6 +98,11 @@ public class EditorWindow {
 
         float windowWidth = ImGui.getWindowWidth();
         float windowHeight = ImGui.getWindowHeight();
+        isHovering = ImGui.isMouseHoveringRect(
+                posX, posY,
+                posX + windowWidth, posY + windowHeight
+        );
+        isFocused = ImGui.isWindowFocused();
         ImGuizmo.setRect(ImGui.getWindowPosX(), ImGui.getWindowPosY(), windowWidth, windowHeight);
         ImGuizmo.setId(0);
         ImGuizmo.drawGrid(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), IDENTITY_MATRIX, 100);
@@ -130,7 +137,7 @@ public class EditorWindow {
 
         float viewManipulateRight = ImGui.getWindowPosX() + windowWidth;
         float viewManipulateTop = ImGui.getWindowPosY();
-        ImGuizmo.viewManipulate(camera.getViewMatrix().getMatrixArray(), CAM_DISTANCE, new float[]{viewManipulateRight - VIEW_MANIPULATE_SIZE[0], viewManipulateTop}, VIEW_MANIPULATE_SIZE, 0x00000000);
+        ImGuizmo.viewManipulate(camera.getViewMatrix().getMatrixArray(), camDistance, new float[]{viewManipulateRight - VIEW_MANIPULATE_SIZE[0], viewManipulateTop}, VIEW_MANIPULATE_SIZE, 0x00000000);
 
         ImGui.end();
     }
@@ -141,6 +148,73 @@ public class EditorWindow {
 
     public static void setCurrentMode(int currentMode) {
         EditorWindow.currentMode = currentMode;
+    }
+
+    public static void setCamDistance(float camDistance) {
+        if(camDistance < 0.1f || camDistance > 16.f || !isHovering)
+            return;
+        EditorWindow.camDistance = camDistance;
+
+        float[] eye = getEye();
+
+        eye[0] -= (float) camera.getLookAt().x;
+        eye[1] -= (float) camera.getLookAt().y;
+        eye[2] -= (float) camera.getLookAt().z;
+
+        Vector3D newLF = new Vector3D(eye[0], eye[1], eye[2]).normalize().mult(EditorWindow.camDistance);
+
+        newLF.add(camera.getLookAt());
+
+        camera.setLookFrom((float) newLF.x, (float) newLF.y, (float) newLF.z);
+        camera.updateViewMatrix();
+
+    }
+
+    public static void cursorMoveCamera(float deltaX, float deltaY) {
+        float[] temp = camera.getViewMatrix().getMatrixArray();
+        Vector3D right = new Vector3D(
+                temp[0], temp[4], temp[8]
+        );
+        Vector3D up = new Vector3D(
+                temp[1], temp[5], temp[9]
+        );
+
+        float[] eyeArr = getEye();
+        Vector3D eye = new Vector3D(
+                eyeArr[0], eyeArr[1], eyeArr[2]
+        );
+
+        right.mult(deltaX);
+        up.mult(deltaY);
+
+        eye.add(right);
+        eye.add(up);
+
+        camera.setLookFrom((float) eye.x, (float) eye.y, (float) eye.z);
+        camera.getLookAt().add(right).add(up);
+        camera.updateViewMatrix();
+
+    }
+
+    private static float[] getEye() {
+        float[] temp = camera.getViewMatrix().getMatrixArray();
+        float[] rotationMatrix = new float[] {
+                temp[0], temp[1], temp[2],
+                temp[4], temp[5], temp[6],
+                temp[8], temp[9], temp[10]
+        };
+        float[] translation = new float[]{temp[12], temp[13], temp[14]};
+        return new float[]{
+                -(rotationMatrix[0] * translation[0]
+                        + rotationMatrix[1] * translation[1]
+                        + rotationMatrix[2] * translation[2]),
+                -(rotationMatrix[3] * translation[0]
+                        + rotationMatrix[4] * translation[1]
+                        + rotationMatrix[5] * translation[2]),
+                -(rotationMatrix[6] * translation[0]
+                        + rotationMatrix[7] * translation[1]
+                        + rotationMatrix[8] * translation[2])
+        };
     }
 
     public static int getCurrentMode() {
@@ -169,5 +243,9 @@ public class EditorWindow {
 
     public static float getPosY() {
         return posY;
+    }
+
+    public static float getCamDistance() {
+        return camDistance;
     }
 }

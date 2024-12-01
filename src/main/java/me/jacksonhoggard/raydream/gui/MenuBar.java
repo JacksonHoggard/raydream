@@ -34,19 +34,19 @@ public class MenuBar {
     }
 
     private static void newScene() {
-        boolean confirm = DialogWindow.openConfirmation("Are you sure you want to create a new scene?");
+        boolean confirm = DialogWindow.openConfirmation("Are you sure you want to create a new project?");
         if(confirm)
             SceneManager.newScene();
     }
 
     private static void saveScene() {
-        String path = DialogWindow.openFileSave("RayDream Project.scene");
+        String path = DialogWindow.openFileSave("New_Project.dream", "dream");
         if(path != null)
             SceneManager.saveScene(path);
     }
 
     private static void loadScene() {
-        String path = DialogWindow.openFileChooser("Scene Files", "scene");
+        String path = DialogWindow.openFileChooser("Project Files", "dream");
         if(path != null)
             SceneManager.loadScene(path);
     }

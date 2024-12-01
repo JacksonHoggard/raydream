@@ -18,9 +18,7 @@ import me.jacksonhoggard.raydream.math.*;
 import me.jacksonhoggard.raydream.render.FrameBuffer;
 import me.jacksonhoggard.raydream.render.Shader;
 import org.lwjgl.BufferUtils;
-import org.lwjgl.glfw.Callbacks;
-import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWVidMode;
+import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.GL;
 
 import java.nio.FloatBuffer;
@@ -44,6 +42,53 @@ public class Window {
 
     private String glslVersion = null;
     private static long windowPtr;
+
+    private static boolean isMiddleMouseButtonPressed = false;
+
+    private static final GLFWScrollCallback scrollCallback = new GLFWScrollCallback() {
+        private static final float ZOOM_STEP = 0.1f;
+
+        @Override
+        public void invoke(long window, double dx, double dy) {
+            EditorWindow.setCamDistance(EditorWindow.getCamDistance() + ((float) -dy * ZOOM_STEP));
+        }
+    };
+
+    private static final GLFWMouseButtonCallback mouseButtonCallback = new GLFWMouseButtonCallback() {
+        @Override
+        public void invoke(long window, int button, int action, int mods) {
+            if(button == GLFW.GLFW_MOUSE_BUTTON_MIDDLE) {
+                switch(action) {
+                    case GLFW_PRESS -> isMiddleMouseButtonPressed = true;
+                    case GLFW_RELEASE -> isMiddleMouseButtonPressed = false;
+                }
+            }
+        }
+    };
+
+    private static final GLFWCursorPosCallback cursorPosCallback = new GLFWCursorPosCallback() {
+        private double lastX = 0;
+        private double lastY = 0;
+        private boolean firstCall = true;
+        private static final float DELTA = 0.01f;
+
+        @Override
+        public void invoke(long window, double x, double y) {
+            if(firstCall) {
+                lastX = x;
+                lastY = y;
+                firstCall = false;
+            }
+            double deltaX = -(x - lastX);
+            double deltaY = y - lastY;
+
+            if(isMiddleMouseButtonPressed)
+                EditorWindow.cursorMoveCamera((float) (deltaX * DELTA), (float) (deltaY * DELTA));
+
+            lastX = x;
+            lastY = y;
+        }
+    };
 
     public Window() {
         imGuiGlfw = new ImGuiImplGlfw();
@@ -83,8 +128,6 @@ public class Window {
         PlaneEditorObject.cleanup();
         SphereEditorObject.cleanup();
         EditorCamera.getModel().remove();
-
-
     }
 
     private void initWindow() {
@@ -110,6 +153,10 @@ public class Window {
 
         glfwSetWindowAspectRatio(windowPtr, 16, 9);
         glfwSetWindowSizeLimits(windowPtr, (int) (vidMode.width() * 0.5D), (int) ((vidMode.width() * 0.5D) / (16.f/9.f)), GLFW_DONT_CARE, GLFW_DONT_CARE);
+
+        glfwSetScrollCallback(windowPtr, scrollCallback);
+        glfwSetMouseButtonCallback(windowPtr, mouseButtonCallback);
+        glfwSetCursorPosCallback(windowPtr, cursorPosCallback);
 
         glfwMakeContextCurrent(windowPtr);
         glfwSwapInterval(1);
