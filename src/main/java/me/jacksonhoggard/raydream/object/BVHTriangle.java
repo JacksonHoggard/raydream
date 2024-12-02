@@ -145,7 +145,7 @@ public class BVHTriangle {
         if(tZMax < tMax)
             tMax = tZMax;
 
-        if(tMin < 0 && tMax >= 0 && tMax < t)
+        if(tMin < 0 && tMax >= 0)
             return tMax;
 
         if(tMin >= 0 && tMin < t)
