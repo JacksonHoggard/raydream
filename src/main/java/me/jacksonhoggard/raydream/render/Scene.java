@@ -265,9 +265,9 @@ public class Scene {
                     bitangent = objectHit.calcBitangent(normalHit, tangent);
                 }
                 phongNormal.set(material.getBumpMap().apply(normalHit, tangent, bitangent, bvhHit.texCoord()));
-                phongNormal.set(Object.transformNormalToWS(phongNormal, objectHit.getNormalMatrix()));
             }
             normalHit.set(Object.transformNormalToWS(normalHit, objectHit.getNormalMatrix()));
+            phongNormal.set(Object.transformNormalToWS(phongNormal, objectHit.getNormalMatrix()));
             Vector3D reflectionColor = new Vector3D();
             Vector3D refractionColor = new Vector3D();
             switch(material.getType()) {

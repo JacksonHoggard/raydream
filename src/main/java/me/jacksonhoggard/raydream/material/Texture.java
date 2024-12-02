@@ -19,8 +19,16 @@ public class Texture {
     }
 
     protected Vector3D getColorAt(double u, double v) {
-        int x = (int) Math.round(u * (width - 1));
-        int y = (int) Math.round(v * (height - 1));
+        while(u > 1.0d)
+            u -= 1.0d;
+        while(v > 1.0d)
+            v -= 1.0d;
+        while(u < 0.0d)
+            u += 1.0d;
+        while(v < 0.0d)
+            v += 1.0d;
+        int x = (int) Math.floor(u * (width - 1));
+        int y = (int) Math.floor(v * (height - 1));
         int color = image.getRGB(x, y);
         return new Vector3D(
                 ((color & 0xff0000) >> 16) / 255D,
