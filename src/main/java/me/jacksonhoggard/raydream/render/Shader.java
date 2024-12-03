@@ -3,6 +3,8 @@ package me.jacksonhoggard.raydream.render;
 import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.util.Util;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 
@@ -16,9 +18,9 @@ public class Shader {
     public Shader(String vertexShaderFile, String fragmentShaderFile) {
         // Compile and attach shaders
         try {
-            vertexShaderId = createShader(Paths.get(ClassLoader.getSystemResource(vertexShaderFile).toURI()).toString(), GL_VERTEX_SHADER);
-            fragmentShaderId = createShader(Paths.get(ClassLoader.getSystemResource(fragmentShaderFile).toURI()).toString(), GL_FRAGMENT_SHADER);
-        } catch (URISyntaxException e) {
+            vertexShaderId = createShader(ClassLoader.getSystemResourceAsStream(vertexShaderFile), GL_VERTEX_SHADER);
+            fragmentShaderId = createShader(ClassLoader.getSystemResourceAsStream(fragmentShaderFile), GL_FRAGMENT_SHADER);
+        } catch (RuntimeException e) {
             throw new RuntimeException("Could not load glsl file.");
         }
         programId = createProgram();
@@ -34,14 +36,20 @@ public class Shader {
         return id;
     }
 
-    private int createShader(String shaderPath, int shaderType) {
-        String shaderSource = Util.loadShader(shaderPath);
+    private int createShader(InputStream shaderInput, int shaderType) {
+        String shaderSource = Util.loadShader(shaderInput);
         int shaderId = glCreateShader(shaderType);
         if(shaderType == 0)
             throw new RuntimeException("Could not create shader.");
 
         glShaderSource(shaderId, shaderSource);
         glCompileShader(shaderId);
+
+        try {
+            shaderInput.close();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to create shader.");
+        }
 
         return shaderId;
     }

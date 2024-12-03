@@ -11,6 +11,7 @@ import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
 import me.jacksonhoggard.raydream.gui.editor.object.*;
 import org.lwjgl.glfw.GLFW;
 
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 public class ObjectWindow {
@@ -50,7 +51,11 @@ public class ObjectWindow {
                 if(ImGui.menuItem("Model")) {
                     String path = DialogWindow.openFileChooser("WaveFront OBJ", "obj");
                     if(path != null) {
-                        objects.add(new OBJEditorObject(path));
+                        try {
+                            objects.add(new OBJEditorObject(path));
+                        } catch (FileNotFoundException e) {
+                            throw new RuntimeException(e);
+                        }
                         EditorObject.setSelected(objects.getLast().getId());
                         EditorLight.setSelected(-1);
                     }

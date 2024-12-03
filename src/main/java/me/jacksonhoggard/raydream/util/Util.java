@@ -48,23 +48,23 @@ public class Util {
         return new BumpMap(image, path, image.getWidth(), image.getHeight(), bumpScale);
     }
 
-    public static String loadShader(String path) {
+    public static String loadShader(InputStream shaderInput) {
         try {
-            return new String(Files.readAllBytes(Paths.get(path)));
+            return new String(shaderInput.readAllBytes());
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load shader file:" + path, e);
+            throw new RuntimeException("Failed to load shader file.", e);
         }
     }
 
-    public static List<String> readAllLines(String path) {
+    public static List<String> readAllLines(InputStream inputStream) {
         List<String> list = new ArrayList<>();
-        try(BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(path), StandardCharsets.UTF_8))) {
+        try(BufferedReader br = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
             String line;
             while((line = br.readLine()) != null) {
                 list.add(line);
             }
         } catch (IOException | NullPointerException e) {
-            throw new RuntimeException("Failed to read resource file:" + path, e);
+            throw new RuntimeException("Failed to read resource file.", e);
         }
         return list;
     }

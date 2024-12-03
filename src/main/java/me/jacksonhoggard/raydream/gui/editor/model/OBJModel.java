@@ -9,9 +9,9 @@ import me.jacksonhoggard.raydream.util.Util;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.nio.FloatBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -25,10 +25,12 @@ public class OBJModel extends EditorModel {
 
     private final String path;
     private final List<Mesh> meshes = new ArrayList<>();
+    private final InputStream inputStream;
 
-    public OBJModel(String path) {
+    public OBJModel(String path, InputStream inputStream) {
         super();
         this.path = path;
+        this.inputStream = inputStream;
     }
 
     private void loadMTL(String path, Map<String, EditorObjectMaterial> materials) throws IOException {
@@ -37,7 +39,7 @@ public class OBJModel extends EditorModel {
         String parentDir = Paths.get(this.path).getParent().toAbsolutePath().toString() + File.separator;
         List<String> lines;
         try {
-            lines = Util.readAllLines(parentDir + path);
+            lines = Util.readAllLines(new FileInputStream( parentDir + path));
         } catch (RuntimeException e) {
             throw new IOException(e);
         }
@@ -118,10 +120,10 @@ public class OBJModel extends EditorModel {
         meshes.add(new Mesh(label, material, tempVertices, tempNormals, tempTextures));
     }
 
-    private void loadOBJ(String path) throws IOException {
+    private void loadOBJ(InputStream inputStream) throws IOException {
         List<String> lines;
         try {
-            lines = Util.readAllLines(path);
+            lines = Util.readAllLines(inputStream);
         } catch (RuntimeException e) {
             throw new IOException(e);
         }
@@ -347,7 +349,7 @@ public class OBJModel extends EditorModel {
             return;
 
         try {
-            loadOBJ(path);
+            loadOBJ(inputStream);
         } catch (IOException e) {
             e.printStackTrace();
         }

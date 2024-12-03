@@ -17,11 +17,7 @@ public class EditorCamera {
 
     private static final OBJModel model;
     static {
-        try {
-            model = new OBJModel(Paths.get(ClassLoader.getSystemResource("camera.obj").toURI()).toString());
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+            model = new OBJModel("camera.obj", ClassLoader.getSystemResourceAsStream("camera.obj"));
     }
 
     private final Matrix4F viewMatrix;

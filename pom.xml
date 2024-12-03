@@ -7,6 +7,7 @@
     <groupId>me.jacksonhoggard</groupId>
     <artifactId>raydream</artifactId>
     <version>1.0-SNAPSHOT</version>
+	<packaging>jar</packaging>
 
     <properties>
         <maven.compiler.source>22</maven.compiler.source>
@@ -163,13 +164,37 @@
     </repositories>
 
     <build>
-        <finalName>maven-unit-test</finalName>
+        <finalName>raydream</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${surefire.version}</version>
             </plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<goals>
+							<goal>single</goal>
+						</goals>
+						<configuration>
+							<archive>
+							<manifest>
+								<mainClass>
+									me.jacksonhoggard.raydream.Main
+								</mainClass>
+							</manifest>
+							</archive>
+							<descriptorRefs>
+								<descriptorRef>jar-with-dependencies</descriptorRef>
+							</descriptorRefs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
         </plugins>
     </build>
 

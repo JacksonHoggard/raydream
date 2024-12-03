@@ -10,6 +10,8 @@ import me.jacksonhoggard.raydream.object.Model;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Triangle;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,12 +22,12 @@ import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 public class OBJEditorObject extends EditorObject {
 
-    public OBJEditorObject(String path, EditorObjectMaterial material) {
-        super(new OBJModel(path), material);
-    }
+//    public OBJEditorObject(String path, EditorObjectMaterial material) {
+//        super(new OBJModel(path), material);
+//    }
 
-    public OBJEditorObject(String path) {
-        super(new OBJModel(path), new EditorObjectMaterial(
+    public OBJEditorObject(String path) throws FileNotFoundException {
+        super(new OBJModel(path, new FileInputStream(path)), new EditorObjectMaterial(
                 new float[] {0.f, 1.f, 0.f},
                 0.1f,
                 0.4f,
