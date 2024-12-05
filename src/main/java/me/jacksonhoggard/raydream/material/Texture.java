@@ -19,14 +19,8 @@ public class Texture {
     }
 
     protected Vector3D getColorAt(double u, double v) {
-        while(u > 1.0d)
-            u -= 1.0d;
-        while(v > 1.0d)
-            v -= 1.0d;
-        while(u < 0.0d)
-            u += 1.0d;
-        while(v < 0.0d)
-            v += 1.0d;
+        u = adjustUV(u);
+        v = adjustUV(v);
         int x = (int) Math.floor(u * (width - 1));
         int y = (int) Math.floor(v * (height - 1));
         int color = image.getRGB(x, y);
@@ -35,6 +29,14 @@ public class Texture {
                 ((color & 0xff00) >> 8) / 255D,
                 ((color & 0xff)) / 255D
         );
+    }
+
+    protected static double adjustUV(double u) {
+        while(u > 1.0d)
+            u -= 1.0d;
+        while(u < 0.0d)
+            u += 1.0d;
+        return u;
     }
 
     public String getPath() {

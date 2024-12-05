@@ -18,35 +18,22 @@ public class BumpMap extends Texture {
     }
 
     public Vector3D apply(Vector3D normal, Vector3D tangent, Vector3D bitangent, Vector2D texCoords) {
-        int x = (int) Math.round(texCoords.x * (getWidth() - 1));
-        int y = (int) Math.round(texCoords.y * (getHeight() - 1));
-        int x1 = (int) Math.round((texCoords.x + deltaX) * (getWidth() - 1));
-        int y1 = (int) Math.round((texCoords.y + deltaY) * (getHeight() - 1));
+        double u = adjustUV(texCoords.x);
+        double v = adjustUV(texCoords.y);
+        double u1 = adjustUV(texCoords.x + deltaX);
+        double v1 = adjustUV(texCoords.y + deltaY);
+        int x = (int) Math.floor(u * (getWidth() - 1));
+        int y = (int) Math.floor(v * (getHeight() - 1));
+        int x1 = (int) Math.floor(u1 * (getWidth() - 1));
+        int y1 = (int) Math.floor(v1 * (getHeight() - 1));
         double height = getHeightAt(x, y);
-        double dU = getHeightAt(x1 % (getWidth() - 1), y) - height;
-        double dV = getHeightAt(x, y1 % (getHeight() - 1)) - height;
+        double dU = getHeightAt(x1, y) - height;
+        double dV = getHeightAt(x, y1) - height;
         dU *= scale;
         dV *= scale;
         Vector3D qu = Vector3D.add(tangent, Vector3D.mult(normal, -dU));
         Vector3D qv = Vector3D.add(bitangent, Vector3D.mult(normal, -dV));
         return qv.cross(qu).normalize();
-
-//        Vector3D tangentTS = new Vector3D(1, 0, dU);
-//        Vector3D bitangentTS = new Vector3D(0, 1, dV);
-//        Vector3D perturbedTS = tangentTS.cross(bitangentTS).normalize();
-//
-//
-//        Vector3D perturbed = new Vector3D(
-//                tangent.x*perturbedTS.x + bitangent.x*perturbedTS.y + normal.x*perturbedTS.z,
-//                tangent.y*perturbedTS.x + bitangent.y*perturbedTS.y + normal.y*perturbedTS.z,
-//                tangent.z*perturbedTS.x + bitangent.z*perturbedTS.y + normal.z*perturbedTS.z
-//        );
-//        Vector3D perturbed = new Vector3D(-dU, -dV, 1).normalize();
-        // Vector3D perturbed = new Vector3D(normal);
-//        perturbed.add(Vector3D.mult(tangent, dU));
-//        perturbed.add(Vector3D.mult(bitangent, dV));
-        // perturbed.set(tangent.mult(perturbed.x).add(bitangent.mult(perturbed.y)).add(normal.mult(perturbed.z)));
-        //return perturbed.normalize();
     }
 
     private double getHeightAt(int x, int y) {
