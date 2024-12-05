@@ -1,12 +1,8 @@
 # RayDream
 
----
-
 A photorealistic raytracer and editor designed to create stunning rendered images with ease and flexibility. Featuring an intuitive interface for editing objects, importing models, and adjusting raytracer settings.
 
 ![Editor](images/editor.png)
-
----
 
 ## Features
 
@@ -22,8 +18,6 @@ A photorealistic raytracer and editor designed to create stunning rendered image
     - **Textures:** Apply image-based materials to models.
     - **Bump Mapping:** Add surface detail for increased realism.
 
----
-
 ## Images Rendered with RayDream
 
 <div style="text-align: center;"><img alt="Scratched Glass" src="images/glass_scratched.png"/></div>
@@ -33,8 +27,6 @@ A photorealistic raytracer and editor designed to create stunning rendered image
 ![Toys](images/toys.png)
 
 ![Spider](images/spider.png)
-
----
 
 ## Getting Started
 ### Prerequisites:
