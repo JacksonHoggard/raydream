@@ -1,91 +1,66 @@
-# 💡 RayDream: Java Ray Tracer
+# RayDream
 
-A simple yet powerful ray tracer implemented in Java. RayDream creates realistic images by simulating the behavior of light rays as they interact with objects in a scene.
+---
 
-![example](example.png)
+A photorealistic raytracer and editor designed to create stunning rendered images with ease and flexibility. Featuring an intuitive interface for editing objects, importing models, and adjusting raytracer settings.
+
+![Editor](images/editor.png)
+
+---
 
 ## Features
 
-- **Ray Tracing Basics:** Implements fundamental ray tracing algorithms, including object intersection, reflection, refraction, and shading.
-- **Scene Description:** Define scenes by programmatically constructing objects and lights.
-- **Support for Basic Shapes:** Supports rendering of basic geometric shapes such as spheres and boxes.
-- **Model Support:** Supports rendering of models in the wavefront obj format.
-- **Materials and Textures:** Assign materials and textures to objects to add realism to a scene.
-- **Antialiasing:** Reduces aliasing artifacts with built-in sampling techniques.
-- **Parallel Rendering:** Utilizes multi-threading for faster rendering of complex scenes.
-- **Acceleration Structures:** Makes use of bounding volume hierarchies and adaptive supersampling to reduce computation times.
+- **Photorealistic Rendering:** High-quality raytracing for realistic lighting, shadows, and reflections.
+- **Acceleration Structures:**
+  - **Bounding Volume Hierarchies (BVH):** Speeds up rendering by optimizing object intersections.
+  - **Adaptive Supersampling:** Enhances image quality by dynamically refining pixel sampling in detailed areas.
+  - **Multithreading:** Leverages multiple CPU cores for faster rendering.
+- **GUI and Editing:**
+  - **Object Editing:** Modify object properties such as position, rotation, scale, and material.
+  - **Settings Panel:** Adjust rendering parameters like resolution, recursion depth, and lighting settings.
+  - **Model Import:** Load and integrate OBJ models, complete with support for:
+    - **Textures:** Apply image-based materials to models.
+    - **Bump Mapping:** Add surface detail for increased realism.
 
-## Usage
-RayDream is designed to be easy to use while still providing flexibility for advanced users. Here's a basic example of a scene in RayDream:
+---
 
-```
-+ camera:
-width: 1920
-height: 1080
-fov: 50
-aperture: 20
-from: -2 1 1
-to: 0 0 -2
-up: 0 1 0
-;
+## Images Rendered with RayDream
 
-+ ambient:
-color: 1 1 1
-brightness: 1
-;
+<div style="text-align: center;"><img alt="Scratched Glass" src="images/glass_scratched.png"/></div>
 
-+ light: sphere
-position: 10 10 10
-color: 1 1 1
-brightness: 10
-radius: 2
-;
+![Glass Cups](images/glasses_2.png)
 
-+ object: sphere
-transform:
-| translation: 0 0 -2
-| rotation: 0 0 0
-| scale: 1 1 1
-/
-radius: 0.5
-material: glass
-| ambient: 0.1
-| ior: 1.5
-/
-;
+![Toys](images/toys.png)
 
-+ object: sphere
-transform:
-| translation: 0 0 -2
-| rotation: 0 0 0
-| scale: 1 1 1
-/
-radius: 0.45
-material: glass
-| ambient: 0.1
-| ior: 0.6667
-/
-;
+![Spider](images/spider.png)
 
-+ object: sphere
-transform:
-| translation: -0.5 0 -3
-| rotation: 0 0 0
-| scale: 1 1 1
-/
-radius: 0.5
-material: reflective
-| color: 1 0 0
-| ambient: 0.1
-| lambertian: 0.6
-| specular: 0.6
-| exponent: 50
-| metalness: 0.2
-| ior: 0.617
-| k: 2.63
-/
-;
-```
+---
+
+## Getting Started
+### Prerequisites:
+- Apache Maven
+- Java JDK 22 or greater
+- A system that supports OpenGL and the latest graphics drivers installed
+
+### Compile and Run
+
+1. Clone the repository:
+
+    ```bash
+    git clone https://github.com/JacksonHoggard/raydream.git
+    cd raydream
+    ```
+
+2. Compile the program:
+
+    `mvn clean package`
+
+3. Once the program has finished compiling, either double click on the `raydream-jar-with-dependencies.jar` file in the newly created target folder, or run the following commands to run the program:
+
+    ```bash
+    cd target/
+    java -jar raydream-jar-with-dependencies.jar
+    ```
 
 ## Contributions
 
@@ -93,11 +68,11 @@ Contributions to RayDream are welcome! Whether you want to fix bugs, add new fea
 
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the [MIT License](LICENSE).
 
 ## Acknowledgments
 
-Resources used for this project.
+Resources used for this project:
 * [Raytracing CS148 Stanford](https://graphics.stanford.edu/courses/cs148-10-summer/as3/instructions/as3.pdf)
 * [Koto's Stack Overflow Comment](https://stackoverflow.com/a/33091767)
 * [Phong Illumination Model Cheat Sheet](http://rodolphe-vaillant.fr/entry/85/phong-illumination-model-cheat-sheet)
@@ -113,3 +88,4 @@ Resources used for this project.
 * [The University of Utah CS 6958 Lecture 8](https://my.eng.utah.edu/~cs6958/slides/Lec8_2.pdf)
 * [The University of Utah Advanced Ray Tracing lecture](https://my.eng.utah.edu/~cs4600/lectures/Wk13_AdvancedRayTracing.pdf)
 * [Karadeniz Technical University: Texture Mapping](https://ceng2.ktu.edu.tr/~cakir/files/grafikler/Texture_Mapping.pdf)
+* [Bump Mapping - CS384G Computer Graphics Final Project](https://pathtracing.home.blog/bump-mapping/)

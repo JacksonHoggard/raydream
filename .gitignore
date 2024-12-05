@@ -31,6 +31,7 @@ bin/
 ### Mac OS ###
 .DS_Store
 
-### Program Output ###
+### RayDream Output ###
 output.png
-imgui.ini
+*.ini
+*.dream
