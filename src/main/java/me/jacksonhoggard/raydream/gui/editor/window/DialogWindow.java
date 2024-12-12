@@ -39,6 +39,16 @@ public class DialogWindow {
         return null;
     }
 
+    public static String openFolder() {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        int result = fileChooser.showOpenDialog(null);
+        if(result == JFileChooser.APPROVE_OPTION)
+            return fileChooser.getSelectedFile().getAbsolutePath();
+
+        return null;
+    }
+
     public static String openFileSave(String defaultName, String... extensions) {
         JFileChooser fileChooser = new JFileChooser();
         FileNameExtensionFilter filter = new FileNameExtensionFilter(defaultName, extensions);

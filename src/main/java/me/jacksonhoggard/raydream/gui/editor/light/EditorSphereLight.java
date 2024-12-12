@@ -54,6 +54,13 @@ public class EditorSphereLight extends EditorLight {
         return new SphereLight(position, color, getMaterial().getBrightness(), radius);
     }
 
+    @Override
+    public String toSaveEntry() {
+        return "+ light: sphere\n" +
+                "label: " + label.get() + "\n" +
+                getTransformSaveEntry() + getMaterial().toSaveEntry() + ";\n";
+    }
+
     public float getRadius() {
         return radius;
     }

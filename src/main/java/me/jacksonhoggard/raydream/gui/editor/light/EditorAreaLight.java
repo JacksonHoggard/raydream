@@ -42,6 +42,13 @@ public class EditorAreaLight extends EditorLight {
         );
     }
 
+    @Override
+    public String toSaveEntry() {
+        return "+ light: area\n" +
+                "label: " + label.get() + "\n" +
+                getTransformSaveEntry() + getMaterial().toSaveEntry() + ";\n";
+    }
+
     public static void cleanup() {
         model.remove();
     }

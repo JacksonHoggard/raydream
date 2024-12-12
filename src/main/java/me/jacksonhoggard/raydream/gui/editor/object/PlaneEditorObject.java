@@ -1,7 +1,6 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
-import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.gui.editor.model.PlaneModel;
 import me.jacksonhoggard.raydream.material.Material;
@@ -63,6 +62,13 @@ public class PlaneEditorObject extends EditorObject {
     public Object toObject() {
         Transform t = getTransform();
         return new Plane(t.translation().y, t.rotation(), getMaterial().toRayDreamMaterial());
+    }
+
+    @Override
+    public String toSaveEntry(String path) {
+        return "+ object: plane\n" +
+                "label: " + label.get() + "\n" +
+                getTransformSaveEntry() + getMaterial().toSaveEntry(path) + ";\n";
     }
 
     public static void cleanup() {

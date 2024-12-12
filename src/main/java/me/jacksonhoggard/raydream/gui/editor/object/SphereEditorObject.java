@@ -1,7 +1,6 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
-import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.gui.editor.model.SphereModel;
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.object.Object;
@@ -58,6 +57,13 @@ public class SphereEditorObject extends EditorObject {
     @Override
     public Object toObject() {
         return new Sphere(getTransform(), 1.0D, getMaterial().toRayDreamMaterial());
+    }
+
+    @Override
+    public String toSaveEntry(String path) {
+        return "+ object: sphere\n" +
+                "label: " + label.get() + "\n" +
+                getTransformSaveEntry() + getMaterial().toSaveEntry(path) + ";\n";
     }
 
     public static void cleanup() {

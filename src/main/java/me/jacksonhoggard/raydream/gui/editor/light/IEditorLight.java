@@ -10,4 +10,6 @@ public interface IEditorLight {
 
     Light toLight();
 
+    String toSaveEntry();
+
 }

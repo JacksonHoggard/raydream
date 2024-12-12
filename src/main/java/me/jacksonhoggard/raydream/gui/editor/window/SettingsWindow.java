@@ -138,6 +138,24 @@ public class SettingsWindow {
         threads = 4;
     }
 
+    public static String toSaveEntry() {
+        return "+ settings:\n" +
+                "lookFrom: " + lookFrom[0] + " " + lookFrom[1] + " " + lookFrom[2] + "\n" +
+                "lookAt: " + lookAt[0] + " " + lookAt[1] + " " + lookAt[2] + "\n" +
+                "up: " + up[0] + " " + up[1] + " " + up[2] + "\n" +
+                "sky: " + skyColor[0] + " " + skyColor[1] + " " + skyColor[2] + "\n" +
+                "ambient: " + ambientColor[0] + " " + ambientColor[1] + " " + ambientColor[2] + "\n" +
+                "fov: " + PreviewWindow.getCamera().getFov() + "\n" +
+                "aperture: " + aperture + "\n" +
+                "width: " + imgWidth + "\n" +
+                "height: " + imgHeight + "\n" +
+                "samples: " + sampleDepth + "\n" +
+                "bounces: " + bounces + "\n" +
+                "shadows: " + numShadowRays + "\n" +
+                "threads: " + threads + "\n" +
+                ";\n";
+    }
+
     public static float getWidth() {
         return width;
     }

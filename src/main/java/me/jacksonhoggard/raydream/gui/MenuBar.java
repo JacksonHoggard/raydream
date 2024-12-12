@@ -4,6 +4,8 @@ import imgui.ImGui;
 import me.jacksonhoggard.raydream.SceneManager;
 import me.jacksonhoggard.raydream.gui.editor.window.DialogWindow;
 
+import java.io.IOException;
+
 public class MenuBar {
 
     private static float height;
@@ -40,9 +42,14 @@ public class MenuBar {
     }
 
     private static void saveScene() {
-        String path = DialogWindow.openFileSave("New_Project.dream", "dream");
-        if(path != null)
-            SceneManager.saveScene(path);
+        String path = DialogWindow.openFolder();
+        if(path != null) {
+            try {
+                SceneManager.saveScene(path);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to save project: ", e);
+            }
+        }
     }
 
     private static void loadScene() {

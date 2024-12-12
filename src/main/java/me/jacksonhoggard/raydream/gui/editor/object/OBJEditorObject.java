@@ -10,15 +10,8 @@ import me.jacksonhoggard.raydream.object.Model;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Triangle;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.List;
-
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
-import static org.lwjgl.opengl.GL13.glActiveTexture;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
+import java.io.*;
+import java.nio.file.Paths;
 
 public class OBJEditorObject extends EditorObject {
 
@@ -120,6 +113,73 @@ public class OBJEditorObject extends EditorObject {
 
         Mesh mesh = new Mesh(model.getPath(), triangles, min, max);
         return new Model(getTransform(), getMaterial().toRayDreamMaterial(), mesh);
+    }
+
+    @Override
+    public String toSaveEntry(String path) {
+        String modelPath;
+        try {
+            modelPath = saveModel(path);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not save model: ", e);
+        }
+        return "+ object: model\n" +
+                "label: " + label.get() + "\n" +
+                getTransformSaveEntry() +
+                "file: " + modelPath + "\n" +
+                ";\n";
+    }
+
+    private String saveModel(String path) throws IOException {
+        OBJModel model = (OBJModel) getModel();
+
+        String filePath = path + File.separator + Paths.get(model.getPath()).getFileName().toString() + ".import";
+
+        FileWriter writer = new FileWriter(filePath);
+        for(OBJModel.Mesh m : model.getMeshes()) {
+
+            writer.write("+ mesh:\n");
+            writer.write("label: " + m.getLabel() + "\n");
+            writer.write(m.getMaterial().toSaveEntry(path));
+            writer.write("triangles: \n");
+
+            Vector3D[] vertices = new Vector3D[m.getVertexCount()];
+            Vector3D[] normals = new Vector3D[m.getVertexCount()];
+            Vector2D[] texCoords = new Vector2D[m.getVertexCount()];
+            int i = 0;
+            for(int j = 0; j < vertices.length; j++) {
+                vertices[j] = new Vector3D(
+                        m.getVertices()[i],
+                        m.getVertices()[i + 1],
+                        m.getVertices()[i + 2]
+                );
+                normals[j] = new Vector3D(
+                        m.getVertices()[i + 3],
+                        m.getVertices()[i + 4],
+                        m.getVertices()[i + 5]
+                );
+                texCoords[j] = new Vector2D(
+                        m.getVertices()[i + 6],
+                        m.getVertices()[i + 7]
+                );
+                i+=8;
+            }
+            i = 0;
+            for(int t = 0; t < m.getVertexCount() / 3; t++) {
+                writer.write("| " + vertices[i] + " " + vertices[i+1] + " " + vertices[i+2] + " "
+                                + normals[i] + " " + normals[i+1] + " " + normals[i+2] + " " +
+                                texCoords[i] + " " + texCoords[i+1] + texCoords[i+2] + "\n");
+                i+=3;
+            }
+
+            writer.write("/\n");
+        }
+
+        writer.write(";\n");
+
+        writer.close();
+
+        return Paths.get(path).relativize(Paths.get(filePath)).toString();
     }
 
     public Model[] toObjects() {

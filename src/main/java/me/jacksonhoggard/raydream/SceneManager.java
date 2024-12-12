@@ -15,7 +15,10 @@ import me.jacksonhoggard.raydream.render.Camera;
 import me.jacksonhoggard.raydream.util.ProgressListener;
 import me.jacksonhoggard.raydream.render.Scene;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -30,8 +33,21 @@ public class SceneManager {
         EditorWindow.reset();
     }
 
-    public static void saveScene(String path) {
+    public static void saveScene(String path) throws IOException {
+        Paths.get(path).toFile().mkdir();
+        FileWriter writer = new FileWriter(path + File.separator + "project.dream");
 
+        writer.write(SettingsWindow.toSaveEntry());
+        for(EditorObject object : ObjectWindow.objects) {
+            writer.write("\n");
+            writer.write(object.toSaveEntry(path));
+        }
+        for(EditorLight light : ObjectWindow.lights) {
+            writer.write("\n");
+            writer.write(light.toSaveEntry());
+        }
+
+        writer.close();
     }
 
     public static void loadScene(String path) {

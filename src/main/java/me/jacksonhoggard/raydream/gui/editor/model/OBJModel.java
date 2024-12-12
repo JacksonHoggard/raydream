@@ -11,7 +11,6 @@ import org.lwjgl.opengl.GL11;
 
 import java.io.*;
 import java.nio.FloatBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;

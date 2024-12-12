@@ -31,4 +31,11 @@ public class EditorLightMaterial {
         return brightness;
     }
 
+    public String toSaveEntry() {
+        return "material:\n" +
+                "| color: " + color[0] + " " + color[1] + " " + color[2] +"\n" +
+                "| brightness: " + brightness + "\n" +
+                "/\n";
+    }
+
 }

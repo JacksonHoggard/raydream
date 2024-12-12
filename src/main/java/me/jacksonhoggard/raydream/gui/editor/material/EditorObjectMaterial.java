@@ -4,6 +4,7 @@ import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.util.Util;
 
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -176,5 +177,28 @@ public class EditorObjectMaterial {
     @Override
     public int hashCode() {
         return Objects.hash(Arrays.hashCode(color), ambient, diffuse, specular, specularExponent, indexOfRefraction, k, metalness, type, texture);
+    }
+
+    public String toSaveEntry(String path) {
+        String texPath = "null";
+        String bumpPath = "null";
+        if(texture != null)
+            texPath = Paths.get(path).relativize(Paths.get(texture.getPath())).toString();
+        if(bumpMap != null)
+            bumpPath = Paths.get(path).relativize(Paths.get(bumpMap.getPath())).toString();
+        return "material:\n" +
+                "| color: " + color[0] + " " + color[1] + " " + color[2] + "\n" +
+                "| ambient: " + ambient + "\n" +
+                "| diffuse: " + diffuse + "\n" +
+                "| specular: " + specular + "\n" +
+                "| exponent: " + specularExponent + "\n" +
+                "| ior: " + indexOfRefraction + "\n" +
+                "| k: " + k + "\n" +
+                "| metalness: " + metalness + "\n" +
+                "| type: " + type + "\n" +
+                "| texture: " + texPath + "\n" +
+                "| bump: " + bumpPath + "\n" +
+                "| bScale: " + bumpScale + "\n" +
+                "/\n";
     }
 }

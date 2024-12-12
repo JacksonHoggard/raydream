@@ -1,7 +1,6 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
-import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.gui.editor.model.BoxModel;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.material.Material;
@@ -54,6 +53,13 @@ public class BoxEditorObject extends EditorObject {
     @Override
     public Object toObject() {
         return new Box(getTransform(), new Vector3D(1, 1, 1), getMaterial().toRayDreamMaterial());
+    }
+
+    @Override
+    public String toSaveEntry(String path) {
+        return "+ object: box\n" +
+                "label: " + label.get() + "\n" +
+                getTransformSaveEntry() + getMaterial().toSaveEntry(path) + ";\n";
     }
 
     public static void cleanup() {

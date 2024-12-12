@@ -116,4 +116,16 @@ public abstract class EditorLight implements IEditorLight {
         selected = -1;
         lastID = 0;
     }
+
+    protected String getTransformSaveEntry() {
+        float[] translation = new float[3];
+        float[] rotation = new float[3];
+        float[] scale = new float[3];
+        ImGuizmo.decomposeMatrixToComponents(getModelMatrix(), translation, rotation, scale);
+        return "transform:\n" +
+                "| " + translation[0] + " " + translation[1] + " " + translation[2] + "\n"
+                + "| " + rotation[0] + " " + rotation[1] + " " + rotation[2] + "\n"
+                + "| " + scale[0] + " " + scale[1] + " " + scale[2] + "\n" +
+                "/\n";
+    }
 }

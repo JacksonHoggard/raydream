@@ -55,6 +55,14 @@ public class EditorPointLight extends EditorLight {
         );
     }
 
+    @Override
+    public String toSaveEntry() {
+        double[] translation = getTransform().translation().toArray();
+        return "+ light: point\n" +
+                "label: " + label.get() + "\n" +
+                getTransformSaveEntry() + getMaterial().toSaveEntry() + ";\n";
+    }
+
     public static void cleanup() {
         sphereModel.remove();
     }
