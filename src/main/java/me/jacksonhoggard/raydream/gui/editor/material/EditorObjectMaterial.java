@@ -55,6 +55,19 @@ public class EditorObjectMaterial {
         this.bumpScale = material.bumpScale;
     }
 
+    public EditorObjectMaterial() {
+        this.color = new float[3];
+        this.ambient = 0;
+        this.diffuse = 0;
+        this.specular = 0;
+        this.specularExponent = 0;
+        this.indexOfRefraction = 0;
+        this.k = 0;
+        this.metalness = 0;
+        this.type = Material.Type.OTHER;
+        this.bumpScale = 0;
+    }
+
     public Material toRayDreamMaterial() {
         return new Material(
                 new Vector3D(color[0], color[1], color[2]),

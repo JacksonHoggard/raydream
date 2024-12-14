@@ -1,10 +1,13 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
+import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.SphereModel;
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Sphere;
+
+import java.io.IOException;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL15.*;
@@ -17,12 +20,12 @@ public class SphereEditorObject extends EditorObject {
 
     private static final SphereModel sphereModel = new SphereModel();
 
-    public SphereEditorObject(EditorObjectMaterial material) {
+    public SphereEditorObject(EditorObjectMaterial material) throws IOException {
         super(sphereModel, material);
         label.set("Sphere");
     }
 
-    public SphereEditorObject() {
+    public SphereEditorObject() throws IOException {
         this(
                 new EditorObjectMaterial(
                         new float[]{0.f, 1.f, 1.f},
@@ -37,6 +40,12 @@ public class SphereEditorObject extends EditorObject {
                         1.f
                 )
         );
+    }
+
+    public SphereEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial material, String label) throws IOException {
+        super(sphereModel, material);
+        ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
+        this.label.set(label);
     }
 
     @Override

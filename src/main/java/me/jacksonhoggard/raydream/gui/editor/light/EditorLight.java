@@ -11,6 +11,8 @@ import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Transform;
 
+import java.io.IOException;
+
 public abstract class EditorLight implements IEditorLight {
 
     protected static int selected = -1;
@@ -29,7 +31,7 @@ public abstract class EditorLight implements IEditorLight {
 
     private final EditorModel model;
 
-    public EditorLight(EditorModel model, EditorLightMaterial material) {
+    public EditorLight(EditorModel model, EditorLightMaterial material) throws IOException {
         this.model = model;
         this.model.create();
         this.material = material;
@@ -123,9 +125,9 @@ public abstract class EditorLight implements IEditorLight {
         float[] scale = new float[3];
         ImGuizmo.decomposeMatrixToComponents(getModelMatrix(), translation, rotation, scale);
         return "transform:\n" +
-                "| " + translation[0] + " " + translation[1] + " " + translation[2] + "\n"
-                + "| " + rotation[0] + " " + rotation[1] + " " + rotation[2] + "\n"
-                + "| " + scale[0] + " " + scale[1] + " " + scale[2] + "\n" +
+                "| translation: " + translation[0] + " " + translation[1] + " " + translation[2] + "\n"
+                + "| rotation: " + rotation[0] + " " + rotation[1] + " " + rotation[2] + "\n"
+                + "| scale: " + scale[0] + " " + scale[1] + " " + scale[2] + "\n" +
                 "/\n";
     }
 }

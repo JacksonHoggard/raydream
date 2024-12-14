@@ -18,13 +18,9 @@ public class Texture {
     private final String path;
     private int id;
 
-    public Texture(String path) {
+    public Texture(String path) throws IOException {
         this.path = path;
-        try {
-            loadTexture(path);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load texture.", e);
-        }
+        loadTexture(path);
     }
 
     private void loadTexture(String path) throws IOException {
@@ -56,7 +52,7 @@ public class Texture {
             glGenerateMipmap(GL_TEXTURE_2D);
             STBImage.stbi_image_free(buffer);
         } catch(Exception e) {
-            e.printStackTrace();
+            throw new IOException("Failed to load texture.", e);
         }
 
     }

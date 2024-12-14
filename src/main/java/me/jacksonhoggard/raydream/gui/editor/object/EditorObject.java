@@ -8,10 +8,12 @@ import imgui.type.ImString;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
+import me.jacksonhoggard.raydream.gui.editor.model.MeshModel;
 import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Transform;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public abstract class EditorObject implements IEditorObject {
@@ -34,7 +36,7 @@ public abstract class EditorObject implements IEditorObject {
 
     private final EditorModel model;
 
-    public EditorObject(EditorModel model, EditorObjectMaterial material) {
+    public EditorObject(EditorModel model, EditorObjectMaterial material) throws IOException {
         this.material = material;
         this.model = model;
         this.model.create();
@@ -42,8 +44,8 @@ public abstract class EditorObject implements IEditorObject {
         label = new ImString("Object", 128);
         lastID++;
         subIds = new ArrayList<>();
-        if(model instanceof OBJModel) {
-            for(OBJModel.Mesh _ : ((OBJModel) model).getMeshes()) {
+        if(model instanceof MeshModel) {
+            for(MeshModel.Mesh _ : ((MeshModel) model).getMeshes()) {
                 subIds.add(lastID);
                 lastID++;
             }
@@ -87,7 +89,7 @@ public abstract class EditorObject implements IEditorObject {
         if(isExpanded) {
             ImGui.indent();
             int i = 0;
-            for(OBJModel.Mesh mesh : ((OBJModel) model).getMeshes()) {
+            for(MeshModel.Mesh mesh : ((MeshModel) model).getMeshes()) {
                 ImGui.pushID(subIds.get(i).intValue());
 
                 if(ImGui.selectable(mesh.getLabel(), subIds.get(i).intValue() == selected)) {
@@ -172,9 +174,9 @@ public abstract class EditorObject implements IEditorObject {
         float[] scale = new float[3];
         ImGuizmo.decomposeMatrixToComponents(getModelMatrix(), translation, rotation, scale);
         return "transform:\n" +
-                "| " + translation[0] + " " + translation[1] + " " + translation[2] + "\n"
-                + "| " + rotation[0] + " " + rotation[1] + " " + rotation[2] + "\n"
-                + "| " + scale[0] + " " + scale[1] + " " + scale[2] + "\n" +
+                "| translation: " + translation[0] + " " + translation[1] + " " + translation[2] + "\n"
+                + "| rotation: " + rotation[0] + " " + rotation[1] + " " + rotation[2] + "\n"
+                + "| scale: " + scale[0] + " " + scale[1] + " " + scale[2] + "\n" +
                 "/\n";
     }
 }

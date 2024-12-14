@@ -10,8 +10,6 @@ import me.jacksonhoggard.raydream.object.*;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.util.ProgressListener;
 import me.jacksonhoggard.raydream.util.Util;
-import me.jacksonhoggard.raydream.util.io.SceneReader;
-import me.jacksonhoggard.raydream.util.io.SceneWriter;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -118,16 +116,6 @@ public class Scene {
             System.out.print("\nFinished in " + minutes + "m " + (float) (durationSeconds - (minutes * 60)) + "s");
         else
             System.out.print("\nFinished in " + durationSeconds + "s");
-    }
-
-    public void save(String path) {
-        SceneWriter sceneWriter = new SceneWriter();
-        sceneWriter.write(this, path);
-    }
-
-    public static Scene read(String path) {
-        SceneReader sceneReader = new SceneReader();
-        return sceneReader.read(path);
     }
 
     public Camera getCamera() {

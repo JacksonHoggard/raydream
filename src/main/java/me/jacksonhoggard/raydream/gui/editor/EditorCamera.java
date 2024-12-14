@@ -6,12 +6,6 @@ import me.jacksonhoggard.raydream.math.Matrix4F;
 import me.jacksonhoggard.raydream.math.Vector3D;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-
-import static org.lwjgl.opengl.GL11.GL_TRIANGLES;
-import static org.lwjgl.opengl.GL11.glDrawArrays;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
 
 public class EditorCamera {
 
@@ -53,7 +47,11 @@ public class EditorCamera {
         lookFrom = new Vector3D(0, 1, 2);
         lookAt = new Vector3D(0, 0, 0);
         up = new Vector3D(0, 1, 0);
-        model.create();
+        try {
+            model.create();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public void updateProjection() {

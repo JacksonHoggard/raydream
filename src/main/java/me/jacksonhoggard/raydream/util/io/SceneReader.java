@@ -1,41 +1,30 @@
 package me.jacksonhoggard.raydream.util.io;
 
-import me.jacksonhoggard.raydream.light.AreaLight;
-import me.jacksonhoggard.raydream.light.Light;
-import me.jacksonhoggard.raydream.light.PointLight;
-import me.jacksonhoggard.raydream.light.SphereLight;
+import me.jacksonhoggard.raydream.SceneManager;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorPointLight;
+import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
+import me.jacksonhoggard.raydream.gui.editor.material.EditorLightMaterial;
+import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
+import me.jacksonhoggard.raydream.gui.editor.model.RDOModel;
+import me.jacksonhoggard.raydream.gui.editor.object.BoxEditorObject;
+import me.jacksonhoggard.raydream.gui.editor.object.ModelEditorObject;
+import me.jacksonhoggard.raydream.gui.editor.object.PlaneEditorObject;
+import me.jacksonhoggard.raydream.gui.editor.object.SphereEditorObject;
+import me.jacksonhoggard.raydream.gui.editor.window.ObjectWindow;
+import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
 import me.jacksonhoggard.raydream.material.*;
-import me.jacksonhoggard.raydream.material.Texture;
-import me.jacksonhoggard.raydream.math.Vector3D;
-import me.jacksonhoggard.raydream.object.*;
-import me.jacksonhoggard.raydream.object.Object;
-import me.jacksonhoggard.raydream.render.Camera;
-import me.jacksonhoggard.raydream.render.Scene;
-import me.jacksonhoggard.raydream.util.Util;
 
 import java.io.*;
-import java.util.ArrayList;
 
 public class SceneReader {
 
-    private Camera camera;
-    private Light ambient;
-    private ArrayList<Light> lights;
-    private ArrayList<Object> objects;
-    private int width;
-    private int height;
-
-    public SceneReader() {
-        this.lights = new ArrayList<>();
-        this.objects = new ArrayList<>();
-    }
-
-    public Scene read(String path) {
+    public static void read(String path) throws IOException {
         FileInputStream stream = null;
         try {
             stream = new FileInputStream(path);
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            throw new IOException("Could not open file: ", e);
         }
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
         String line;
@@ -46,39 +35,33 @@ public class SceneReader {
                 }
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IOException("Could not read file: " + path, e);
         } catch (UnrecognizedTokenException e) {
-            throw new RuntimeException(e);
+            throw new IOException("Error reading file: " + path, e);
         }
         try {
             reader.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IOException("Could not close stream: ", e);
         }
-
-        Object[] objArr = new Object[objects.size()];
-        objArr = objects.toArray(objArr);
-        Light[] lightArr = new Light[lights.size()];
-        lightArr = lights.toArray(lightArr);
-        return new Scene(camera, ambient, lightArr, objArr, new Vector3D(0, 0, 0), width, height);
     }
 
-    private void parseObject(BufferedReader reader, String line) throws IOException, UnrecognizedTokenException {
+    private static void parseObject(BufferedReader reader, String line) throws IOException, UnrecognizedTokenException {
         String[] tokens = line.split("\\s+");
         switch(tokens[1]) {
-            case "camera:":
-                camera = createCamera(reader);
-                break;
-            case "ambient:":
-                ambient = createAmbient(reader);
+            case "settings:":
+                setSettings(reader);
                 break;
             case "light:":
                 switch(tokens[2]) {
                     case "area":
-                        lights.add(createAreaLight(reader));
+                        addAreaLight(reader);
                         break;
                     case "sphere":
-                        lights.add(createSphereLight(reader));
+                        addSphereLight(reader);
+                        break;
+                    case "point":
+                        addPointLight(reader);
                         break;
                     default:
                         throw new UnrecognizedTokenException(tokens[2]);
@@ -87,16 +70,16 @@ public class SceneReader {
             case "object:":
                 switch(tokens[2]) {
                     case "sphere":
-                        objects.add(createSphere(reader));
+                        addSphere(reader);
                         break;
                     case "box":
-                        objects.add(createBox(reader));
+                        addBox(reader);
                         break;
                     case "plane":
-                        objects.add(createPlane(reader));
+                        addPlane(reader);
                         break;
                     case "model":
-                        objects.add(createModel(reader));
+                        addModel(reader);
                         break;
                     default:
                         throw new UnrecognizedTokenException(tokens[2]);
@@ -107,416 +90,360 @@ public class SceneReader {
         }
     }
 
-    private Camera createCamera(BufferedReader reader) throws IOException, UnrecognizedTokenException {
-        Vector3D lookFrom = null;
-        Vector3D lookAt = null;
-        double fov = 0;
-        double aperture = 0;
-        Vector3D up = null;
+    private static void setSettings(BufferedReader reader) throws IOException, UnrecognizedTokenException {
         String line;
         while(!(line = reader.readLine()).startsWith(";")) {
             String[] params = line.split("\\s+");
             switch(params[0]) {
                 case "width:":
-                    width = Integer.parseInt(params[1]);
+                    SettingsWindow.setImgWidth(Integer.parseInt(params[1]));
                     break;
                 case "height:":
-                    height = Integer.parseInt(params[1]);
+                    SettingsWindow.setImgHeight(Integer.parseInt(params[1]));
                     break;
                 case "fov:":
-                    fov = Double.parseDouble(params[1]);
+                    SettingsWindow.setFov(Float.parseFloat(params[1]));
                     break;
                 case "aperture:":
-                    aperture = Double.parseDouble(params[1]);
+                    SettingsWindow.setAperture(Float.parseFloat(params[1]));
                     break;
-                case "from:":
-                    lookFrom = new Vector3D(
-                            Double.parseDouble(params[1]),
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3])
-                    );
+                case "lookFrom:":
+                    SettingsWindow.setLookFrom(new float[] {
+                            Float.parseFloat(params[1]),
+                            Float.parseFloat(params[2]),
+                            Float.parseFloat(params[3])
+                    });
                     break;
-                case "to:":
-                    lookAt = new Vector3D(
-                            Double.parseDouble(params[1]),
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3])
-                    );
+                case "lookAt:":
+                    SettingsWindow.setLookAt(new float[]{
+                            Float.parseFloat(params[1]),
+                            Float.parseFloat(params[2]),
+                            Float.parseFloat(params[3])
+                    });
                     break;
                 case "up:":
-                    up = new Vector3D(
-                            Double.parseDouble(params[1]),
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3])
-                    );
+                    SettingsWindow.setUp(new float[]{
+                            Float.parseFloat(params[1]),
+                            Float.parseFloat(params[2]),
+                            Float.parseFloat(params[3])
+                    });
                     break;
-                default:
-                    throw new UnrecognizedTokenException(params[0]);
-            }
-        }
-        return new Camera(lookFrom, lookAt, up, fov, aperture, width, height);
-    }
-
-    private Light createAmbient(BufferedReader reader) throws IOException, UnrecognizedTokenException {
-        Vector3D color = null;
-        double brightness = 0;
-        String line;
-        while(!(line = reader.readLine()).startsWith(";")) {
-            String[] params = line.split("\\s+");
-            switch(params[0]) {
-                case "color:":
-                    color = new Vector3D(
-                            Double.parseDouble(params[1]),
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3])
-                    );
-                    break;
-                case "brightness:":
-                    brightness = Double.parseDouble(params[1]);
-                    break;
-                default:
-                    throw new UnrecognizedTokenException(params[0]);
-            }
-        }
-        return new PointLight(new Vector3D(), color, brightness);
-    }
-
-    private AreaLight createAreaLight(BufferedReader reader) throws IOException, UnrecognizedTokenException {
-        Transform transform = null;
-        Vector3D color = null;
-        double brightness = 0;
-        String line;
-        while(!(line = reader.readLine()).startsWith(";")) {
-            String[] params = line.split("\\s+");
-            switch(params[0]) {
-                case "transform:":
-                    transform = createTransform(reader);
-                    break;
-                case "color:":
-                    color = new Vector3D(
-                            Double.parseDouble(params[1]),
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3])
-                    );
-                    break;
-                case "brightness:":
-                    brightness = Double.parseDouble(params[1]);
-                    break;
-                default:
-                    throw new UnrecognizedTokenException(params[0]);
-            }
-        }
-        return new AreaLight(transform, color, brightness);
-    }
-
-    private SphereLight createSphereLight(BufferedReader reader) throws IOException {
-        Vector3D position = null;
-        Vector3D color = null;
-        double brightness = 0;
-        double radius = 0;
-        String line;
-        while(!(line = reader.readLine()).startsWith(";")) {
-            String[] params = line.split("\\s+");
-            switch(params[0]) {
-                case "position:":
-                    position = new Vector3D(
-                            Double.parseDouble(params[1]),
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3])
-                    );
-                    break;
-                case "color:":
-                    color = new Vector3D(
-                            Double.parseDouble(params[1]),
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3])
-                    );
-                    break;
-                case "brightness:":
-                    brightness = Double.parseDouble(params[1]);
-                    break;
-                case "radius:":
-                    radius = Double.parseDouble(params[1]);
-                    break;
-            }
-        }
-        return new SphereLight(position, color, brightness, radius);
-    }
-
-    private Sphere createSphere(BufferedReader reader) throws IOException, UnrecognizedTokenException {
-        Transform transform = null;
-        double radius = 0;
-        Material material = null;
-        String line;
-        while(!(line = reader.readLine()).startsWith(";")) {
-            String[] params = line.split("\\s+");
-            switch(params[0]) {
-                case "transform:":
-                    transform = createTransform(reader);
-                    break;
-                case "radius:":
-                    radius = Double.parseDouble(params[1]);
-                    break;
-                case "material:":
-                    material = createMaterial(reader, params[1]);
-                    break;
-                default:
-                    throw new UnrecognizedTokenException(params[0]);
-            }
-        }
-        return new Sphere(transform, radius, material);
-    }
-
-    private Box createBox(BufferedReader reader) throws IOException, UnrecognizedTokenException {
-        Transform transform = null;
-        Vector3D size = null;
-        Material material = null;
-        String line;
-        while(!(line = reader.readLine()).startsWith(";")) {
-            String[] params = line.split("\\s+");
-            switch(params[0]) {
-                case "transform:":
-                    transform = createTransform(reader);
-                    break;
-                case "size:":
-                    size = new Vector3D(
-                            Double.parseDouble(params[1]),
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3])
-                    );
-                    break;
-                case "material:":
-                    material = createMaterial(reader, params[1]);
-                    break;
-                default:
-                    throw new UnrecognizedTokenException(params[0]);
-            }
-        }
-        return new Box(transform, size, material);
-    }
-
-    private Plane createPlane(BufferedReader reader) throws IOException, UnrecognizedTokenException {
-        double offset = 0;
-        Vector3D rotation = null;
-        Material material = null;
-        String line;
-        while(!(line = reader.readLine()).startsWith(";")) {
-            String[] params = line.split("\\s+");
-            switch(params[0]) {
-                case "offset:":
-                    offset = Double.parseDouble(params[1]);
-                    break;
-                case "rotation:":
-                    rotation = new Vector3D(
-                            Double.parseDouble(params[1]),
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3])
-                    );
-                    break;
-                case "material:":
-                    material = createMaterial(reader, params[1]);
-                    break;
-                default:
-                    throw new UnrecognizedTokenException(params[0]);
-            }
-        }
-        return new Plane(offset, rotation, material);
-    }
-
-    private Model createModel(BufferedReader reader) throws IOException, UnrecognizedTokenException {
-        Transform transform = null;
-        Material material = null;
-        Mesh mesh = null;
-        boolean invert = false;
-        String line;
-        while(!(line = reader.readLine()).startsWith(";")) {
-            String[] params = line.split("\\s+");
-            switch(params[0]) {
-                case "transform:":
-                    transform = createTransform(reader);
-                    break;
-                case "material:":
-                    material = createMaterial(reader, params[1]);
-                    break;
-                case "mesh:":
-                    //mesh = Util.loadOBJ(line.substring(6));
-                    break;
-                default:
-                    throw new UnrecognizedTokenException(params[0]);
-            }
-        }
-        return new Model(transform, material, mesh);
-    }
-
-    private Material createMaterial(BufferedReader reader, String type) throws IOException, UnrecognizedTokenException {
-        Vector3D color = null;
-        Texture texture = null;
-        double ambient = 0;
-        double lambertian = 0;
-        double specular = 0;
-        double specularExponent = 0;
-        double metalness = 0;
-        double indexOfRefraction = 0;
-        double k = 0;
-        String line;
-        while(!(line = reader.readLine()).trim().startsWith("/") && line.trim().startsWith("|")) {
-            String[] params = line.trim().split("\\s+");
-            switch(params[1]) {
-                case "color:":
-                    color = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
-                    break;
-                case "texture:":
-                    if(texture != null)
-                        throw new IllegalArgumentException("Texture/pattern already assigned.");
-                    texture = Util.loadTexture(line.trim().substring(11));
-                    break;
-                case "pattern:":
-                    if(texture != null)
-                        throw new IllegalArgumentException("Texture/pattern already assigned.");
-                    texture = createPattern(reader, params[2]);
+                case "sky:":
+                    SettingsWindow.setSkyColor(new float[] {
+                            Float.parseFloat(params[1]),
+                            Float.parseFloat(params[2]),
+                            Float.parseFloat(params[3])
+                    });
                     break;
                 case "ambient:":
-                    ambient = Double.parseDouble(params[2]);
+                    SettingsWindow.setAmbientColor(new float[] {
+                            Float.parseFloat(params[1]),
+                            Float.parseFloat(params[2]),
+                            Float.parseFloat(params[3])
+                    });
                     break;
-                case "lambertian:":
-                    lambertian = Double.parseDouble(params[2]);
+                case "samples:":
+                    SettingsWindow.setSampleDepth(Integer.parseInt(params[1]));
                     break;
-                case "specular:":
-                    specular = Double.parseDouble(params[2]);
+                case "bounces:":
+                    SettingsWindow.setBounces(Integer.parseInt(params[1]));
                     break;
-                case "exponent:":
-                    specularExponent = Double.parseDouble(params[2]);
+                case "shadows:":
+                    SettingsWindow.setNumShadowRays(Integer.parseInt(params[1]));
                     break;
-                case "metalness:":
-                    metalness = Double.parseDouble(params[2]);
+                case "threads:":
+                    SettingsWindow.setThreads(Integer.parseInt(params[1]));
                     break;
-                case "ior:":
-                    indexOfRefraction = Double.parseDouble(params[2]);
+                default:
+                    throw new UnrecognizedTokenException(params[0]);
+            }
+        }
+    }
+
+    private static void parseLightMaterial(BufferedReader reader, EditorLightMaterial material) throws IOException, UnrecognizedTokenException {
+        float[] color = new float[3];
+        float brightness = 0;
+        String line;
+        while(!(line = reader.readLine()).trim().startsWith("/") && line.trim().startsWith("|")) {
+            String[] params = line.split("\\s+");
+            switch(params[1]) {
+                case "color:":
+                    color[0] = Float.parseFloat(params[2]);
+                    color[1] = Float.parseFloat(params[3]);
+                    color[2] = Float.parseFloat(params[4]);
                     break;
-                case "k:":
-                    k = Double.parseDouble(params[2]);
+                case "brightness:":
+                    brightness = Float.parseFloat(params[2]);
                     break;
                 default:
                     throw new UnrecognizedTokenException(params[1]);
             }
         }
-        return null;
+        material.setColor(color);
+        material.setBrightness(brightness);
     }
 
-    private Texture createPattern(BufferedReader reader, String type) throws IOException, UnrecognizedTokenException {
-        int width = 0;
-        int height = 0;
-        Vector3D colorA = null;
-        Vector3D colorB = null;
-        Vector3D main = null;
-        Vector3D ul = null;
-        Vector3D ur = null;
-        Vector3D bl = null;
-        Vector3D br = null;
+    private static void addAreaLight(BufferedReader reader) throws IOException, UnrecognizedTokenException {
+        float[] translation = new float[3];
+        float[] rotation = new float[3];
+        float[] scale = new float[3];
+        EditorLightMaterial material = new EditorLightMaterial();
+        StringBuilder label = new StringBuilder();
+        String line;
+        while(!(line = reader.readLine()).startsWith(";")) {
+            String[] params = line.split("\\s+");
+            switch(params[0]) {
+                case "label:":
+                    label.append(line.substring(7));
+                    break;
+                case "transform:":
+                    parseTransform(reader, translation, rotation, scale);
+                    break;
+                case "material:":
+                    parseLightMaterial(reader, material);
+                    break;
+                default:
+                    throw new UnrecognizedTokenException(params[0]);
+            }
+        }
+        ObjectWindow.lights.add(new EditorAreaLight(translation, rotation, scale, material, label.toString()));
+    }
+
+    private static void addSphereLight(BufferedReader reader) throws IOException, UnrecognizedTokenException {
+        float[] translation = new float[3];
+        float[] rotation = new float[3];
+        float[] scale = new float[3];
+        EditorLightMaterial material = new EditorLightMaterial();
+        StringBuilder label = new StringBuilder();
+        String line;
+        while(!(line = reader.readLine()).startsWith(";")) {
+            String[] params = line.split("\\s+");
+            switch(params[0]) {
+                case "label:":
+                    label.append(line.substring(7));
+                    break;
+                case "transform:":
+                    parseTransform(reader, translation, rotation, scale);
+                    break;
+                case "material:":
+                    parseLightMaterial(reader, material);
+                    break;
+                default:
+                    throw new UnrecognizedTokenException(params[0]);
+            }
+        }
+        ObjectWindow.lights.add(new EditorSphereLight(translation, rotation, scale, material, label.toString()));
+    }
+
+    private static void addPointLight(BufferedReader reader) throws IOException, UnrecognizedTokenException {
+        float[] translation = new float[3];
+        float[] rotation = new float[3];
+        float[] scale = new float[3];
+        EditorLightMaterial material = new EditorLightMaterial();
+        StringBuilder label = new StringBuilder();
+        String line;
+        while(!(line = reader.readLine()).startsWith(";")) {
+            String[] params = line.split("\\s+");
+            switch(params[0]) {
+                case "label:":
+                    label.append(line.substring(7));
+                    break;
+                case "transform:":
+                    parseTransform(reader, translation, rotation, scale);
+                    break;
+                case "material:":
+                    parseLightMaterial(reader, material);
+                    break;
+                default:
+                    throw new UnrecognizedTokenException(params[0]);
+            }
+        }
+        ObjectWindow.lights.add(new EditorPointLight(translation, rotation, scale, material, label.toString()));
+    }
+
+    private static void addSphere(BufferedReader reader) throws IOException, UnrecognizedTokenException {
+        float[] translation = new float[3];
+        float[] rotation = new float[3];
+        float[] scale = new float[3];
+        EditorObjectMaterial material = new EditorObjectMaterial();
+        StringBuilder label = new StringBuilder();
+        String line;
+        while(!(line = reader.readLine()).startsWith(";")) {
+            String[] params = line.split("\\s+");
+            switch(params[0]) {
+                case "label:":
+                    label.append(line.substring(7));
+                    break;
+                case "transform:":
+                    parseTransform(reader, translation, rotation, scale);
+                    break;
+                case "material:":
+                    parseObjectMaterial(reader, material, SceneManager.getProjectDir());
+                    break;
+                default:
+                    throw new UnrecognizedTokenException(params[0]);
+            }
+        }
+        ObjectWindow.objects.add(new SphereEditorObject(translation, rotation, scale, material, label.toString()));
+    }
+
+    private static void addBox(BufferedReader reader) throws IOException, UnrecognizedTokenException {
+        float[] translation = new float[3];
+        float[] rotation = new float[3];
+        float[] scale = new float[3];
+        EditorObjectMaterial material = new EditorObjectMaterial();
+        StringBuilder label = new StringBuilder();
+        String line;
+        while(!(line = reader.readLine()).startsWith(";")) {
+            String[] params = line.split("\\s+");
+            switch(params[0]) {
+                case "label:":
+                    label.append(line.substring(7));
+                    break;
+                case "transform:":
+                    parseTransform(reader, translation, rotation, scale);
+                    break;
+                case "material:":
+                    parseObjectMaterial(reader, material, SceneManager.getProjectDir());
+                    break;
+                default:
+                    throw new UnrecognizedTokenException(params[0]);
+            }
+        }
+        ObjectWindow.objects.add(new BoxEditorObject(translation, rotation, scale, material, label.toString()));
+    }
+
+    private static void addPlane(BufferedReader reader)  throws IOException, UnrecognizedTokenException {
+        float[] translation = new float[3];
+        float[] rotation = new float[3];
+        float[] scale = new float[3];
+        EditorObjectMaterial material = new EditorObjectMaterial();
+        StringBuilder label = new StringBuilder();
+        String line;
+        while(!(line = reader.readLine()).startsWith(";")) {
+            String[] params = line.split("\\s+");
+            switch(params[0]) {
+                case "label:":
+                    label.append(line.substring(7));
+                    break;
+                case "transform:":
+                    parseTransform(reader, translation, rotation, scale);
+                    break;
+                case "material:":
+                    parseObjectMaterial(reader, material, SceneManager.getProjectDir());
+                    break;
+                default:
+                    throw new UnrecognizedTokenException(params[0]);
+            }
+        }
+        ObjectWindow.objects.add(new PlaneEditorObject(translation, rotation, scale, material, label.toString()));
+    }
+
+    private static void addModel(BufferedReader reader)  throws IOException, UnrecognizedTokenException {
+        float[] translation = new float[3];
+        float[] rotation = new float[3];
+        float[] scale = new float[3];
+        StringBuilder label = new StringBuilder();
+        RDOModel model = null;
+        String line;
+        while(!(line = reader.readLine()).startsWith(";")) {
+            String[] params = line.split("\\s+");
+            switch(params[0]) {
+                case "label:":
+                    label.append(line.substring(7));
+                    break;
+                case "transform:":
+                    parseTransform(reader, translation, rotation, scale);
+                    break;
+                case "file:":
+                    model = new RDOModel(SceneManager.getProjectDir() + File.separator + line.substring(6), new FileInputStream(SceneManager.getProjectDir() + File.separator + line.substring(6)));
+                    break;
+                default:
+                    throw new UnrecognizedTokenException(params[0]);
+            }
+        }
+        ObjectWindow.objects.add(new ModelEditorObject(model, translation, rotation, scale, label.toString()));
+    }
+
+    public static void parseObjectMaterial(BufferedReader reader, EditorObjectMaterial material, String dirPath) throws IOException, UnrecognizedTokenException {
         String line;
         while(!(line = reader.readLine()).trim().startsWith("/") && line.trim().startsWith("|")) {
             String[] params = line.trim().split("\\s+");
             switch(params[1]) {
-                case "colorA:":
-                    colorA = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
+                case "color:":
+                    material.setColor(new float[] {
+                            Float.parseFloat(params[2]),
+                            Float.parseFloat(params[3]),
+                            Float.parseFloat(params[4])
+                    });
                     break;
-                case "colorB:":
-                    colorB = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
+                case "ambient:":
+                    material.setAmbient(Float.parseFloat(params[2]));
                     break;
-                case "width:":
-                    width = Integer.parseInt(params[2]);
+                case "diffuse:":
+                     material.setDiffuse(Float.parseFloat(params[2]));
                     break;
-                case "height:":
-                    height = Integer.parseInt(params[2]);
+                case "specular:":
+                    material.setSpecular(Float.parseFloat(params[2]));
                     break;
-                case "main:":
-                    main = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
+                case "exponent:":
+                    material.setSpecularExponent(Float.parseFloat(params[2]));
                     break;
-                case "ul:":
-                    ul = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
+                case "metalness:":
+                    material.setMetalness(Float.parseFloat(params[2]));
                     break;
-                case "ur:":
-                    ur = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
+                case "ior:":
+                    material.setIndexOfRefraction(Float.parseFloat(params[2]));
                     break;
-                case "bl:":
-                    bl = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
+                case "k:":
+                    material.setK(Float.parseFloat(params[2]));
                     break;
-                case "br:":
-                    br = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
+                case "type:":
+                    material.setType(Material.Type.valueOf(params[2]));
+                    break;
+                case "texture:":
+                    if(params[2].equals("null"))
+                        break;
+                    material.setTexture(new me.jacksonhoggard.raydream.gui.editor.material.Texture(dirPath + File.separator + line.substring(11)));
+                    break;
+                case "bump:":
+                    if(params[2].equals("null"))
+                        break;
+                    material.setBumpMap(new me.jacksonhoggard.raydream.gui.editor.material.Texture(dirPath + File.separator + line.substring(8)));
+                    break;
+                case "bScale:":
+                    material.setBumpScale(Float.parseFloat(params[2]));
                     break;
                 default:
                     throw new UnrecognizedTokenException(params[1]);
             }
         }
-        return null;
     }
 
-    private Transform createTransform(BufferedReader reader) throws IOException, UnrecognizedTokenException {
-        Vector3D translation = null;
-        Vector3D scale = null;
-        Vector3D rotation = null;
+    private static void parseTransform(BufferedReader reader, float[] translation, float[] rotation, float[] scale) throws IOException, UnrecognizedTokenException {
         String line;
         while(!(line = reader.readLine()).trim().startsWith("/") && line.trim().startsWith("|")) {
             String[] params = line.trim().split("\\s+");
             switch(params[1]) {
                 case "scale:":
-                    scale = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
+                    scale[0] = Float.parseFloat(params[2]);
+                    scale[1] = Float.parseFloat(params[3]);
+                    scale[2] = Float.parseFloat(params[4]);
                     break;
                 case "translation:":
-                    translation = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
+                    translation[0] = Float.parseFloat(params[2]);
+                    translation[1] = Float.parseFloat(params[3]);
+                    translation[2] = Float.parseFloat(params[4]);
                     break;
                 case "rotation:":
-                    rotation = new Vector3D(
-                            Double.parseDouble(params[2]),
-                            Double.parseDouble(params[3]),
-                            Double.parseDouble(params[4])
-                    );
+                    rotation[0] = Float.parseFloat(params[2]);
+                    rotation[1] = Float.parseFloat(params[3]);
+                    rotation[2] = Float.parseFloat(params[4]);
                     break;
                 default:
                     throw new UnrecognizedTokenException(params[1]);
             }
         }
-        return new Transform(translation, rotation, scale);
     }
 
 }

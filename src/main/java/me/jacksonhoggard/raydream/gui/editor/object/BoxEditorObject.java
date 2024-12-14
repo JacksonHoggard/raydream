@@ -1,5 +1,6 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
+import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.BoxModel;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
@@ -7,6 +8,8 @@ import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Box;
 import me.jacksonhoggard.raydream.object.Object;
+
+import java.io.IOException;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
@@ -17,12 +20,12 @@ public class BoxEditorObject extends EditorObject {
 
     private static final EditorModel boxModel = new BoxModel();
 
-    public BoxEditorObject(EditorObjectMaterial material) {
+    public BoxEditorObject(EditorObjectMaterial material) throws IOException {
         super(boxModel, material);
         label.set("Box");
     }
 
-    public BoxEditorObject() {
+    public BoxEditorObject() throws IOException {
         this(
                 new EditorObjectMaterial(
                         new float[]{1.f, 0.f, 0.f},
@@ -37,6 +40,12 @@ public class BoxEditorObject extends EditorObject {
                         1.f
                 )
         );
+    }
+
+    public BoxEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial material, String label) throws IOException {
+        super(boxModel, material);
+        ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
+        this.label.set(label);
     }
 
     @Override

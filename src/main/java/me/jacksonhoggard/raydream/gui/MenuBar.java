@@ -18,10 +18,18 @@ public class MenuBar {
                     newScene();
                 }
                 if(ImGui.menuItem("Save")) {
-                    saveScene();
+                    try {
+                        saveScene();
+                    } catch (IOException e) {
+                        DialogWindow.showError("Unable to save project.", e);
+                    }
                 }
                 if(ImGui.menuItem("Open")) {
-                    loadScene();
+                    try {
+                        loadScene();
+                    } catch (IOException e) {
+                        DialogWindow.showError("Unable to load project.", e);
+                    }
                 }
                 ImGui.endMenu();
             }
@@ -41,18 +49,13 @@ public class MenuBar {
             SceneManager.newScene();
     }
 
-    private static void saveScene() {
-        String path = DialogWindow.openFolder();
-        if(path != null) {
-            try {
-                SceneManager.saveScene(path);
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to save project: ", e);
-            }
-        }
+    private static void saveScene() throws IOException {
+        String path = DialogWindow.openFolder("Choose project folder");
+        if(path != null)
+            SceneManager.saveScene(path);
     }
 
-    private static void loadScene() {
+    private static void loadScene() throws IOException {
         String path = DialogWindow.openFileChooser("Project Files", "dream");
         if(path != null)
             SceneManager.loadScene(path);

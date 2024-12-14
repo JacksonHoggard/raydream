@@ -3,7 +3,7 @@ package me.jacksonhoggard.raydream;
 import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
-import me.jacksonhoggard.raydream.gui.editor.object.OBJEditorObject;
+import me.jacksonhoggard.raydream.gui.editor.object.ModelEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.window.EditorWindow;
 import me.jacksonhoggard.raydream.gui.editor.window.ObjectWindow;
 import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
@@ -14,6 +14,7 @@ import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.render.Camera;
 import me.jacksonhoggard.raydream.util.ProgressListener;
 import me.jacksonhoggard.raydream.render.Scene;
+import me.jacksonhoggard.raydream.util.io.SceneReader;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -25,17 +26,21 @@ import java.util.List;
 
 public class SceneManager {
 
+    private static String projectDir;
+
     public static void newScene() {
         ObjectWindow.reset();
         EditorObject.reset();
         EditorLight.reset();
         SettingsWindow.reset();
         EditorWindow.reset();
+        projectDir = System.getProperty("user.dir");
     }
 
     public static void saveScene(String path) throws IOException {
         Paths.get(path).toFile().mkdir();
         FileWriter writer = new FileWriter(path + File.separator + "project.dream");
+        projectDir = path;
 
         writer.write(SettingsWindow.toSaveEntry());
         for(EditorObject object : ObjectWindow.objects) {
@@ -50,14 +55,16 @@ public class SceneManager {
         writer.close();
     }
 
-    public static void loadScene(String path) {
-
+    public static void loadScene(String path) throws IOException {
+        newScene();
+        projectDir = Paths.get(path).getParent().toString();
+        SceneReader.read(path);
     }
 
     public static void renderScene(List<EditorObject> editorObjects, List<EditorLight> editorLights, Light ambient, Vector3D skyColor, EditorCamera editorCamera, int width, int height, float aperture, String filename, int sampleDepth, int bounces, int numShadowRays, int threads, ProgressListener progressListener) {
         List<Object> listObj = new ArrayList<>();
         for (EditorObject editorObject : editorObjects) {
-            if (editorObject instanceof OBJEditorObject obj) {
+            if (editorObject instanceof ModelEditorObject obj) {
                 Model[] models = obj.toObjects();
                 listObj.addAll(Arrays.asList(models));
                 continue;
@@ -79,5 +86,9 @@ public class SceneManager {
         } catch (IOException e) {
             throw new RuntimeException("Unable to render scene: ", e);
         }
+    }
+
+    public static String getProjectDir() {
+        return projectDir;
     }
 }
