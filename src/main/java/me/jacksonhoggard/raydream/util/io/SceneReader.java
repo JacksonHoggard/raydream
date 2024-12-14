@@ -6,6 +6,7 @@ import me.jacksonhoggard.raydream.gui.editor.light.EditorPointLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorLightMaterial;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
+import me.jacksonhoggard.raydream.gui.editor.model.MeshModel;
 import me.jacksonhoggard.raydream.gui.editor.model.RDOModel;
 import me.jacksonhoggard.raydream.gui.editor.object.BoxEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.object.ModelEditorObject;
@@ -16,6 +17,8 @@ import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
 import me.jacksonhoggard.raydream.material.*;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class SceneReader {
 
@@ -340,6 +343,7 @@ public class SceneReader {
     }
 
     private static void addModel(BufferedReader reader)  throws IOException, UnrecognizedTokenException {
+        List<EditorObjectMaterial> materials = new ArrayList<>();
         float[] translation = new float[3];
         float[] rotation = new float[3];
         float[] scale = new float[3];
@@ -355,6 +359,11 @@ public class SceneReader {
                 case "transform:":
                     parseTransform(reader, translation, rotation, scale);
                     break;
+                case "material:":
+                    EditorObjectMaterial material = new EditorObjectMaterial();
+                    parseObjectMaterial(reader, material, SceneManager.getProjectDir());
+                    materials.add(material);
+                    break;
                 case "file:":
                     model = new RDOModel(SceneManager.getProjectDir() + File.separator + line.substring(6), new FileInputStream(SceneManager.getProjectDir() + File.separator + line.substring(6)));
                     break;
@@ -362,7 +371,15 @@ public class SceneReader {
                     throw new UnrecognizedTokenException(params[0]);
             }
         }
-        ObjectWindow.objects.add(new ModelEditorObject(model, translation, rotation, scale, label.toString()));
+        ModelEditorObject modelEditorObject = new ModelEditorObject(model, translation, rotation, scale, label.toString());
+        if(!materials.isEmpty()) {
+            int i = 0;
+            for (MeshModel.Mesh mesh : ((MeshModel) modelEditorObject.getModel()).getMeshes()) {
+                mesh.setMaterial(materials.get(i));
+                i++;
+            }
+        }
+        ObjectWindow.objects.add(modelEditorObject);
     }
 
     public static void parseObjectMaterial(BufferedReader reader, EditorObjectMaterial material, String dirPath) throws IOException, UnrecognizedTokenException {

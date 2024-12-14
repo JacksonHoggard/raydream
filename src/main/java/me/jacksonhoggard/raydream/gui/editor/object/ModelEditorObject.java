@@ -114,9 +114,13 @@ public class ModelEditorObject extends EditorObject {
         } catch (IOException e) {
             throw new RuntimeException("Could not save model: ", e);
         }
+        StringBuilder materials = new StringBuilder();
+        for(MeshModel.Mesh m : ((MeshModel) getModel()).getMeshes()) {
+            materials.append(m.getMaterial().toSaveEntry(path));
+        }
         return "+ object: model\n" +
                 "label: " + label.get() + "\n" +
-                getTransformSaveEntry() +
+                getTransformSaveEntry() + materials.toString() +
                 "file: " + modelPath + "\n" +
                 ";\n";
     }
@@ -132,7 +136,6 @@ public class ModelEditorObject extends EditorObject {
 
             writer.write("+ mesh:\n");
             writer.write("label: " + m.getLabel() + "\n");
-            writer.write(m.getMaterial().toSaveEntry(path));
             writer.write("triangles: \n");
 
             Vector3D[] vertices = new Vector3D[m.getVertexCount()];

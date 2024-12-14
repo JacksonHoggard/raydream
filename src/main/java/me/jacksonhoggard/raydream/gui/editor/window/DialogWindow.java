@@ -49,9 +49,9 @@ public class DialogWindow {
 
     public static String openFolder(String title) {
         JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         if(SceneManager.getProjectDir() != null)
             fileChooser.setCurrentDirectory(new File(SceneManager.getProjectDir()));
+        fileChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
         fileChooser.setDialogTitle(title);
         int result = fileChooser.showOpenDialog(null);
         if(result == JFileChooser.APPROVE_OPTION)

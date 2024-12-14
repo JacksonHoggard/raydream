@@ -48,7 +48,7 @@ public abstract class MeshModel extends EditorModel {
     public class Mesh {
 
         private final String label;
-        private final EditorObjectMaterial material;
+        private EditorObjectMaterial material;
         private final float[] vertices;
         private int vertexArrayId;
         private int vertexBufferId;
@@ -133,6 +133,10 @@ public abstract class MeshModel extends EditorModel {
 
         public EditorObjectMaterial getMaterial() {
             return material;
+        }
+
+        public void setMaterial(EditorObjectMaterial material) {
+            this.material = material;
         }
 
         public String getLabel() {
