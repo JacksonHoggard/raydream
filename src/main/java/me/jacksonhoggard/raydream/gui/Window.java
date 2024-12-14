@@ -10,7 +10,7 @@ import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorPointLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
-import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
+import me.jacksonhoggard.raydream.gui.editor.model.MeshModel;
 import me.jacksonhoggard.raydream.gui.editor.object.*;
 import me.jacksonhoggard.raydream.gui.editor.window.*;
 import me.jacksonhoggard.raydream.material.Material;
@@ -308,7 +308,7 @@ public class Window {
         Map<Float, EditorObject> transparentObjects = new HashMap<>();
         // Draw opaque objects
         for(EditorObject object : ObjectWindow.objects) {
-            if(object instanceof OBJEditorObject) {
+            if(object instanceof ModelEditorObject) {
                 drawObject(object, camera);
                 continue;
             }
@@ -350,8 +350,8 @@ public class Window {
         }
         objectShader.setBool("isSelected", false);
         objectShader.setMatrix4("model", object.getModelMatrix());
-        if(object instanceof OBJEditorObject) {
-            for(OBJModel.Mesh mesh : ((OBJModel) object.getModel()).getMeshes()) {
+        if(object instanceof ModelEditorObject) {
+            for(MeshModel.Mesh mesh : ((MeshModel) object.getModel()).getMeshes()) {
                 updateObjectShader(mesh.getMaterial());
                 if(mesh.getMaterial().getType().equals(Material.Type.REFLECT_REFRACT)) {
                     objectShader.setFloat("opacity", 0.75f);

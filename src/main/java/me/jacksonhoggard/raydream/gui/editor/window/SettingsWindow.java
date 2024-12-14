@@ -138,6 +138,24 @@ public class SettingsWindow {
         threads = 4;
     }
 
+    public static String toSaveEntry() {
+        return "+ settings:\n" +
+                "lookFrom: " + lookFrom[0] + " " + lookFrom[1] + " " + lookFrom[2] + "\n" +
+                "lookAt: " + lookAt[0] + " " + lookAt[1] + " " + lookAt[2] + "\n" +
+                "up: " + up[0] + " " + up[1] + " " + up[2] + "\n" +
+                "sky: " + skyColor[0] + " " + skyColor[1] + " " + skyColor[2] + "\n" +
+                "ambient: " + ambientColor[0] + " " + ambientColor[1] + " " + ambientColor[2] + "\n" +
+                "fov: " + PreviewWindow.getCamera().getFov() + "\n" +
+                "aperture: " + aperture + "\n" +
+                "width: " + imgWidth + "\n" +
+                "height: " + imgHeight + "\n" +
+                "samples: " + sampleDepth + "\n" +
+                "bounces: " + bounces + "\n" +
+                "shadows: " + numShadowRays + "\n" +
+                "threads: " + threads + "\n" +
+                ";\n";
+    }
+
     public static float getWidth() {
         return width;
     }
@@ -172,5 +190,62 @@ public class SettingsWindow {
 
     public static float[] getAmbientColor() {
         return ambientColor;
+    }
+
+    public static void setImgWidth(int imgWidth) {
+        SettingsWindow.imgWidth = imgWidth;
+    }
+
+    public static void setImgHeight(int imgHeight) {
+        SettingsWindow.imgHeight = imgHeight;
+    }
+
+    public static void setAperture(float aperture) {
+        SettingsWindow.aperture = aperture;
+    }
+
+    public static void setSkyColor(float[] skyColor) {
+        SettingsWindow.skyColor = new float[] {
+                skyColor[0],
+                skyColor[1],
+                skyColor[2],
+                1.0f
+        };
+    }
+
+    public static void setAmbientColor(float[] ambientColor) {
+        SettingsWindow.ambientColor = ambientColor;
+    }
+
+    public static void setBounces(int bounces) {
+        SettingsWindow.bounces = bounces;
+    }
+
+    public static void setLookAt(float[] lookAt) {
+        SettingsWindow.lookAt = lookAt;
+    }
+
+    public static void setLookFrom(float[] lookFrom) {
+        SettingsWindow.lookFrom = lookFrom;
+    }
+
+    public static void setNumShadowRays(int numShadowRays) {
+        SettingsWindow.numShadowRays = numShadowRays;
+    }
+
+    public static void setSampleDepth(int sampleDepth) {
+        SettingsWindow.sampleDepth = sampleDepth;
+    }
+
+    public static void setUp(float[] up) {
+        SettingsWindow.up = up;
+    }
+
+    public static void setThreads(int threads) {
+        SettingsWindow.threads = threads;
+    }
+
+    public static void setFov(float fov) {
+        PreviewWindow.getCamera().setFov(fov);
     }
 }

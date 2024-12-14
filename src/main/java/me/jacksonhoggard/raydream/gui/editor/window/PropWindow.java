@@ -6,7 +6,6 @@ import imgui.extension.imguizmo.flag.Mode;
 import imgui.extension.imguizmo.flag.Operation;
 import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiWindowFlags;
-import imgui.type.ImBoolean;
 import imgui.type.ImFloat;
 import imgui.type.ImInt;
 import me.jacksonhoggard.raydream.gui.MenuBar;
@@ -17,11 +16,10 @@ import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorLightMaterial;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.material.Texture;
-import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
-import me.jacksonhoggard.raydream.gui.editor.object.OBJEditorObject;
 import me.jacksonhoggard.raydream.material.Material;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 public class PropWindow {
@@ -195,7 +193,11 @@ public class PropWindow {
                 if(path != null) {
                     if(material.getTexture() != null)
                         material.getTexture().remove();
-                    material.setTexture(new Texture(path));
+                    try {
+                        material.setTexture(new Texture(path));
+                    } catch (IOException e) {
+                        DialogWindow.showError("Unable to load texture: ", e);
+                    }
                 }
             }
             if(material.getTexture() != null) {
@@ -210,7 +212,11 @@ public class PropWindow {
                 if(path != null) {
                     if(material.getBumpMap() != null)
                         material.getBumpMap().remove();
-                    material.setBumpMap(new Texture(path));
+                    try {
+                        material.setBumpMap(new Texture(path));
+                    } catch(IOException e) {
+                        DialogWindow.showError("Unable to load bump map: ", e);
+                    }
                 }
             }
             if(material.getBumpMap() != null) {

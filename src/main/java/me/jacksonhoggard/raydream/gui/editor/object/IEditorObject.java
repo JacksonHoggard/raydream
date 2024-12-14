@@ -12,4 +12,6 @@ public interface IEditorObject {
     
     Object toObject();
 
+    String toSaveEntry(String path);
+
 }

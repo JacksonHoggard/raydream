@@ -1,8 +1,8 @@
 package me.jacksonhoggard.raydream.gui.editor.object;
 
+import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
-import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
-import me.jacksonhoggard.raydream.material.Material;
+import me.jacksonhoggard.raydream.gui.editor.model.MeshModel;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Mesh;
@@ -10,35 +10,19 @@ import me.jacksonhoggard.raydream.object.Model;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Triangle;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.*;
+import java.nio.file.Paths;
 
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
-import static org.lwjgl.opengl.GL13.glActiveTexture;
-import static org.lwjgl.opengl.GL30.glBindVertexArray;
+public class ModelEditorObject extends EditorObject {
 
-public class OBJEditorObject extends EditorObject {
+    public ModelEditorObject(MeshModel model) throws IOException {
+        super(model, new EditorObjectMaterial());
+    }
 
-//    public OBJEditorObject(String path, EditorObjectMaterial material) {
-//        super(new OBJModel(path), material);
-//    }
-
-    public OBJEditorObject(String path) throws FileNotFoundException {
-        super(new OBJModel(path, new FileInputStream(path)), new EditorObjectMaterial(
-                new float[] {0.f, 1.f, 0.f},
-                0.1f,
-                0.4f,
-                0.5f,
-                32,
-                3.638f,
-                0.177f,
-                0.3f,
-                Material.Type.REFLECT,
-                1.f
-        ));
+    public ModelEditorObject(MeshModel model, float[] translation, float[] rotation, float[] scale, String label) throws IOException {
+        super(model, new EditorObjectMaterial());
+        ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
+        this.label.set(label);
     }
 
     @Override
@@ -50,7 +34,7 @@ public class OBJEditorObject extends EditorObject {
         if(!getSubIds().isEmpty()) {
             for(Integer i : getSubIds()) {
                 if(i.intValue() == selected) {
-                    return ((OBJModel) getModel()).getMeshes().get(getSubIds().indexOf(i)).getMaterial();
+                    return ((MeshModel) getModel()).getMeshes().get(getSubIds().indexOf(i)).getMaterial();
                 }
             }
         }
@@ -69,7 +53,7 @@ public class OBJEditorObject extends EditorObject {
 
     @Override
     public Object toObject() {
-        OBJModel model = (OBJModel) getModel();
+        MeshModel model = (MeshModel) getModel();
         Vector3D[] vertices = new Vector3D[model.getVertexCount()];
         Vector3D[] normals = new Vector3D[model.getVertexCount()];
         Vector2D[] texCoords = new Vector2D[model.getVertexCount()];
@@ -122,12 +106,89 @@ public class OBJEditorObject extends EditorObject {
         return new Model(getTransform(), getMaterial().toRayDreamMaterial(), mesh);
     }
 
+    @Override
+    public String toSaveEntry(String path) {
+        String modelPath;
+        try {
+            modelPath = saveModel(path);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not save model: ", e);
+        }
+        StringBuilder materials = new StringBuilder();
+        for(MeshModel.Mesh m : ((MeshModel) getModel()).getMeshes()) {
+            materials.append(m.getMaterial().toSaveEntry(path));
+        }
+        return "+ object: model\n" +
+                "label: " + label.get() + "\n" +
+                getTransformSaveEntry() + materials.toString() +
+                "file: " + modelPath + "\n" +
+                ";\n";
+    }
+
+    private String saveModel(String path) throws IOException {
+        MeshModel model = (MeshModel) getModel();
+        String fileName = Paths.get(model.getPath()).getFileName().toString();
+        fileName = fileName.endsWith(".obj") ? fileName.substring(0, fileName.length() - 3) + "rdo" : fileName ;
+        String filePath = path + File.separator + fileName;
+
+        FileWriter writer = new FileWriter(filePath);
+        for(MeshModel.Mesh m : model.getMeshes()) {
+
+            writer.write("+ mesh:\n");
+            writer.write("label: " + m.getLabel() + "\n");
+            writer.write("triangles: \n");
+
+            Vector3D[] vertices = new Vector3D[m.getVertexCount()];
+            Vector3D[] normals = new Vector3D[m.getVertexCount()];
+            Vector2D[] texCoords = new Vector2D[m.getVertexCount()];
+            int i = 0;
+            for(int j = 0; j < vertices.length; j++) {
+                vertices[j] = new Vector3D(
+                        m.getVertices()[i],
+                        m.getVertices()[i + 1],
+                        m.getVertices()[i + 2]
+                );
+                normals[j] = new Vector3D(
+                        m.getVertices()[i + 3],
+                        m.getVertices()[i + 4],
+                        m.getVertices()[i + 5]
+                );
+                texCoords[j] = new Vector2D(
+                        m.getVertices()[i + 6],
+                        m.getVertices()[i + 7]
+                );
+                i+=8;
+            }
+            i = 0;
+            for(int t = 0; t < m.getVertexCount() / 3; t++) {
+                writer.write("| " + vecToSaveEntry(vertices[i]) + " " + vecToSaveEntry(vertices[i+1]) + " " + vecToSaveEntry(vertices[i+2]) + " "
+                                + vecToSaveEntry(normals[i]) + " " + vecToSaveEntry(normals[i+1]) + " " + vecToSaveEntry(normals[i+2]) + " " +
+                                vecToSaveEntry(texCoords[i]) + " " + vecToSaveEntry(texCoords[i+1]) + " " + vecToSaveEntry(texCoords[i+2]) + "\n");
+                i+=3;
+            }
+            writer.write("/\n");
+            writer.write(";\n");
+        }
+
+        writer.close();
+
+        return Paths.get(path).relativize(Paths.get(filePath)).toString();
+    }
+
+    private static String vecToSaveEntry(Vector3D v) {
+        return v.x + " " + v.y + " " + v.z;
+    }
+
+    private static String vecToSaveEntry(Vector2D v) {
+        return v.x + " " + v.y;
+    }
+
     public Model[] toObjects() {
         Model[] models = new Model[getSubIds().size()];
 
         int mIndex = 0;
-        OBJModel model = (OBJModel) getModel();
-        for(OBJModel.Mesh m : model.getMeshes()) {
+        MeshModel model = (MeshModel) getModel();
+        for(MeshModel.Mesh m : model.getMeshes()) {
 
             Vector3D[] vertices = new Vector3D[m.getVertexCount()];
             Vector3D[] normals = new Vector3D[m.getVertexCount()];

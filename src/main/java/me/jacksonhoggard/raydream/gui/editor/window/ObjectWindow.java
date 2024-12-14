@@ -8,10 +8,13 @@ import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorPointLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
 import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
+import me.jacksonhoggard.raydream.gui.editor.model.RDOModel;
 import me.jacksonhoggard.raydream.gui.editor.object.*;
 import org.lwjgl.glfw.GLFW;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class ObjectWindow {
@@ -34,49 +37,76 @@ public class ObjectWindow {
         if(ImGui.begin("Objects", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBringToFrontOnFocus)) {
             if(ImGui.beginMenu("Add Object")) {
                 if(ImGui.menuItem("Box")) {
-                    objects.add(new BoxEditorObject());
-                    EditorObject.setSelected(objects.getLast().getId());
-                    EditorLight.setSelected(-1);
-                }
-                if(ImGui.menuItem("Sphere")) {
-                    objects.add(new SphereEditorObject());
-                    EditorObject.setSelected(objects.getLast().getId());
-                    EditorLight.setSelected(-1);
-                }
-                if(ImGui.menuItem("Plane")) {
-                    objects.add(new PlaneEditorObject());
-                    EditorObject.setSelected(objects.getLast().getId());
-                    EditorLight.setSelected(-1);
-                }
-                if(ImGui.menuItem("Model")) {
-                    String path = DialogWindow.openFileChooser("WaveFront OBJ", "obj");
-                    if(path != null) {
-                        try {
-                            objects.add(new OBJEditorObject(path));
-                        } catch (FileNotFoundException e) {
-                            throw new RuntimeException(e);
-                        }
+                    try {
+                        objects.add(new BoxEditorObject());
                         EditorObject.setSelected(objects.getLast().getId());
                         EditorLight.setSelected(-1);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if(ImGui.menuItem("Sphere")) {
+                    try {
+                        objects.add(new SphereEditorObject());
+                        EditorObject.setSelected(objects.getLast().getId());
+                        EditorLight.setSelected(-1);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if(ImGui.menuItem("Plane")) {
+                    try {
+                        objects.add(new PlaneEditorObject());
+                        EditorObject.setSelected(objects.getLast().getId());
+                        EditorLight.setSelected(-1);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+                if(ImGui.menuItem("Model")) {
+                    String path = DialogWindow.openFileChooser("3D models", "obj", "rdo");
+                    if(path != null) {
+                        try {
+                            if(path.endsWith(".obj"))
+                                objects.add(new ModelEditorObject(new OBJModel(path, new FileInputStream(path))));
+                            if(path.endsWith(".rdo"))
+                                objects.add(new ModelEditorObject(new RDOModel(path, new FileInputStream(path))));
+                            EditorObject.setSelected(objects.getLast().getId());
+                            EditorLight.setSelected(-1);
+                        } catch (IOException e) {
+                            DialogWindow.showError("Unable to open model.", e);
+                        }
                     }
                 }
                 ImGui.endMenu();
             }
             if(ImGui.beginMenu("Add Light")) {
                 if(ImGui.menuItem("Point")) {
-                    lights.add(new EditorPointLight());
-                    EditorLight.setSelected(lights.getLast().getId());
-                    EditorObject.setSelected(-1);
+                    try {
+                        lights.add(new EditorPointLight());
+                        EditorLight.setSelected(lights.getLast().getId());
+                        EditorObject.setSelected(-1);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 if(ImGui.menuItem("Sphere")) {
-                    lights.add(new EditorSphereLight());
-                    EditorLight.setSelected(lights.getLast().getId());
-                    EditorObject.setSelected(-1);
+                    try {
+                        lights.add(new EditorSphereLight());
+                        EditorLight.setSelected(lights.getLast().getId());
+                        EditorObject.setSelected(-1);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 if(ImGui.menuItem("Area")) {
-                    lights.add(new EditorAreaLight());
-                    EditorLight.setSelected(lights.getLast().getId());
-                    EditorObject.setSelected(-1);
+                    try {
+                        lights.add(new EditorAreaLight());
+                        EditorLight.setSelected(lights.getLast().getId());
+                        EditorObject.setSelected(-1);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                 }
                 ImGui.endMenu();
             }
@@ -85,7 +115,7 @@ public class ObjectWindow {
                 EditorLight.setSelected(-1);
             }
             if(ImGui.isKeyPressed(GLFW.GLFW_KEY_DELETE)) {
-                if(getSelectedObject() instanceof OBJEditorObject)
+                if(getSelectedObject() instanceof ModelEditorObject)
                     getSelectedObject().remove();
                 objects.remove(getSelectedObject());
                 lights.remove(getSelectedLight());
