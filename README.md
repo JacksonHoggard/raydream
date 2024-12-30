@@ -1,5 +1,4 @@
 # RayDream
-
 A photorealistic raytracer and editor designed to create stunning rendered images with ease and flexibility. Featuring an intuitive interface for editing objects, importing models, and adjusting raytracer settings.
 
 ![Editor](images/editor.png)

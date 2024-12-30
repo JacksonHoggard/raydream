@@ -11,9 +11,11 @@ public class MenuBar {
     private static float height;
 
     public static void show(Window window) {
+        ImGui.pushFont(Window.getTitleFont());
         if(ImGui.beginMainMenuBar()) {
             height = ImGui.getFrameHeight();
             if(ImGui.beginMenu("File")) {
+                ImGui.pushFont(Window.getBodyFont());
                 if(ImGui.menuItem("New")) {
                     newScene();
                 }
@@ -31,16 +33,20 @@ public class MenuBar {
                         DialogWindow.showError("Unable to load project.", e);
                     }
                 }
+                ImGui.popFont();
                 ImGui.endMenu();
             }
             if(ImGui.beginMenu("Options")) {
+                ImGui.pushFont(Window.getBodyFont());
                 if(ImGui.menuItem("Quit")) {
                     window.close();
                 }
+                ImGui.popFont();
                 ImGui.endMenu();
             }
             ImGui.endMainMenuBar();
         }
+        ImGui.popFont();
     }
 
     private static void newScene() {

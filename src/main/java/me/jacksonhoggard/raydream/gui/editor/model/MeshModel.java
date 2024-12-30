@@ -121,6 +121,12 @@ public abstract class MeshModel extends EditorModel {
         public void delete() {
             glDeleteBuffers(vertexBufferId);
             glDeleteVertexArrays(vertexArrayId);
+            if(material.getTexture() != null) {
+                material.getTexture().remove();
+            }
+            if(material.getBumpMap() != null) {
+                material.getBumpMap().remove();
+            }
         }
 
         public int getVertexCount() {

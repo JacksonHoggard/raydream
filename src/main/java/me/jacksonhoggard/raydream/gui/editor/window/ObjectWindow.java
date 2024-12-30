@@ -3,6 +3,7 @@ package me.jacksonhoggard.raydream.gui.editor.window;
 import imgui.ImGui;
 import imgui.flag.ImGuiWindowFlags;
 import me.jacksonhoggard.raydream.gui.MenuBar;
+import me.jacksonhoggard.raydream.gui.Window;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorPointLight;
@@ -35,7 +36,9 @@ public class ObjectWindow {
         ImGui.setNextWindowSize(width, height);
         ImGui.setNextWindowPos(posX, posY);
         if(ImGui.begin("Objects", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBringToFrontOnFocus)) {
+            ImGui.pushFont(Window.getTitleFont());
             if(ImGui.beginMenu("Add Object")) {
+                ImGui.pushFont(Window.getBodyFont());
                 if(ImGui.menuItem("Box")) {
                     try {
                         objects.add(new BoxEditorObject());
@@ -78,9 +81,11 @@ public class ObjectWindow {
                         }
                     }
                 }
+                ImGui.popFont();
                 ImGui.endMenu();
             }
             if(ImGui.beginMenu("Add Light")) {
+                ImGui.pushFont(Window.getBodyFont());
                 if(ImGui.menuItem("Point")) {
                     try {
                         lights.add(new EditorPointLight());
@@ -108,6 +113,7 @@ public class ObjectWindow {
                         throw new RuntimeException(e);
                     }
                 }
+                ImGui.popFont();
                 ImGui.endMenu();
             }
             if(ImGui.isKeyPressed(GLFW.GLFW_KEY_ESCAPE)) {
@@ -121,6 +127,7 @@ public class ObjectWindow {
                 lights.remove(getSelectedLight());
             }
             ImGui.separator();
+            ImGui.pushFont(Window.getBodyFont());
             for(EditorObject object : objects) {
                 object.show();
                 ImGui.separator();
@@ -129,6 +136,9 @@ public class ObjectWindow {
                 light.show();
                 ImGui.separator();
             }
+            ImGui.popFont();
+
+            ImGui.popFont();
         }
         ImGui.end();
     }

@@ -6,6 +6,7 @@ import imgui.type.ImFloat;
 import imgui.type.ImInt;
 import me.jacksonhoggard.raydream.SceneManager;
 import me.jacksonhoggard.raydream.gui.MenuBar;
+import me.jacksonhoggard.raydream.gui.Window;
 import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
 import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.math.Vector3D;
@@ -41,7 +42,12 @@ public class SettingsWindow {
         height = ImGui.getMainViewport().getSizeY() - posY;
         ImGui.setNextWindowSize(width, height);
         ImGui.setNextWindowPos(posX, posY);
-        ImGui.begin("Settings Window", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoBringToFrontOnFocus);
+        ImGui.pushFont(Window.getBodyFont());
+        ImGui.begin("Settings Window", ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.AlwaysVerticalScrollbar | ImGuiWindowFlags.AlwaysHorizontalScrollbar);
+
+        ImGui.pushFont(Window.getTitleFont());
+        ImGui.text("Camera Settings");
+        ImGui.popFont();
 
         EditorCamera camera = PreviewWindow.getCamera();
         ImGui.inputFloat3("From", lookFrom);
@@ -59,8 +65,8 @@ public class SettingsWindow {
         inputInt.set(imgHeight);
         ImGui.inputInt("Height", inputInt);
         imgHeight = inputInt.get();
-        ImGui.inputFloat3("Sky Color", skyColor);
-        ImGui.inputFloat3("Ambient Color", ambientColor);
+        ImGui.colorEdit3("Sky Color", skyColor);
+        ImGui.colorEdit3("Ambient Color", ambientColor);
 
         camera.setAspect((float) imgWidth / (float) imgHeight);
         camera.setLookFrom(lookFrom[0], lookFrom[1], lookFrom[2]);
@@ -71,6 +77,11 @@ public class SettingsWindow {
         camera.updateModelMatrix();
 
         ImGui.separator();
+
+        ImGui.pushFont(Window.getTitleFont());
+        ImGui.text("Render Settings");
+        ImGui.popFont();
+
         inputInt.set(sampleDepth);
         ImGui.inputInt("Samples per Pixel", inputInt);
         sampleDepth = inputInt.get();
@@ -86,6 +97,8 @@ public class SettingsWindow {
         if(ImGui.button("Render")) {
             String path = DialogWindow.openFileSave("output.png", "png", "jpg");
             if(path != null) {
+                if(!(path.endsWith(".jpg") || path.endsWith(".png") || path.endsWith(".jpeg")))
+                    path += ".png";
                 DialogWindow.showProgressBar("Render Progress", 250, 100, Scene.getRenderCancelListener());
                 SceneManager.renderScene(
                         ObjectWindow.objects,
@@ -120,6 +133,7 @@ public class SettingsWindow {
             }
         }
 
+        ImGui.popFont();
         ImGui.end();
     }
 

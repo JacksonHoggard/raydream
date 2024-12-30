@@ -3,13 +3,12 @@ package me.jacksonhoggard.raydream.util;
 import me.jacksonhoggard.raydream.material.BumpMap;
 import me.jacksonhoggard.raydream.material.Texture;
 import me.jacksonhoggard.raydream.math.Vector3D;
+import org.lwjgl.glfw.GLFWImage;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
@@ -53,6 +52,27 @@ public class Util {
             return new String(shaderInput.readAllBytes());
         } catch (IOException e) {
             throw new RuntimeException("Failed to load shader file.", e);
+        }
+    }
+
+    public static byte[] loadFont(String filePath) {
+        try (InputStream is = ClassLoader.getSystemResourceAsStream(filePath);
+             ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
+
+            if (is == null) {
+                throw new IllegalArgumentException("Resource not found: " + filePath);
+            }
+
+            byte[] data = new byte[1024];
+            int bytesRead;
+
+            while ((bytesRead = is.read(data, 0, data.length)) != -1) {
+                buffer.write(data, 0, bytesRead);
+            }
+
+            return buffer.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to load font.", e);
         }
     }
 
