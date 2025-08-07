@@ -43,16 +43,6 @@ public class MenuBar {
                 ImGui.popFont();
                 ImGui.endMenu();
             }
-            if(ImGui.beginMenu("Options")) {
-                ImGui.pushFont(bodyFont != null ? bodyFont : ImGui.getFont());
-                if(ImGui.menuItem("Quit")) {
-                    if (window != null) {
-                        window.close();
-                    }
-                }
-                ImGui.popFont();
-                ImGui.endMenu();
-            }
             ImGui.endMainMenuBar();
         }
         ImGui.popFont();
