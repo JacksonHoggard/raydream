@@ -105,17 +105,21 @@ public class Material {
 
     public Ray reflectRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
         Vector3D direction = reflect(rayIn, normal).normalized();
-        Vector3D origin = direction.dot(normal) < 0 ?
-                Vector3D.sub(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON)) :
-                Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
+        // Improved bias calculation for reflection rays
+        Vector3D origin = Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
+        // Add small directional bias to prevent self-intersection
+        origin.add(Vector3D.mult(direction, ApplicationConfig.RAY_OFFSET_EPSILON * 0.1));
         return new Ray(origin, direction);
     }
 
     public Ray refractRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
         Vector3D direction = refract(rayIn, normal, indexOfRefraction).normalized();
+        // Improved bias calculation for refraction rays
         Vector3D origin = direction.dot(normal) < 0 ?
                 Vector3D.sub(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON)) :
                 Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
+        // Add small directional bias to prevent self-intersection
+        origin.add(Vector3D.mult(direction, ApplicationConfig.RAY_OFFSET_EPSILON * 0.1));
         return new Ray(origin, direction);
     }
 

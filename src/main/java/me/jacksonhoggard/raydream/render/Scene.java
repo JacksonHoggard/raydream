@@ -107,16 +107,49 @@ public class Scene {
         }
 
         int k = 0;
+        Vector3D[][] imageData = new Vector3D[height][width];
+        
+        // First pass: tone mapping and gamma correction
         for(int j = 0; j < height; j++) {
             for(int i = 0; i < width; i++) {
                 Vector3D pixelColor = pixelColors.get(k++);
+                
+                // Apply tone mapping to handle HDR values better
+                pixelColor.x = toneMap(pixelColor.x);
+                pixelColor.y = toneMap(pixelColor.y);
+                pixelColor.z = toneMap(pixelColor.z);
+                
+                imageData[j][i] = new Vector3D(pixelColor);
+            }
+        }
+        
+        // Apply bilateral denoising filter for high DOF scenes
+        if(camera.getAperture() > 5.0) {
+            imageData = applyBilateralFilter(imageData, width, height);
+        }
+        
+        // Second pass: dithering and final color conversion
+        for(int j = 0; j < height; j++) {
+            for(int i = 0; i < width; i++) {
+                Vector3D pixelColor = imageData[j][i];
+                
+                // Apply dithering to reduce banding artifacts
+                pixelColor.x = Util.applyDithering(pixelColor.x, i, j);
+                pixelColor.y = Util.applyDithering(pixelColor.y, i, j);
+                pixelColor.z = Util.applyDithering(pixelColor.z, i, j);
                 
                 // Apply gamma correction for more accurate color display
                 double invGamma = 1.0 / ApplicationConfig.GAMMA_CORRECTION;
                 double r = Math.pow(Math.min(Math.max(pixelColor.x, 0.0), 1.0), invGamma) * 255;
                 double g = Math.pow(Math.min(Math.max(pixelColor.y, 0.0), 1.0), invGamma) * 255;
                 double b = Math.pow(Math.min(Math.max(pixelColor.z, 0.0), 1.0), invGamma) * 255;
-                image.setRGB(i, j, new Color((int) r, (int) g, (int) b).getRGB());
+                
+                // Round to prevent floating point artifacts
+                int red = Math.min(255, Math.max(0, (int) Math.round(r)));
+                int green = Math.min(255, Math.max(0, (int) Math.round(g)));
+                int blue = Math.min(255, Math.max(0, (int) Math.round(b)));
+                
+                image.setRGB(i, j, new Color(red, green, blue).getRGB());
             }
         }
         File output = new File(filename);
@@ -129,6 +162,63 @@ public class Scene {
             logger.info("Render completed in " + minutes + "m " + (float) (durationSeconds - (minutes * 60)) + "s");
         else
             logger.info("Render completed in " + durationSeconds + "s");
+    }
+
+    /**
+     * Simple tone mapping to handle HDR values and reduce artifacts
+     * Uses Reinhard tone mapping operator
+     */
+    private double toneMap(double value) {
+        // Reinhard tone mapping: x / (1 + x)
+        return value / (1.0 + value);
+    }
+
+    /**
+     * Apply bilateral filtering to reduce noise while preserving edges
+     * Particularly effective for depth of field noise
+     */
+    private Vector3D[][] applyBilateralFilter(Vector3D[][] imageData, int width, int height) {
+        Vector3D[][] filtered = new Vector3D[height][width];
+        int filterRadius = ApplicationConfig.BILATERAL_FILTER_RADIUS;
+        double spatialSigma = ApplicationConfig.BILATERAL_SPATIAL_SIGMA;
+        double intensitySigma = ApplicationConfig.BILATERAL_INTENSITY_SIGMA;
+        
+        for(int y = 0; y < height; y++) {
+            for(int x = 0; x < width; x++) {
+                Vector3D centerPixel = imageData[y][x];
+                Vector3D filteredColor = new Vector3D();
+                double weightSum = 0.0;
+                
+                // Sample neighbors within filter radius
+                for(int dy = -filterRadius; dy <= filterRadius; dy++) {
+                    for(int dx = -filterRadius; dx <= filterRadius; dx++) {
+                        int ny = Math.max(0, Math.min(height - 1, y + dy));
+                        int nx = Math.max(0, Math.min(width - 1, x + dx));
+                        Vector3D neighborPixel = imageData[ny][nx];
+                        
+                        // Spatial weight (based on distance)
+                        double spatialDist = Math.sqrt(dx * dx + dy * dy);
+                        double spatialWeight = Math.exp(-(spatialDist * spatialDist) / (2 * spatialSigma * spatialSigma));
+                        
+                        // Intensity weight (based on color similarity) - more aggressive for DOF
+                        double intensityDist = Vector3D.sub(centerPixel, neighborPixel).length();
+                        double intensityWeight = Math.exp(-(intensityDist * intensityDist) / (2 * intensitySigma * intensitySigma));
+                        
+                        double totalWeight = spatialWeight * intensityWeight;
+                        filteredColor.add(Vector3D.mult(neighborPixel, totalWeight));
+                        weightSum += totalWeight;
+                    }
+                }
+                
+                if(weightSum > 0) {
+                    filtered[y][x] = Vector3D.div(filteredColor, weightSum);
+                } else {
+                    filtered[y][x] = new Vector3D(centerPixel);
+                }
+            }
+        }
+        
+        return filtered;
     }
 
     public Camera getCamera() {
@@ -188,28 +278,97 @@ public class Scene {
         }
 
         private void takeSamples() {
-            camera.shootRay(ray, i, j, 0.5D, -0.5D);
-            trace(ray, bounces, pixelColor);
-            if(sampleDepth == 1)
-                return;
-            Vector3D temp = new Vector3D(pixelColor);
-            camera.shootRay(ray, i, j, Util.randomRange(0, 1), Util.randomRange(-1, 0));
-            trace(ray, bounces, pixelColor);
-            samples = 2;
+            // Determine if this is a high DOF scene requiring more samples
+            boolean isHighDOF = camera.getAperture() > 5.0;
+            int maxSamples = isHighDOF ? 
+                Math.min(ApplicationConfig.MAX_DOF_SAMPLES, sampleDepth * 2) : sampleDepth;
             
-            // Check for convergence with tolerance for better efficiency
-            Vector3D avgColor = Vector3D.div(pixelColor, samples);
-            if(Vector3D.sub(avgColor, temp).length() < ApplicationConfig.ADAPTIVE_SAMPLING_TOLERANCE) {
-                pixelColor.div(samples);
-                return;
-            }
+            // First sample at pixel center for base quality
+            camera.shootRay(ray, i, j, 0.5D, 0.5D);
+            trace(ray, bounces, pixelColor);
+            samples = 1;
             
-            for(int k = sampleDepth - samples; k > 0; k--) {
-                camera.shootRay(ray, i, j, Util.randomRange(0, 1), Util.randomRange(-1, 0));
-                trace(ray, bounces, pixelColor);
+            if(maxSamples == 1)
+                return;
+                
+            // Track variance for better convergence detection
+            Vector3D colorSum = new Vector3D(pixelColor);
+            Vector3D colorSumSquared = new Vector3D(
+                pixelColor.x * pixelColor.x, 
+                pixelColor.y * pixelColor.y, 
+                pixelColor.z * pixelColor.z
+            );
+            
+            Vector3D tempColor = new Vector3D();
+            
+            // Use stratified sampling for first batch of samples
+            int stratifiedSamples = Math.min(16, maxSamples - 1);
+            for(int s = 0; s < stratifiedSamples; s++) {
+                tempColor.set(0, 0, 0);
+                
+                // Stratified sampling within pixel
+                double stratumX = (s % 4) * 0.25 + Util.randomRange(0, 0.25);
+                double stratumY = (s / 4) * 0.25 + Util.randomRange(0, 0.25);
+                
+                // Use stratified aperture sampling for high DOF scenes
+                if(isHighDOF && stratifiedSamples >= 16) {
+                    camera.shootRayStratified(ray, i, j, stratumX, stratumY, s, 16);
+                } else {
+                    camera.shootRay(ray, i, j, stratumX, stratumY);
+                }
+                trace(ray, bounces, tempColor);
+                
+                colorSum.add(tempColor);
+                colorSumSquared.add(new Vector3D(
+                    tempColor.x * tempColor.x,
+                    tempColor.y * tempColor.y, 
+                    tempColor.z * tempColor.z
+                ));
                 samples++;
             }
-            pixelColor.div(samples);
+            
+            // Continue with Halton sequence for remaining samples
+            for(int sample = samples; sample < maxSamples; sample++) {
+                tempColor.set(0, 0, 0);
+                
+                // Use Halton sequence for better sample distribution
+                double jitterX = Util.vanDerCorput(sample, 2);
+                double jitterY = Util.vanDerCorput(sample, 3);
+                
+                camera.shootRay(ray, i, j, jitterX, jitterY);
+                trace(ray, bounces, tempColor);
+                
+                colorSum.add(tempColor);
+                colorSumSquared.add(new Vector3D(
+                    tempColor.x * tempColor.x,
+                    tempColor.y * tempColor.y, 
+                    tempColor.z * tempColor.z
+                ));
+                samples++;
+                
+                // Check convergence using variance
+                if(samples >= ApplicationConfig.MIN_SAMPLES_BEFORE_CONVERGENCE && 
+                   samples % 8 == 0) { // Check less frequently to reduce overhead
+                    
+                    Vector3D mean = Vector3D.div(colorSum, samples);
+                    Vector3D meanSquared = Vector3D.div(colorSumSquared, samples);
+                    Vector3D variance = Vector3D.sub(meanSquared, new Vector3D(
+                        mean.x * mean.x, mean.y * mean.y, mean.z * mean.z
+                    ));
+                    
+                    double totalVariance = variance.x + variance.y + variance.z;
+                    double convergenceThreshold = isHighDOF ? 
+                        ApplicationConfig.DOF_NOISE_THRESHOLD : 
+                        ApplicationConfig.ADAPTIVE_SAMPLING_TOLERANCE;
+                    
+                    if(totalVariance < convergenceThreshold) {
+                        break;
+                    }
+                }
+            }
+            
+            // Set final pixel color
+            pixelColor.set(Vector3D.div(colorSum, samples));
         }
 
         /**
@@ -318,7 +477,11 @@ public class Scene {
                 for(int j = 0; j < rows; j++) {
                     for(int i = 0; i < cols; i++) {
                         Vector3D shadowDir = Vector3D.sub(light.pointOnLight(i, j, cols, rows), pointHit).normalize();
-                        Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(shadowDir, ApplicationConfig.RAY_OFFSET_EPSILON)), shadowDir);
+                        // Improved shadow ray origin with better bias calculation
+                        Vector3D shadowOrigin = Vector3D.add(pointHit, Vector3D.mult(normalHit, ApplicationConfig.RAY_OFFSET_EPSILON));
+                        // Add small directional bias to prevent self-intersection
+                        shadowOrigin.add(Vector3D.mult(shadowDir, ApplicationConfig.RAY_OFFSET_EPSILON * 0.1));
+                        Ray shadowRay = new Ray(shadowOrigin, shadowDir);
                         double lightDist = light.intersect(shadowRay);
                         if(lightDist < 0)
                             continue;

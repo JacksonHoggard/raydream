@@ -58,10 +58,53 @@ public class Camera {
         ray.direction().set(direction.sub(ray.origin()));
     }
 
+    /**
+     * Shoots ray with stratified aperture sampling for better DOF
+     * @param ray the ray to be sent into the scene
+     * @param i pixel row index
+     * @param j pixel column index
+     * @param x x offset from pixel center
+     * @param y y offset from pixel center
+     * @param stratum aperture stratum for stratified sampling
+     * @param totalStrata total aperture strata
+     */
+    public void shootRayStratified(Ray ray, int i, int j, double x, double y, int stratum, int totalStrata) {
+        ray.origin().set(getStratifiedRandomOrigin(stratum, totalStrata));
+        w = Vector3D.sub(ray.origin(), lookAt).normalized();
+        u = vUp.cross(w).normalized();
+        v = w.cross(u);
+        Vector3D vu = Vector3D.mult(u, vWidth);
+        Vector3D vv = Vector3D.mult(v.negated(), vHeight);
+        Vector3D px = Vector3D.div(vu, imgWidth);
+        Vector3D py = Vector3D.div(vv, imgHeight);
+        Vector3D direction = Vector3D.sub(ray.origin(), Vector3D.mult(w, focalLength));
+        direction.sub(Vector3D.div(vu, 2));
+        direction.sub(Vector3D.div(vv, 2));
+        direction.add(Vector3D.add(px, py).mult(0.5D));
+        Vector3D pixelXVariation = Vector3D.mult(px, i + x);
+        Vector3D pixelYVariation = Vector3D.mult(py, j + y);
+        direction.add(pixelXVariation).add(pixelYVariation);
+        ray.direction().set(direction.sub(ray.origin()));
+    }
+
     public Vector3D getRandomOrigin() {
-        Vector3D randomOrigin = new Vector3D(Util.randomRange(-aperture, aperture), Util.randomRange(-aperture, aperture), 0);
-        while(randomOrigin.length() * randomOrigin.length() >= aperture)
-            randomOrigin.set(new Vector3D(Util.randomRange(-aperture, aperture), Util.randomRange(-aperture, aperture), 0));
+        // Use improved disk sampling for depth of field to reduce noise
+        Vector3D diskSample = Util.sampleDisk();
+        Vector3D randomOrigin = Vector3D.mult(diskSample, aperture);
+        randomOrigin.add(lookFrom);
+        Vector3D direction = Vector3D.sub(lookAt, randomOrigin).normalize();
+        return Vector3D.sub(lookAt, direction.mult(focalLength));
+    }
+
+    /**
+     * Get stratified random origin for better DOF sampling
+     * @param stratum which stratum for stratified sampling
+     * @param totalStrata total number of strata
+     * @return stratified origin point
+     */
+    public Vector3D getStratifiedRandomOrigin(int stratum, int totalStrata) {
+        Vector3D diskSample = Util.sampleDiskStratified(stratum, totalStrata);
+        Vector3D randomOrigin = Vector3D.mult(diskSample, aperture);
         randomOrigin.add(lookFrom);
         Vector3D direction = Vector3D.sub(lookAt, randomOrigin).normalize();
         return Vector3D.sub(lookAt, direction.mult(focalLength));
