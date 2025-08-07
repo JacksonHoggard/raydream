@@ -1,6 +1,5 @@
 package me.jacksonhoggard.raydream.util.io;
 
-import me.jacksonhoggard.raydream.SceneManager;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorPointLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
@@ -17,12 +16,18 @@ import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
 import me.jacksonhoggard.raydream.material.*;
 
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 public class SceneReader {
 
     public static void read(String path) throws IOException {
+        // Extract the directory from the project file path
+        Path projectPath = Paths.get(path);
+        String projectDir = projectPath.getParent().toString();
+        
         FileInputStream stream = null;
         try {
             stream = new FileInputStream(path);
@@ -34,7 +39,7 @@ public class SceneReader {
         try {
             while((line = reader.readLine()) != null) {
                 if(line.startsWith("+")) {
-                    parseObject(reader, line);
+                    parseObject(reader, line, projectDir);
                 }
             }
         } catch (IOException e) {
@@ -49,7 +54,7 @@ public class SceneReader {
         }
     }
 
-    private static void parseObject(BufferedReader reader, String line) throws IOException, UnrecognizedTokenException {
+    private static void parseObject(BufferedReader reader, String line, String projectDir) throws IOException, UnrecognizedTokenException {
         String[] tokens = line.split("\\s+");
         switch(tokens[1]) {
             case "settings:":
@@ -73,16 +78,16 @@ public class SceneReader {
             case "object:":
                 switch(tokens[2]) {
                     case "sphere":
-                        addSphere(reader);
+                        addSphere(reader, projectDir);
                         break;
                     case "box":
-                        addBox(reader);
+                        addBox(reader, projectDir);
                         break;
                     case "plane":
-                        addPlane(reader);
+                        addPlane(reader, projectDir);
                         break;
                     case "model":
-                        addModel(reader);
+                        addModel(reader, projectDir);
                         break;
                     default:
                         throw new UnrecognizedTokenException(tokens[2]);
@@ -264,7 +269,7 @@ public class SceneReader {
         ObjectWindow.lights.add(new EditorPointLight(translation, rotation, scale, material, label.toString()));
     }
 
-    private static void addSphere(BufferedReader reader) throws IOException, UnrecognizedTokenException {
+    private static void addSphere(BufferedReader reader, String projectDir) throws IOException, UnrecognizedTokenException {
         float[] translation = new float[3];
         float[] rotation = new float[3];
         float[] scale = new float[3];
@@ -281,7 +286,7 @@ public class SceneReader {
                     parseTransform(reader, translation, rotation, scale);
                     break;
                 case "material:":
-                    parseObjectMaterial(reader, material, SceneManager.getProjectDir());
+                    parseObjectMaterial(reader, material, projectDir);
                     break;
                 default:
                     throw new UnrecognizedTokenException(params[0]);
@@ -290,7 +295,7 @@ public class SceneReader {
         ObjectWindow.objects.add(new SphereEditorObject(translation, rotation, scale, material, label.toString()));
     }
 
-    private static void addBox(BufferedReader reader) throws IOException, UnrecognizedTokenException {
+    private static void addBox(BufferedReader reader, String projectDir) throws IOException, UnrecognizedTokenException {
         float[] translation = new float[3];
         float[] rotation = new float[3];
         float[] scale = new float[3];
@@ -307,7 +312,7 @@ public class SceneReader {
                     parseTransform(reader, translation, rotation, scale);
                     break;
                 case "material:":
-                    parseObjectMaterial(reader, material, SceneManager.getProjectDir());
+                    parseObjectMaterial(reader, material, projectDir);
                     break;
                 default:
                     throw new UnrecognizedTokenException(params[0]);
@@ -316,7 +321,7 @@ public class SceneReader {
         ObjectWindow.objects.add(new BoxEditorObject(translation, rotation, scale, material, label.toString()));
     }
 
-    private static void addPlane(BufferedReader reader)  throws IOException, UnrecognizedTokenException {
+    private static void addPlane(BufferedReader reader, String projectDir)  throws IOException, UnrecognizedTokenException {
         float[] translation = new float[3];
         float[] rotation = new float[3];
         float[] scale = new float[3];
@@ -333,7 +338,7 @@ public class SceneReader {
                     parseTransform(reader, translation, rotation, scale);
                     break;
                 case "material:":
-                    parseObjectMaterial(reader, material, SceneManager.getProjectDir());
+                    parseObjectMaterial(reader, material, projectDir);
                     break;
                 default:
                     throw new UnrecognizedTokenException(params[0]);
@@ -342,7 +347,7 @@ public class SceneReader {
         ObjectWindow.objects.add(new PlaneEditorObject(translation, rotation, scale, material, label.toString()));
     }
 
-    private static void addModel(BufferedReader reader)  throws IOException, UnrecognizedTokenException {
+    private static void addModel(BufferedReader reader, String projectDir)  throws IOException, UnrecognizedTokenException {
         List<EditorObjectMaterial> materials = new ArrayList<>();
         float[] translation = new float[3];
         float[] rotation = new float[3];
@@ -361,11 +366,11 @@ public class SceneReader {
                     break;
                 case "material:":
                     EditorObjectMaterial material = new EditorObjectMaterial();
-                    parseObjectMaterial(reader, material, SceneManager.getProjectDir());
+                    parseObjectMaterial(reader, material, projectDir);
                     materials.add(material);
                     break;
                 case "file:":
-                    model = new RDOModel(SceneManager.getProjectDir() + File.separator + line.substring(6), new FileInputStream(SceneManager.getProjectDir() + File.separator + line.substring(6)));
+                    model = new RDOModel(projectDir + File.separator + line.substring(6), new FileInputStream(projectDir + File.separator + line.substring(6)));
                     break;
                 default:
                     throw new UnrecognizedTokenException(params[0]);

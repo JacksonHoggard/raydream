@@ -70,14 +70,32 @@ public class ObjectWindow {
                     String path = DialogWindow.openFileChooser("3D models", "obj", "rdo");
                     if(path != null) {
                         try {
-                            if(path.endsWith(".obj"))
-                                objects.add(new ModelEditorObject(new OBJModel(path, new FileInputStream(path))));
-                            if(path.endsWith(".rdo"))
-                                objects.add(new ModelEditorObject(new RDOModel(path, new FileInputStream(path))));
+                            System.out.println("Attempting to load model: " + path);
+                            if(path.endsWith(".obj")) {
+                                ModelEditorObject modelObj = new ModelEditorObject(new OBJModel(path, new FileInputStream(path)));
+                                objects.add(modelObj);
+                                System.out.println("Successfully loaded OBJ model: " + path);
+                            } else if(path.endsWith(".rdo")) {
+                                ModelEditorObject modelObj = new ModelEditorObject(new RDOModel(path, new FileInputStream(path)));
+                                objects.add(modelObj);
+                                System.out.println("Successfully loaded RDO model: " + path);
+                            } else {
+                                DialogWindow.showError("Unsupported file format", new Exception("Only .obj and .rdo files are supported"));
+                                return; // Exit the menu item handler
+                            }
                             EditorObject.setSelected(objects.getLast().getId());
                             EditorLight.setSelected(-1);
+                        } catch (FileNotFoundException e) {
+                            DialogWindow.showError("File not found: " + path, e);
+                            System.err.println("File not found: " + path);
                         } catch (IOException e) {
-                            DialogWindow.showError("Unable to open model.", e);
+                            DialogWindow.showError("Unable to load model: " + e.getMessage(), e);
+                            System.err.println("IOException loading model: " + e.getMessage());
+                            e.printStackTrace();
+                        } catch (Exception e) {
+                            DialogWindow.showError("Unexpected error loading model: " + e.getMessage(), e);
+                            System.err.println("Unexpected error loading model: " + e.getMessage());
+                            e.printStackTrace();
                         }
                     }
                 }

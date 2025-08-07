@@ -4,6 +4,8 @@ out/
 !**/src/test/**/out/
 .idea/
 *.iml
+*.ipr
+*.iws
 target/
 
 ### Eclipse ###

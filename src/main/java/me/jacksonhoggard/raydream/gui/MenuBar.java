@@ -1,21 +1,24 @@
 package me.jacksonhoggard.raydream.gui;
 
 import imgui.ImGui;
-import me.jacksonhoggard.raydream.SceneManager;
+import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.gui.editor.window.DialogWindow;
+import me.jacksonhoggard.raydream.service.SceneService;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 
 public class MenuBar {
 
     private static float height;
+    private static final SceneService sceneService = ApplicationContext.getInstance().getSceneService();
 
     public static void show(Window window) {
-        ImGui.pushFont(Window.getTitleFont());
+        ImGui.pushFont(window.getTitleFont());
         if(ImGui.beginMainMenuBar()) {
             height = ImGui.getFrameHeight();
             if(ImGui.beginMenu("File")) {
-                ImGui.pushFont(Window.getBodyFont());
+                ImGui.pushFont(window.getBodyFont());
                 if(ImGui.menuItem("New")) {
                     newScene();
                 }
@@ -37,7 +40,7 @@ public class MenuBar {
                 ImGui.endMenu();
             }
             if(ImGui.beginMenu("Options")) {
-                ImGui.pushFont(Window.getBodyFont());
+                ImGui.pushFont(window.getBodyFont());
                 if(ImGui.menuItem("Quit")) {
                     window.close();
                 }
@@ -52,19 +55,19 @@ public class MenuBar {
     private static void newScene() {
         boolean confirm = DialogWindow.openConfirmation("Are you sure you want to create a new project?");
         if(confirm)
-            SceneManager.newScene();
+            sceneService.createNewScene();
     }
 
     private static void saveScene() throws IOException {
         String path = DialogWindow.openFolder("Choose project folder");
         if(path != null)
-            SceneManager.saveScene(path);
+            sceneService.saveScene(Paths.get(path));
     }
 
     private static void loadScene() throws IOException {
         String path = DialogWindow.openFileChooser("Project Files", "dream");
         if(path != null)
-            SceneManager.loadScene(path);
+            sceneService.loadScene(Paths.get(path));
     }
 
     public static float getHeight() {

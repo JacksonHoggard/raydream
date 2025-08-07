@@ -5,6 +5,8 @@ import imgui.flag.ImGuiCol;
 import imgui.flag.ImGuiConfigFlags;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
+import me.jacksonhoggard.raydream.config.ApplicationConfig;
+import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
@@ -37,13 +39,14 @@ import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Window {
+    private final ApplicationContext context;
     private final ImGuiImplGlfw imGuiGlfw;
     private final ImGuiImplGl3 imGuiGl3;
     private Shader objectShader;
     private Shader lightShader;
     private FrameBuffer editorFrameBuffer;
     private FrameBuffer previewFrameBuffer;
-    private static float scale;
+    private float scale;
     private static ImFont titleFont;
     private static ImFont bodyFont;
 
@@ -51,20 +54,18 @@ public class Window {
     private int fps;
 
     private String glslVersion = null;
-    private static long windowPtr;
+    private long windowPtr;
 
-    private static boolean isMiddleMouseButtonPressed = false;
+    private boolean isMiddleMouseButtonPressed = false;
 
-    private static final GLFWScrollCallback scrollCallback = new GLFWScrollCallback() {
-        private static final float ZOOM_STEP = 0.1f;
-
+    private final GLFWScrollCallback scrollCallback = new GLFWScrollCallback() {
         @Override
         public void invoke(long window, double dx, double dy) {
-            EditorWindow.setCamDistance(EditorWindow.getCamDistance() + ((float) -dy * ZOOM_STEP));
+            EditorWindow.setCamDistance(EditorWindow.getCamDistance() + ((float) -dy * ApplicationConfig.ZOOM_STEP));
         }
     };
 
-    private static final GLFWMouseButtonCallback mouseButtonCallback = new GLFWMouseButtonCallback() {
+    private final GLFWMouseButtonCallback mouseButtonCallback = new GLFWMouseButtonCallback() {
         @Override
         public void invoke(long window, int button, int action, int mods) {
             if(button == GLFW.GLFW_MOUSE_BUTTON_MIDDLE) {
@@ -76,11 +77,10 @@ public class Window {
         }
     };
 
-    private static final GLFWCursorPosCallback cursorPosCallback = new GLFWCursorPosCallback() {
+    private final GLFWCursorPosCallback cursorPosCallback = new GLFWCursorPosCallback() {
         private double lastX = 0;
         private double lastY = 0;
         private boolean firstCall = true;
-        private static final float DELTA = 0.01f;
 
         @Override
         public void invoke(long window, double x, double y) {
@@ -93,16 +93,18 @@ public class Window {
             double deltaY = y - lastY;
 
             if(isMiddleMouseButtonPressed)
-                EditorWindow.cursorMoveCamera((float) (deltaX * DELTA), (float) (deltaY * DELTA));
+                EditorWindow.cursorMoveCamera((float) (deltaX * ApplicationConfig.CAMERA_MOVE_DELTA),
+                                            (float) (deltaY * ApplicationConfig.CAMERA_MOVE_DELTA));
 
             lastX = x;
             lastY = y;
         }
     };
 
-    public Window() {
-        imGuiGlfw = new ImGuiImplGlfw();
-        imGuiGl3 = new ImGuiImplGl3();
+    public Window(ApplicationContext context) {
+        this.context = context;
+        this.imGuiGlfw = new ImGuiImplGlfw();
+        this.imGuiGl3 = new ImGuiImplGl3();
     }
 
     public void init() {
@@ -484,7 +486,7 @@ public class Window {
         objectShader.setBool("hasTexture", material.getTexture() != null);
     }
 
-    public static float getScale() {
+    public float getScale() {
         return scale;
     }
 
