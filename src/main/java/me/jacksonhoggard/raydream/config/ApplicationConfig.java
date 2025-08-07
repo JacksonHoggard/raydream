@@ -46,6 +46,12 @@ public final class ApplicationConfig {
     public static final float DEFAULT_FONT_SIZE = 16.0f;
     public static final float TITLE_FONT_SIZE = 24.0f;
 
+    // Logging Configuration
+    public static final boolean ENABLE_CONSOLE_LOGGING = true;
+    public static final boolean ENABLE_FILE_LOGGING = true;
+    public static final boolean ENABLE_COLORED_LOGGING = true;
+    public static final String LOG_LEVEL = "INFO"; // DEBUG, INFO, WARN, ERROR
+
     private ApplicationConfig() {
         // Prevent instantiation
     }

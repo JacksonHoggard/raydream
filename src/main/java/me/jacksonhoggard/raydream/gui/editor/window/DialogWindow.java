@@ -1,7 +1,9 @@
 package me.jacksonhoggard.raydream.gui.editor.window;
 
 import me.jacksonhoggard.raydream.SceneManager;
+import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.render.RenderCancelListener;
+import me.jacksonhoggard.raydream.util.Logger;
 import me.jacksonhoggard.raydream.util.ProgressListener;
 
 import javax.imageio.ImageIO;
@@ -16,6 +18,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 public class DialogWindow {
+    private static final Logger logger = ApplicationContext.getInstance().getLoggingService().getLogger(DialogWindow.class);
 
     private static JFrame frame;
     private static String lastDir;
@@ -88,6 +91,8 @@ public class DialogWindow {
     }
 
     public static void showError(String message, Exception e) {
+        logger.error("Error dialog shown: " + message, e);
+        
         closeFrame();
         frame = new JFrame("Error");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -186,6 +191,7 @@ public class DialogWindow {
                 imgWidth = image.getWidth();
                 imgHeight = image.getHeight();
             } catch (IOException e) {
+                logger.error("Error loading image: " + path, e);
                 throw new RuntimeException("Error loading image: ", e);
             }
         }

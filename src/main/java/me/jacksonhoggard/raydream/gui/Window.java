@@ -20,6 +20,7 @@ import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.*;
 import me.jacksonhoggard.raydream.render.FrameBuffer;
 import me.jacksonhoggard.raydream.render.Shader;
+import me.jacksonhoggard.raydream.util.Logger;
 import me.jacksonhoggard.raydream.util.Util;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.*;
@@ -40,6 +41,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class Window {
     private final ApplicationContext context;
+    private final Logger logger;
     private final ImGuiImplGlfw imGuiGlfw;
     private final ImGuiImplGl3 imGuiGl3;
     private Shader objectShader;
@@ -103,6 +105,7 @@ public class Window {
 
     public Window(ApplicationContext context) {
         this.context = context;
+        this.logger = context.getLoggingService().getLogger(Window.class);
         this.imGuiGlfw = new ImGuiImplGlfw();
         this.imGuiGl3 = new ImGuiImplGl3();
     }
@@ -147,7 +150,7 @@ public class Window {
         GLFWErrorCallback.createPrint(System.err).set();
 
         if(!glfwInit()) {
-            System.out.println("Unable to initialize GLFW");
+            logger.error("Unable to initialize GLFW");
             System.exit(-1);
         }
 
@@ -162,9 +165,11 @@ public class Window {
         windowPtr = glfwCreateWindow((int) (vidMode.width() * 0.8D), (int) (vidMode.height() * 0.8D), "RayDream", NULL, NULL);
 
         if(windowPtr == NULL) {
-            System.out.println("Unable to create window");
+            logger.error("Unable to create window");
             System.exit(-1);
         }
+
+        logger.info("Window initialized successfully");
 
         // Set window icon
         ByteBuffer iconBuffer;

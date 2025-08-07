@@ -2,6 +2,7 @@ package me.jacksonhoggard.raydream.render;
 
 import me.jacksonhoggard.raydream.acceleration.ImprovedBVH;
 import me.jacksonhoggard.raydream.config.ApplicationConfig;
+import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.material.*;
@@ -10,6 +11,7 @@ import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.*;
 import me.jacksonhoggard.raydream.object.Object;
+import me.jacksonhoggard.raydream.util.Logger;
 import me.jacksonhoggard.raydream.util.ProgressListener;
 import me.jacksonhoggard.raydream.util.Util;
 
@@ -28,6 +30,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class Scene {
+    private static final Logger logger = ApplicationContext.getInstance().getLoggingService().getLogger(Scene.class);
+    
     private final Camera camera;
     private final Light ambient;
     private final Light[] lights;
@@ -98,7 +102,7 @@ public class Scene {
         }
 
         if(renderCancelListener.isCanceled()) {
-            System.out.println("Render cancelled.");
+            logger.info("Render cancelled by user");
             return;
         }
 
@@ -122,9 +126,9 @@ public class Scene {
         double durationSeconds = ((int) ((duration / 1e9D) * 100) / 100.0);
         int minutes =  (int) (durationSeconds / 60);
         if(minutes > 0)
-            System.out.print("\nFinished in " + minutes + "m " + (float) (durationSeconds - (minutes * 60)) + "s");
+            logger.info("Render completed in " + minutes + "m " + (float) (durationSeconds - (minutes * 60)) + "s");
         else
-            System.out.print("\nFinished in " + durationSeconds + "s");
+            logger.info("Render completed in " + durationSeconds + "s");
     }
 
     public Camera getCamera() {

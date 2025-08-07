@@ -2,6 +2,7 @@ package me.jacksonhoggard.raydream.gui.editor.window;
 
 import imgui.ImGui;
 import imgui.flag.ImGuiWindowFlags;
+import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.gui.MenuBar;
 import me.jacksonhoggard.raydream.gui.Window;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
@@ -11,6 +12,7 @@ import me.jacksonhoggard.raydream.gui.editor.light.EditorSphereLight;
 import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
 import me.jacksonhoggard.raydream.gui.editor.model.RDOModel;
 import me.jacksonhoggard.raydream.gui.editor.object.*;
+import me.jacksonhoggard.raydream.util.Logger;
 import org.lwjgl.glfw.GLFW;
 
 import java.io.FileInputStream;
@@ -19,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 public class ObjectWindow {
+    private static final Logger logger = ApplicationContext.getInstance().getLoggingService().getLogger(ObjectWindow.class);
 
     public static final ArrayList<EditorObject> objects = new ArrayList<>();
     public static final ArrayList<EditorLight> lights = new ArrayList<>();
@@ -70,15 +73,15 @@ public class ObjectWindow {
                     String path = DialogWindow.openFileChooser("3D models", "obj", "rdo");
                     if(path != null) {
                         try {
-                            System.out.println("Attempting to load model: " + path);
+                            logger.debug("Attempting to load model: " + path);
                             if(path.endsWith(".obj")) {
                                 ModelEditorObject modelObj = new ModelEditorObject(new OBJModel(path, new FileInputStream(path)));
                                 objects.add(modelObj);
-                                System.out.println("Successfully loaded OBJ model: " + path);
+                                logger.info("Successfully loaded OBJ model: " + path);
                             } else if(path.endsWith(".rdo")) {
                                 ModelEditorObject modelObj = new ModelEditorObject(new RDOModel(path, new FileInputStream(path)));
                                 objects.add(modelObj);
-                                System.out.println("Successfully loaded RDO model: " + path);
+                                logger.info("Successfully loaded RDO model: " + path);
                             } else {
                                 DialogWindow.showError("Unsupported file format", new Exception("Only .obj and .rdo files are supported"));
                                 return; // Exit the menu item handler
@@ -87,15 +90,13 @@ public class ObjectWindow {
                             EditorLight.setSelected(-1);
                         } catch (FileNotFoundException e) {
                             DialogWindow.showError("File not found: " + path, e);
-                            System.err.println("File not found: " + path);
+                            logger.error("File not found: " + path, e);
                         } catch (IOException e) {
                             DialogWindow.showError("Unable to load model: " + e.getMessage(), e);
-                            System.err.println("IOException loading model: " + e.getMessage());
-                            e.printStackTrace();
+                            logger.error("IOException loading model: " + e.getMessage(), e);
                         } catch (Exception e) {
                             DialogWindow.showError("Unexpected error loading model: " + e.getMessage(), e);
-                            System.err.println("Unexpected error loading model: " + e.getMessage());
-                            e.printStackTrace();
+                            logger.error("Unexpected error loading model: " + e.getMessage(), e);
                         }
                     }
                 }

@@ -13,12 +13,14 @@ import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.render.Scene;
 import me.jacksonhoggard.raydream.service.SceneService;
+import me.jacksonhoggard.raydream.util.Logger;
 
 import java.io.IOException;
 
 import java.nio.file.Path;
 
 public class SettingsWindow {
+    private static final Logger logger = ApplicationContext.getInstance().getLoggingService().getLogger(SettingsWindow.class);
 
     private static float width;
     private static float height;
@@ -135,7 +137,7 @@ public class SettingsWindow {
                             DialogWindow.getProgressListener()
                     );
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error("Failed to render scene", e);
                     // TODO: Show error dialog to user
                 }
                 if(!Scene.getRenderCancelListener().isCanceled())

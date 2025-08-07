@@ -37,3 +37,6 @@ bin/
 output.png
 *.ini
 *.dream
+*.rdo
+*.log
+logs/

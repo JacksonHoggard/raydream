@@ -1,5 +1,6 @@
 package me.jacksonhoggard.raydream.util;
 
+import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.material.BumpMap;
 import me.jacksonhoggard.raydream.material.Texture;
 import me.jacksonhoggard.raydream.math.Vector3D;
@@ -14,6 +15,8 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Util {
+    private static final Logger logger = ApplicationContext.getInstance().getLoggingService().getLogger(Util.class);
+    
     public static double randomRange(double min, double max) {
         return min + (max - min) * ThreadLocalRandom.current().nextDouble();
     }
@@ -32,6 +35,7 @@ public class Util {
         try {
             image = ImageIO.read(new File(path));
         } catch (IOException e) {
+            logger.error("Failed to load texture file: " + path, e);
             throw new RuntimeException("Failed to load texture file:" + path, e);
         }
         return new Texture(image, path, image.getWidth(), image.getHeight());
@@ -42,6 +46,7 @@ public class Util {
         try {
             image = ImageIO.read(new File(path));
         } catch (IOException e) {
+            logger.error("Failed to load bump map file: " + path, e);
             throw new RuntimeException("Failed to load bump map file:" + path, e);
         }
         return new BumpMap(image, path, image.getWidth(), image.getHeight(), bumpScale);
@@ -51,6 +56,7 @@ public class Util {
         try {
             return new String(shaderInput.readAllBytes());
         } catch (IOException e) {
+            logger.error("Failed to load shader file", e);
             throw new RuntimeException("Failed to load shader file.", e);
         }
     }
@@ -60,6 +66,7 @@ public class Util {
              ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
 
             if (is == null) {
+                logger.error("Resource not found: " + filePath);
                 throw new IllegalArgumentException("Resource not found: " + filePath);
             }
 
@@ -72,6 +79,7 @@ public class Util {
 
             return buffer.toByteArray();
         } catch (IOException e) {
+            logger.error("Failed to load font", e);
             throw new RuntimeException("Failed to load font.", e);
         }
     }
@@ -84,6 +92,7 @@ public class Util {
                 list.add(line);
             }
         } catch (IOException | NullPointerException e) {
+            logger.error("Failed to read resource file", e);
             throw new RuntimeException("Failed to read resource file.", e);
         }
         return list;
