@@ -3,7 +3,9 @@ package me.jacksonhoggard.raydream.acceleration;
 import me.jacksonhoggard.raydream.config.ApplicationConfig;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector3D;
+import me.jacksonhoggard.raydream.math.Vector4D;
 import me.jacksonhoggard.raydream.object.Hit;
+import me.jacksonhoggard.raydream.object.Model;
 import me.jacksonhoggard.raydream.object.Object;
 
 import java.util.ArrayList;
@@ -34,6 +36,17 @@ public class ImprovedBVH {
     public Hit intersect(Ray ray, double tMin, double tMax) {
         if (root == null) return null;
         return intersectNode(root, ray, tMin, tMax);
+    }
+
+    /**
+     * Shadow ray intersection that properly handles object space transformations
+     * @param ray the shadow ray
+     * @param maxDistance maximum distance to check
+     * @return true if ray is blocked, false if clear path
+     */
+    public boolean intersectShadowRay(Ray ray, double maxDistance) {
+        if (root == null) return false;
+        return intersectShadowNode(root, ray, 0.0001, maxDistance);
     }
 
     private BVHNode buildBVH(List<Object> objects, int depth) {
@@ -100,15 +113,27 @@ public class ImprovedBVH {
             return null;
         }
 
-        // Leaf node - test objects
+        // Leaf node - test objects with proper object space transformation
         if (node.objects != null) {
             Hit closest = null;
             double closestT = tMax;
 
             for (Object object : node.objects) {
-                Hit result = object.intersect(ray);
+                // Transform ray to object space (critical for correct intersection)
+                Vector4D rOriginOS = new Vector4D(ray.origin().x, ray.origin().y, ray.origin().z, 1);
+                Vector4D rDirOS = new Vector4D(ray.direction().x, ray.direction().y, ray.direction().z, 0);
+                rOriginOS = rOriginOS.mult(object.getInverseTransformMatrix());
+                rDirOS = rDirOS.mult(object.getInverseTransformMatrix());
+                Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
+                
+                Hit result = object.intersect(rayOS);
                 if (result != null && result.t() > tMin && result.t() < closestT) {
-                    closest = result;
+                    // Create hit in world space (using original ray for hit point calculation)
+                    if(result.object() instanceof Model) {
+                        closest = new Hit(result.object(), result.triangle(), ray.at(result.t()), result.normal(), result.texCoord(), result.t());
+                    } else {
+                        closest = new Hit(result.object(), null, ray.at(result.t()), result.normal(), result.texCoord(), result.t());
+                    }
                     closestT = result.t();
                 }
             }
@@ -131,6 +156,48 @@ public class ImprovedBVH {
         // Return closest intersection
         if (rightResult != null) return rightResult;
         return leftResult;
+    }
+
+    private boolean intersectShadowNode(BVHNode node, Ray ray, double tMin, double tMax) {
+        // Check if ray intersects node bounds
+        if (!node.bounds.intersects(ray, tMin, tMax)) {
+            return false;
+        }
+
+        // Leaf node - test objects for shadow ray intersection with object space transform
+        if (node.objects != null) {
+            for (Object object : node.objects) {
+                // Transform ray to object space (critical for correct intersection)
+                Vector4D rOriginOS = new Vector4D(ray.origin().x, ray.origin().y, ray.origin().z, 1);
+                Vector4D rDirOS = new Vector4D(ray.direction().x, ray.direction().y, ray.direction().z, 0);
+                rOriginOS = rOriginOS.mult(object.getInverseTransformMatrix());
+                rDirOS = rDirOS.mult(object.getInverseTransformMatrix());
+                Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
+                
+                // For shadow rays, we only care if there's an intersection, not the details
+                if(object instanceof Model) {
+                    if(((Model) object).intersectShadowRay(rayOS, tMax)) {
+                        return true;
+                    }
+                } else {
+                    Hit result = object.intersect(rayOS);
+                    if (result != null && result.t() > tMin && result.t() < tMax) {
+                        return true; // Early exit on first intersection
+                    }
+                }
+            }
+            return false;
+        }
+
+        // Internal node - test children
+        if (node.left != null && intersectShadowNode(node.left, ray, tMin, tMax)) {
+            return true;
+        }
+        if (node.right != null && intersectShadowNode(node.right, ray, tMin, tMax)) {
+            return true;
+        }
+        
+        return false;
     }
 
     private static class BVHNode {

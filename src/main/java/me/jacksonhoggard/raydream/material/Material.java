@@ -1,5 +1,6 @@
 package me.jacksonhoggard.raydream.material;
 
+import me.jacksonhoggard.raydream.config.ApplicationConfig;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
@@ -83,28 +84,38 @@ public class Material {
         return (Rs * Rs + Rp * Rp) / 2;
     }
 
-    // Fresnel for metals
+    // Fresnel for metals using Schlick's approximation with extinction coefficient
     public double fresnelMetal(Ray rayIn, Vector3D normal) {
         Vector3D v = rayIn.direction().normalized();
-        double cosi = Math.abs(Math.clamp(v.dot(normal), -1, 1));
-        double top = Math.pow(indexOfRefraction - 1, 2) + ((4 * indexOfRefraction) * Math.pow(1 - cosi, 5)) + k*k;
-        double bottom = Math.pow(indexOfRefraction + 1, 2) + k*k;
-        return top / bottom;
+        double cosTheta = Math.abs(Math.clamp(v.dot(normal), -1, 1));
+        
+        // Calculate F0 (reflectance at normal incidence)
+        double F0 = Math.pow((indexOfRefraction - 1) / (indexOfRefraction + 1), 2);
+        
+        // Account for extinction coefficient if present (for complex metals)
+        if (k > 0) {
+            double n2 = indexOfRefraction * indexOfRefraction;
+            double k2 = k * k;
+            F0 = ((n2 + k2) - 2 * indexOfRefraction + 1) / ((n2 + k2) + 2 * indexOfRefraction + 1);
+        }
+        
+        // Schlick's approximation
+        return F0 + (1 - F0) * Math.pow(1 - cosTheta, 5);
     }
 
     public Ray reflectRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
         Vector3D direction = reflect(rayIn, normal).normalized();
         Vector3D origin = direction.dot(normal) < 0 ?
-                Vector3D.sub(pointHit, Vector3D.mult(normal, 0.00000001D)) :
-                Vector3D.add(pointHit, Vector3D.mult(normal, 0.00000001D));
+                Vector3D.sub(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON)) :
+                Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
         return new Ray(origin, direction);
     }
 
     public Ray refractRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
         Vector3D direction = refract(rayIn, normal, indexOfRefraction).normalized();
         Vector3D origin = direction.dot(normal) < 0 ?
-                Vector3D.sub(pointHit, Vector3D.mult(normal, 0.00000001D)) :
-                Vector3D.add(pointHit, Vector3D.mult(normal, 0.00000001D));
+                Vector3D.sub(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON)) :
+                Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
         return new Ray(origin, direction);
     }
 

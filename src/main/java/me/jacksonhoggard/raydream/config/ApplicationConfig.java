@@ -14,6 +14,9 @@ public final class ApplicationConfig {
     // Rendering Configuration
     public static final int DEFAULT_MAX_BOUNCE_DEPTH = 10;
     public static final double DEFAULT_EPSILON = 1e-6;
+    public static final double RAY_OFFSET_EPSILON = 1e-6;
+    public static final double GAMMA_CORRECTION = 2.2;
+    public static final double ADAPTIVE_SAMPLING_TOLERANCE = 0.01;
     public static final int DEFAULT_THREAD_COUNT = Runtime.getRuntime().availableProcessors();
 
     // Camera Configuration

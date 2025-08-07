@@ -1,5 +1,7 @@
 package me.jacksonhoggard.raydream.render;
 
+import me.jacksonhoggard.raydream.acceleration.ImprovedBVH;
+import me.jacksonhoggard.raydream.config.ApplicationConfig;
 import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.material.*;
@@ -17,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,7 +33,7 @@ public class Scene {
     private final Light[] lights;
     private final Object[] objects;
     private final Vector3D skyColor;
-    private final BVH bvh;
+    private final ImprovedBVH bvh;
     private final BufferedImage image;
     private final int width;
     private final int height;
@@ -70,7 +73,7 @@ public class Scene {
         this.height = height;
         this.threadCounter = width * height;
         this.renderProgress = 0;
-        this.bvh = new BVH(objects);
+        this.bvh = new ImprovedBVH(Arrays.asList(objects));
     }
 
     public void render(String filename, int sampleDepth, int bounces, int numShadowRays, int threads, ProgressListener listener) throws IOException {
@@ -103,7 +106,13 @@ public class Scene {
         for(int j = 0; j < height; j++) {
             for(int i = 0; i < width; i++) {
                 Vector3D pixelColor = pixelColors.get(k++);
-                image.setRGB(i, j, new Color((int) Math.min(pixelColor.x * 255, 255), (int) Math.min(pixelColor.y * 255, 255), (int) Math.min(pixelColor.z * 255, 255)).getRGB());
+                
+                // Apply gamma correction for more accurate color display
+                double invGamma = 1.0 / ApplicationConfig.GAMMA_CORRECTION;
+                double r = Math.pow(Math.min(Math.max(pixelColor.x, 0.0), 1.0), invGamma) * 255;
+                double g = Math.pow(Math.min(Math.max(pixelColor.y, 0.0), 1.0), invGamma) * 255;
+                double b = Math.pow(Math.min(Math.max(pixelColor.z, 0.0), 1.0), invGamma) * 255;
+                image.setRGB(i, j, new Color((int) r, (int) g, (int) b).getRGB());
             }
         }
         File output = new File(filename);
@@ -183,10 +192,14 @@ public class Scene {
             camera.shootRay(ray, i, j, Util.randomRange(0, 1), Util.randomRange(-1, 0));
             trace(ray, bounces, pixelColor);
             samples = 2;
-            if(Vector3D.div(pixelColor, samples).equals(temp)) {
+            
+            // Check for convergence with tolerance for better efficiency
+            Vector3D avgColor = Vector3D.div(pixelColor, samples);
+            if(Vector3D.sub(avgColor, temp).length() < ApplicationConfig.ADAPTIVE_SAMPLING_TOLERANCE) {
                 pixelColor.div(samples);
                 return;
             }
+            
             for(int k = sampleDepth - samples; k > 0; k--) {
                 camera.shootRay(ray, i, j, Util.randomRange(0, 1), Util.randomRange(-1, 0));
                 trace(ray, bounces, pixelColor);
@@ -205,11 +218,11 @@ public class Scene {
             // Return if no more bounces
             if(bounce <= 0)
                 return;
-            // Find intersections
-            Hit bvhHit = bvh.intersect(ray, objects);
-            Vector3D pointHit = bvhHit.point();
-            Object objectHit = bvhHit.object();
-            Vector3D normalHit = bvhHit.normal();
+            // Find intersections using ImprovedBVH
+            Hit bvhHit = bvh.intersect(ray, 0.0001, Double.MAX_VALUE);
+            Vector3D pointHit = bvhHit != null ? bvhHit.point() : null;
+            Object objectHit = bvhHit != null ? bvhHit.object() : null;
+            Vector3D normalHit = bvhHit != null ? bvhHit.normal() : null;
             double minLightDist = Double.MAX_VALUE;
             Vector3D minLightColor = null;
             double minLightBrightness = Double.MAX_VALUE;
@@ -222,7 +235,7 @@ public class Scene {
                 }
             }
             // Check if light is hit before an object
-            if(objectHit != null && minLightDist < bvhHit.t()) {
+            if(objectHit != null && bvhHit != null && minLightDist < bvhHit.t()) {
                 // If light is hit return the color of the light
                 double brightness = minLightBrightness / minLightDist;
                 color.add(Vector3D.mult(minLightColor, brightness));
@@ -278,6 +291,13 @@ public class Scene {
                     color.add(phong.add(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr))));
                     return;
                 }
+                case OTHER -> {
+                    // Standard diffuse/specular material - no reflection/refraction
+                    Vector3D phong = new Vector3D();
+                    phong(phong, ray, objectHit, pointHit, phongNormal, bvhHit.texCoord());
+                    color.add(phong);
+                    return;
+                }
             }
             Vector3D phong = new Vector3D();
             phong(phong, ray, objectHit, pointHit, phongNormal, bvhHit.texCoord());
@@ -294,11 +314,11 @@ public class Scene {
                 for(int j = 0; j < rows; j++) {
                     for(int i = 0; i < cols; i++) {
                         Vector3D shadowDir = Vector3D.sub(light.pointOnLight(i, j, cols, rows), pointHit).normalize();
-                        Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(shadowDir, 0.00001D)), shadowDir);
+                        Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(shadowDir, ApplicationConfig.RAY_OFFSET_EPSILON)), shadowDir);
                         double lightDist = light.intersect(shadowRay);
                         if(lightDist < 0)
                             continue;
-                        if(!bvh.intersectShadowRay(shadowRay, objects, lightDist)) {
+                        if(!bvh.intersectShadowRay(shadowRay, lightDist)) {
                             shadowPhong(tempColor, ray, objectHit, shadowRay, pointHit, normalHit, light, lightDist, texCoord);
                         }
                     }
@@ -309,6 +329,8 @@ public class Scene {
         }
 
         private static void shadowPhong(Vector3D shadowPhong, Ray ray, Object objectHit, Ray shadowRay, Vector3D pointHit, Vector3D normalHit, Light light, double lightDist, Vector2D texCoord) {
+            if (lightDist <= 0) return; // Safety check
+            
             Ray reflectedRay = objectHit.getMaterial().reflectRay(shadowRay, pointHit, normalHit);
             double kl = Math.max(0D, normalHit.dot(shadowRay.direction().normalized())) * objectHit.getMaterial().getLambertian();
             double ks = Math.pow(Math.max(0, ray.direction().normalized().dot(reflectedRay.direction().normalized())), objectHit.getMaterial().getSpecularExponent()) * objectHit.getMaterial().getSpecular();
@@ -316,8 +338,9 @@ public class Scene {
             Vector3D diffuse = new Vector3D(objectHit.getMaterial().getColor(texCoord)).mult(light.getColor()).mult(kl);
             Vector3D specular = new Vector3D(light.getColor()).mult(s).mult(ks);
             double brightness = light.getBrightness() / lightDist;
-            (diffuse.add(specular)).mult(brightness);
-            shadowPhong.add(diffuse);
+            diffuse.mult(brightness);
+            specular.mult(brightness);
+            shadowPhong.add(Vector3D.add(diffuse, specular));
         }
     }
 }
