@@ -36,6 +36,7 @@ public class BoxEditorObject extends EditorObject {
                         3.638f,
                         0.177f,
                         0.3f,
+                        0.f, // roughness
                         Material.Type.REFLECT,
                         1.f
                 )

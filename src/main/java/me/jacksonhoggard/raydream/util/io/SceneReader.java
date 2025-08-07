@@ -414,6 +414,9 @@ public class SceneReader {
                 case "metalness:":
                     material.setMetalness(Float.parseFloat(params[2]));
                     break;
+                case "roughness:":
+                    material.setRoughness(Float.parseFloat(params[2]));
+                    break;
                 case "ior:":
                     material.setIndexOfRefraction(Float.parseFloat(params[2]));
                     break;

@@ -51,6 +51,7 @@ public class OBJModel extends MeshModel {
                         1.0f,
                         0.5f,
                         0.f,
+                        0.f, // roughness
                         Material.Type.OTHER,
                         1.f
                     );
@@ -257,6 +258,7 @@ public class OBJModel extends MeshModel {
                     1.0f,
                     0.5f,
                     0.f,
+                    0.f, // roughness
                     Material.Type.OTHER,
                     1.f
             );

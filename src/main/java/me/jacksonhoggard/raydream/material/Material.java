@@ -4,6 +4,7 @@ import me.jacksonhoggard.raydream.config.ApplicationConfig;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
+import me.jacksonhoggard.raydream.util.MathUtils;
 
 public class Material {
 
@@ -21,11 +22,12 @@ public class Material {
     private double specular;
     private double specularExponent;
     private final double metalness;
+    private final double roughness; // For matte reflections
     private final Type type;
     private final Texture texture;
     private final BumpMap bumpMap;
 
-    public Material(Vector3D color, double ambient, double lambertian, double specular, double specularExponent, double metalness, double indexOfRefraction, double k, Type type, Texture texture, BumpMap bumpMap) {
+    public Material(Vector3D color, double ambient, double lambertian, double specular, double specularExponent, double metalness, double roughness, double indexOfRefraction, double k, Type type, Texture texture, BumpMap bumpMap) {
         this.color = color;
         this.ambient = ambient;
         this.lambertian = lambertian;
@@ -34,6 +36,7 @@ public class Material {
         this.indexOfRefraction = indexOfRefraction;
         this.k = k;
         this.metalness = metalness;
+        this.roughness = roughness;
         this.type = type;
         this.texture = texture;
         this.bumpMap = bumpMap;
@@ -105,13 +108,51 @@ public class Material {
 
     public Ray reflectRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
         Vector3D direction = reflect(rayIn, normal).normalized();
+        
+        // Apply roughness to create matte reflections
+        if (roughness > 0.0) {
+            direction = perturbReflectionDirection(direction, roughness);
+        }
+        
         // Improved bias calculation for reflection rays
         Vector3D origin = Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
         // Add small directional bias to prevent self-intersection
         origin.add(Vector3D.mult(direction, ApplicationConfig.RAY_OFFSET_EPSILON * 0.1));
         return new Ray(origin, direction);
     }
-
+    
+    /**
+     * Perturbs a reflection direction based on material roughness to create matte reflections.
+     * Uses a more physically-based approach with cosine-weighted hemisphere sampling.
+     * @param perfectReflection the perfect mirror reflection direction
+     * @param roughness the surface roughness (0.0 = perfect mirror, 1.0 = very rough)
+     * @return perturbed reflection direction
+     */
+    private Vector3D perturbReflectionDirection(Vector3D perfectReflection, double roughness) {
+        if (roughness <= 0.0) {
+            return perfectReflection;
+        }
+        
+        // For very rough surfaces, use cosine-weighted hemisphere sampling around the reflection direction
+        // For smoother surfaces, interpolate between perfect reflection and random hemisphere
+        if (roughness >= 0.9) {
+            // Very rough - use hemisphere sampling around the reflection direction
+            return MathUtils.randomHemisphere(perfectReflection);
+        } else {
+            // Generate a random vector in the hemisphere around the perfect reflection
+            Vector3D randomInHemisphere = MathUtils.randomHemisphere(perfectReflection);
+            
+            // Use a power function to make the roughness falloff more realistic
+            double blend = Math.pow(roughness, 0.5); // Square root gives a more natural falloff
+            
+            // Interpolate between perfect reflection and random direction
+            return Vector3D.add(
+                Vector3D.mult(perfectReflection, 1.0 - blend),
+                Vector3D.mult(randomInHemisphere, blend)
+            ).normalized();
+        }
+    }
+    
     public Ray refractRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
         Vector3D direction = refract(rayIn, normal, indexOfRefraction).normalized();
         // Improved bias calculation for refraction rays
@@ -139,6 +180,10 @@ public class Material {
 
     public double getMetalness() {
         return metalness;
+    }
+
+    public double getRoughness() {
+        return roughness;
     }
 
     public double getAmbient() {
