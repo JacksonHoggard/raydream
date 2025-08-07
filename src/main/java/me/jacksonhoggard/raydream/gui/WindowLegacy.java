@@ -4,15 +4,15 @@ import imgui.ImFont;
 import me.jacksonhoggard.raydream.core.ApplicationContext;
 
 /**
- * Main Window class - now delegates to GUIApplication for the new architecture
- * This maintains the existing API while using the improved architecture underneath
+ * Legacy Window class - now delegates to GUIApplication for backward compatibility
+ * This maintains the existing API while using the new architecture underneath
  */
-public class Window {
+public class WindowLegacy {
     private final GUIApplication guiApplication;
     private static ImFont titleFont;
     private static ImFont bodyFont;
     
-    public Window(ApplicationContext context) {
+    public WindowLegacy(ApplicationContext context) {
         this.guiApplication = new GUIApplication(context);
     }
     

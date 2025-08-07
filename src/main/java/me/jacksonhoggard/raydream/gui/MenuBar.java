@@ -1,5 +1,6 @@
 package me.jacksonhoggard.raydream.gui;
 
+import imgui.ImFont;
 import imgui.ImGui;
 import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.gui.editor.window.DialogWindow;
@@ -14,11 +15,14 @@ public class MenuBar {
     private static final SceneService sceneService = ApplicationContext.getInstance().getSceneService();
 
     public static void show(Window window) {
-        ImGui.pushFont(window.getTitleFont());
+        ImFont titleFont = Window.getTitleFont();
+        ImFont bodyFont = Window.getBodyFont();
+        
+        ImGui.pushFont(titleFont != null ? titleFont : ImGui.getFont());
         if(ImGui.beginMainMenuBar()) {
             height = ImGui.getFrameHeight();
             if(ImGui.beginMenu("File")) {
-                ImGui.pushFont(window.getBodyFont());
+                ImGui.pushFont(bodyFont != null ? bodyFont : ImGui.getFont());
                 if(ImGui.menuItem("New")) {
                     newScene();
                 }
@@ -40,9 +44,11 @@ public class MenuBar {
                 ImGui.endMenu();
             }
             if(ImGui.beginMenu("Options")) {
-                ImGui.pushFont(window.getBodyFont());
+                ImGui.pushFont(bodyFont != null ? bodyFont : ImGui.getFont());
                 if(ImGui.menuItem("Quit")) {
-                    window.close();
+                    if (window != null) {
+                        window.close();
+                    }
                 }
                 ImGui.popFont();
                 ImGui.endMenu();
