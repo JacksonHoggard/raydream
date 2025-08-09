@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -87,12 +88,17 @@ public class Scene {
         renderCancelListener.setCanceled(false);
         pool = Executors.newFixedThreadPool(threads);
         List<Vector3D> pixelColors = new ArrayList<>();
+        List<TraceRayTask> tasks = new ArrayList<>();
 
         for(int j = 0; j < height; j++) {
             for(int i = 0; i < width; i++) {
                 pixelColors.add(new Vector3D());
-                pool.execute(new TraceRayTask(pixelColors.getLast(), bounces, sampleDepth, numShadowRays, i, j));
+                tasks.add(new TraceRayTask(pixelColors.getLast(), bounces, sampleDepth, numShadowRays, i, j));
             }
+        }
+        Collections.shuffle(tasks);
+        for(TraceRayTask task : tasks) {
+            pool.execute(task);
         }
         pool.shutdown();
         try {
@@ -267,13 +273,23 @@ public class Scene {
         }
 
         private void updateProgress() {
+            // Apply gamma correction for more accurate color display
+            double invGamma = 1.0 / ApplicationConfig.GAMMA_CORRECTION;
+            double r = Math.pow(Math.min(Math.max(toneMap(pixelColor.x), 0.0), 1.0), invGamma) * 255;
+            double g = Math.pow(Math.min(Math.max(toneMap(pixelColor.y), 0.0), 1.0), invGamma) * 255;
+            double b = Math.pow(Math.min(Math.max(toneMap(pixelColor.z), 0.0), 1.0), invGamma) * 255;
+
+            // Round to prevent floating point artifacts
+            int red = Math.min(255, Math.max(0, (int) Math.round(r)));
+            int green = Math.min(255, Math.max(0, (int) Math.round(g)));
+            int blue = Math.min(255, Math.max(0, (int) Math.round(b)));
             lock.lock();
             threadCounter--;
             double progress = (((((width * height) - threadCounter) / (double) (width * height))) * 100);
             image.setRGB(i, j, new Color(
-                (int) Math.min(255, Math.max(0, pixelColor.x * 255)),
-                (int) Math.min(255, Math.max(0, pixelColor.y * 255)),
-                (int) Math.min(255, Math.max(0, pixelColor.z * 255))
+                red,
+                green,
+                blue
             ).getRGB());
             if(renderProgress < (int) progress) {
                 renderProgress = (int) progress;
