@@ -106,7 +106,7 @@ public class SettingsWindow {
             if(path != null) {
                 if(!(path.endsWith(".jpg") || path.endsWith(".png") || path.endsWith(".jpeg")))
                     path += ".png";
-                DialogWindow.showProgressBar("Render Progress", 250, 100, Scene.getRenderCancelListener());
+                DialogWindow.showProgressBar("Render Progress", 250, 70, Scene.getRenderCancelListener());
                 try {
                     sceneService.renderScene(
                             ObjectWindow.objects,

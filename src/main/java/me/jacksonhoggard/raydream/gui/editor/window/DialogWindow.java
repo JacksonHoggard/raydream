@@ -23,13 +23,49 @@ public class DialogWindow {
     private static JFrame frame;
     private static String lastDir;
 
+    private static final ImageIcon imageIcon = new ImageIcon();
+    private static final JLabel imageLabel = new JLabel(imageIcon);
+
     private static int progress = 0;
     private static final JProgressBar progressBar = new JProgressBar(0, 100);
-    private static final ProgressListener progressListener = progress -> {
-        DialogWindow.progress = progress;
-        progressBar.setValue(progress);
-        if(progress >= 100)
-            closeFrame();
+    private static final ProgressListener progressListener = new ProgressListener() {
+        @Override
+        public void progressUpdated(int progress, BufferedImage image) {
+            DialogWindow.progress = progress;
+            progressBar.setValue(progress);
+            
+            // Get screen dimensions
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            int maxWidth = (int) (screenSize.width * 0.90); // 90% of screen width
+            int maxHeight = (int) (screenSize.height * 0.90); // 90% of screen height
+
+            // Calculate scaled dimensions
+            int imageWidth = image.getWidth();
+            int imageHeight = image.getHeight();
+            int progressBarHeight = progressBar.getSize().height;
+            
+            double scale = Math.min((double) maxWidth / imageWidth, 
+                      (double) (maxHeight - progressBarHeight) / imageHeight);
+            scale = Math.min(scale, 1.0); // Don't scale up
+            
+            int scaledWidth = (int) (imageWidth * scale);
+            int scaledHeight = (int) (imageHeight * scale);
+            int totalHeight = progressBarHeight + scaledHeight;
+            
+            // Scale the image to fit the calculated dimensions
+            Image scaledImage = image.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
+            imageIcon.setImage(scaledImage);
+            
+            if(!frame.getSize().equals(new Dimension(scaledWidth, totalHeight))) {
+                frame.setSize(scaledWidth, totalHeight);
+                frame.setLocationRelativeTo(null);
+            }
+
+            imageLabel.repaint();
+
+            if(progress >= 100)
+                closeFrame();
+        }
     };
 
     public static String openFileChooser(String description, String... extensions) {
@@ -150,6 +186,7 @@ public class DialogWindow {
             }
         });
         frame.getContentPane().add(closeButton);
+        frame.getContentPane().add(imageLabel);
         frame.setVisible(true);
     }
 

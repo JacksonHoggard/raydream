@@ -270,9 +270,14 @@ public class Scene {
             lock.lock();
             threadCounter--;
             double progress = (((((width * height) - threadCounter) / (double) (width * height))) * 100);
+            image.setRGB(i, j, new Color(
+                (int) Math.min(255, Math.max(0, pixelColor.x * 255)),
+                (int) Math.min(255, Math.max(0, pixelColor.y * 255)),
+                (int) Math.min(255, Math.max(0, pixelColor.z * 255))
+            ).getRGB());
             if(renderProgress < (int) progress) {
                 renderProgress = (int) progress;
-                progressListener.progressUpdated(renderProgress);
+                progressListener.progressUpdated(renderProgress, image);
             }
             lock.unlock();
         }
