@@ -17,7 +17,7 @@ import me.jacksonhoggard.raydream.gui.resource.ResourceManager;
 import me.jacksonhoggard.raydream.gui.state.StateManager;
 import me.jacksonhoggard.raydream.gui.window.WindowManager;
 import me.jacksonhoggard.raydream.util.Logger;
-import org.lwjgl.glfw.*;
+import org.lwjgl.glfw.GLFWScrollCallback;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -38,10 +38,10 @@ public class GUIApplication implements AutoCloseable {
     private ImGuiImplGlfwWrapper imGuiGlfw;
     private ImGuiImplGl3Wrapper imGuiGl3;
     
-    // Input callbacks
-    private GLFWScrollCallback scrollCallback;
-    private GLFWMouseButtonCallback mouseButtonCallback;
-    private GLFWCursorPosCallback cursorPosCallback;
+    // Mouse state tracking for custom input handling
+    private double lastMouseX = 0;
+    private double lastMouseY = 0;
+    private boolean firstMouse = true;
     
     public GUIApplication(ApplicationContext context) {
         this.context = context;
@@ -66,8 +66,8 @@ public class GUIApplication implements AutoCloseable {
             // Initialize ImGui
             initializeImGui(windowPtr);
             
-            // Setup input handling
-            setupInputCallbacks();
+            // Set up scroll callback for both ImGui and custom input
+            setupScrollCallback(windowPtr);
             
             // Initialize state
             initializeState();
@@ -86,55 +86,65 @@ public class GUIApplication implements AutoCloseable {
         imGuiGlfw = resourceManager.register(new ImGuiImplGlfwWrapper());
         imGuiGl3 = resourceManager.register(new ImGuiImplGl3Wrapper());
         
-        imGuiGlfw.init(windowPtr, true);
+        imGuiGlfw.init(windowPtr, false); // Don't let ImGui install callbacks, we'll handle them manually
         imGuiGl3.init(windowManager.getGlslVersion());
     }
     
-    private void setupInputCallbacks() {
-        scrollCallback = new GLFWScrollCallback() {
+    private void setupScrollCallback(long windowPtr) {
+        glfwSetScrollCallback(windowPtr, new GLFWScrollCallback() {
             @Override
             public void invoke(long window, double dx, double dy) {
-                inputManager.handleMouseScroll(dx, dy);
-            }
-        };
-        
-        mouseButtonCallback = new GLFWMouseButtonCallback() {
-            @Override
-            public void invoke(long window, int button, int action, int mods) {
-                inputManager.handleMouseButton(button, action);
-            }
-        };
-        
-        cursorPosCallback = new GLFWCursorPosCallback() {
-            private double lastX = 0;
-            private double lastY = 0;
-            private boolean firstCall = true;
-            
-            @Override
-            public void invoke(long window, double x, double y) {
-                if (firstCall) {
-                    lastX = x;
-                    lastY = y;
-                    firstCall = false;
-                    return;
+                // Forward to ImGui manually by setting the mouse wheel delta
+                // ImGui will read these values in the next frame
+                ImGui.getIO().setMouseWheelH(ImGui.getIO().getMouseWheelH() + (float) dx);
+                ImGui.getIO().setMouseWheel(ImGui.getIO().getMouseWheel() + (float) dy);
+                
+                // Only handle custom scroll if ImGui doesn't want to capture mouse input
+                if (!ImGui.getIO().getWantCaptureMouse()) {
+                    inputManager.handleMouseScroll(dx, dy);
                 }
-                
-                double deltaX = x - lastX;
-                double deltaY = y - lastY;
-                
-                inputManager.handleCursorMove(deltaX, deltaY);
-                
-                lastX = x;
-                lastY = y;
             }
-        };
-        
-        windowManager.setCallbacks(scrollCallback, mouseButtonCallback, cursorPosCallback);
+        });
     }
     
     private void initializeState() {
         stateManager.getState().setCamDistance(me.jacksonhoggard.raydream.config.ApplicationConfig.DEFAULT_CAMERA_DISTANCE);
         stateManager.getState().setFps(0);
+    }
+    
+    private void handleCustomInput() {
+        // Only handle custom input if ImGui doesn't want to capture mouse/keyboard
+        if (!ImGui.getIO().getWantCaptureMouse()) {
+            // Handle mouse movement
+            long window = windowManager.getWindowPtr();
+            double[] xpos = new double[1];
+            double[] ypos = new double[1];
+            glfwGetCursorPos(window, xpos, ypos);
+            
+            if (firstMouse) {
+                lastMouseX = xpos[0];
+                lastMouseY = ypos[0];
+                firstMouse = false;
+            }
+            
+            double deltaX = xpos[0] - lastMouseX;
+            double deltaY = ypos[0] - lastMouseY;
+            lastMouseX = xpos[0];
+            lastMouseY = ypos[0];
+            
+            // Handle mouse movement for camera controls
+            if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS) {
+                inputManager.handleCursorMove(deltaX, deltaY);
+            }
+            
+            // Handle scroll wheel - this needs to be done differently since it's event-based
+            // We'll use a callback for scroll events that respects ImGui's wantCaptureMouse state
+        }
+        
+        if (!ImGui.getIO().getWantCaptureKeyboard()) {
+            // Handle keyboard input if needed
+            // For now, key input is handled elsewhere
+        }
     }
     
     public void run() {
@@ -154,6 +164,9 @@ public class GUIApplication implements AutoCloseable {
                 // Start ImGui frame
                 imGuiGlfw.newFrame();
                 ImGui.newFrame();
+                
+                // Handle custom input when ImGui doesn't want to capture it
+                handleCustomInput();
                 
                 // Render GUI
                 renderGUI();

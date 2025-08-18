@@ -244,4 +244,8 @@ public class EditorWindow {
     public static float getCamDistance() {
         return camDistance;
     }
+    
+    public static boolean isHovering() {
+        return isHovering;
+    }
 }

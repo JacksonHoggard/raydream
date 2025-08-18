@@ -148,10 +148,14 @@ public class WindowManager implements AutoCloseable {
     
     public void setCallbacks(GLFWScrollCallback scrollCallback, 
                            GLFWMouseButtonCallback mouseButtonCallback,
-                           GLFWCursorPosCallback cursorPosCallback) {
+                           GLFWCursorPosCallback cursorPosCallback,
+                           GLFWKeyCallback keyCallback,
+                           GLFWCharCallback charCallback) {
         glfwSetScrollCallback(windowPtr, scrollCallback);
         glfwSetMouseButtonCallback(windowPtr, mouseButtonCallback);
         glfwSetCursorPosCallback(windowPtr, cursorPosCallback);
+        glfwSetKeyCallback(windowPtr, keyCallback);
+        glfwSetCharCallback(windowPtr, charCallback);
     }
     
     public boolean shouldClose() {

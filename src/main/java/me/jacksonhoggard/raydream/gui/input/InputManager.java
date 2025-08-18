@@ -41,10 +41,13 @@ public class InputManager {
     }
     
     public void handleMouseScroll(double dx, double dy) {
-        float currentDistance = stateManager.getState().getCamDistance();
-        float newDistance = currentDistance + ((float) -dy * ApplicationConfig.ZOOM_STEP);
-        stateManager.getState().setCamDistance(newDistance);
-        EditorWindow.setCamDistance(newDistance);
+        // Only handle scroll when hovering over the editor window
+        if (EditorWindow.isHovering()) {
+            float currentDistance = stateManager.getState().getCamDistance();
+            float newDistance = currentDistance + ((float) -dy * ApplicationConfig.ZOOM_STEP);
+            stateManager.getState().setCamDistance(newDistance);
+            EditorWindow.setCamDistance(newDistance);
+        }
     }
     
     public void handleMouseButton(int button, int action) {
@@ -55,7 +58,8 @@ public class InputManager {
     }
     
     public void handleCursorMove(double deltaX, double deltaY) {
-        if (stateManager.getState().isMiddleMousePressed()) {
+        // Only handle cursor movement when hovering over the editor window and middle mouse is pressed
+        if (EditorWindow.isHovering() && stateManager.getState().isMiddleMousePressed()) {
             EditorWindow.cursorMoveCamera(
                 (float) (-deltaX * ApplicationConfig.CAMERA_MOVE_DELTA),
                 (float) (deltaY * ApplicationConfig.CAMERA_MOVE_DELTA)
