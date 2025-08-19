@@ -42,6 +42,7 @@ public class GUIApplication implements AutoCloseable {
     private double lastMouseX = 0;
     private double lastMouseY = 0;
     private boolean firstMouse = true;
+    private boolean lastMiddleMouseState = false;
     
     public GUIApplication(ApplicationContext context) {
         this.context = context;
@@ -99,8 +100,8 @@ public class GUIApplication implements AutoCloseable {
                 ImGui.getIO().setMouseWheelH(ImGui.getIO().getMouseWheelH() + (float) dx);
                 ImGui.getIO().setMouseWheel(ImGui.getIO().getMouseWheel() + (float) dy);
                 
-                // Only handle custom scroll if ImGui doesn't want to capture mouse input
-                if (!ImGui.getIO().getWantCaptureMouse()) {
+                // Handle custom scroll if the editor window is being hovered
+                if (me.jacksonhoggard.raydream.gui.editor.window.EditorWindow.isHovering()) {
                     inputManager.handleMouseScroll(dx, dy);
                 }
             }
@@ -113,37 +114,36 @@ public class GUIApplication implements AutoCloseable {
     }
     
     private void handleCustomInput() {
-        // Only handle custom input if ImGui doesn't want to capture mouse/keyboard
-        if (!ImGui.getIO().getWantCaptureMouse()) {
-            // Handle mouse movement
-            long window = windowManager.getWindowPtr();
-            double[] xpos = new double[1];
-            double[] ypos = new double[1];
-            glfwGetCursorPos(window, xpos, ypos);
-            
-            if (firstMouse) {
-                lastMouseX = xpos[0];
-                lastMouseY = ypos[0];
-                firstMouse = false;
-            }
-            
-            double deltaX = xpos[0] - lastMouseX;
-            double deltaY = ypos[0] - lastMouseY;
-            lastMouseX = xpos[0];
-            lastMouseY = ypos[0];
-            
-            // Handle mouse movement for camera controls
-            if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS) {
-                inputManager.handleCursorMove(deltaX, deltaY);
-            }
-            
-            // Handle scroll wheel - this needs to be done differently since it's event-based
-            // We'll use a callback for scroll events that respects ImGui's wantCaptureMouse state
+        // Always check mouse input, but only process it when over editor window
+        long window = windowManager.getWindowPtr();
+        
+        // Handle mouse button state changes
+        boolean currentMiddleMouseState = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE) == GLFW_PRESS;
+        if (currentMiddleMouseState != lastMiddleMouseState) {
+            inputManager.handleMouseButton(GLFW_MOUSE_BUTTON_MIDDLE, 
+                currentMiddleMouseState ? GLFW_PRESS : GLFW_RELEASE);
+            lastMiddleMouseState = currentMiddleMouseState;
         }
         
-        if (!ImGui.getIO().getWantCaptureKeyboard()) {
-            // Handle keyboard input if needed
-            // For now, key input is handled elsewhere
+        // Handle mouse movement
+        double[] xpos = new double[1];
+        double[] ypos = new double[1];
+        glfwGetCursorPos(window, xpos, ypos);
+        
+        if (firstMouse) {
+            lastMouseX = xpos[0];
+            lastMouseY = ypos[0];
+            firstMouse = false;
+        }
+        
+        double deltaX = xpos[0] - lastMouseX;
+        double deltaY = ypos[0] - lastMouseY;
+        lastMouseX = xpos[0];
+        lastMouseY = ypos[0];
+        
+        // Handle mouse movement for camera controls - only if there's actual movement
+        if ((deltaX != 0 || deltaY != 0) && currentMiddleMouseState) {
+            inputManager.handleCursorMove(deltaX, deltaY);
         }
     }
     

@@ -31,11 +31,11 @@ public final class ApplicationConfig {
     public static final float DEFAULT_FOV = 60.0f;
     public static final float DEFAULT_NEAR_PLANE = 0.1f;
     public static final float DEFAULT_FAR_PLANE = 1000.0f;
-    public static final float DEFAULT_CAMERA_DISTANCE = 5.0f;
+    public static final float DEFAULT_CAMERA_DISTANCE = 8.0f;
 
     // Editor Configuration
     public static final float ZOOM_STEP = 0.1f;
-    public static final float CAMERA_MOVE_DELTA = 0.01f;
+    public static final float CAMERA_MOVE_DELTA = 0.1f;
     public static final float ROTATION_SENSITIVITY = 0.01f;
 
     // File Extensions
