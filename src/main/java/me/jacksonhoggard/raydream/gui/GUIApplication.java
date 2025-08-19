@@ -17,6 +17,9 @@ import me.jacksonhoggard.raydream.gui.resource.ResourceManager;
 import me.jacksonhoggard.raydream.gui.state.StateManager;
 import me.jacksonhoggard.raydream.gui.window.WindowManager;
 import me.jacksonhoggard.raydream.util.Logger;
+import org.lwjgl.glfw.GLFWCharCallback;
+import org.lwjgl.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import org.lwjgl.glfw.GLFWScrollCallback;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -67,8 +70,8 @@ public class GUIApplication implements AutoCloseable {
             // Initialize ImGui
             initializeImGui(windowPtr);
             
-            // Set up scroll callback for both ImGui and custom input
-            setupScrollCallback(windowPtr);
+            // Set up input callbacks for both ImGui and custom input
+            setupInputCallbacks(windowPtr);
             
             // Initialize state
             initializeState();
@@ -91,7 +94,8 @@ public class GUIApplication implements AutoCloseable {
         imGuiGl3.init(windowManager.getGlslVersion());
     }
     
-    private void setupScrollCallback(long windowPtr) {
+    private void setupInputCallbacks(long windowPtr) {
+        // Set up scroll callback
         glfwSetScrollCallback(windowPtr, new GLFWScrollCallback() {
             @Override
             public void invoke(long window, double dx, double dy) {
@@ -103,6 +107,39 @@ public class GUIApplication implements AutoCloseable {
                 // Handle custom scroll if the editor window is being hovered
                 if (me.jacksonhoggard.raydream.gui.editor.window.EditorWindow.isHovering()) {
                     inputManager.handleMouseScroll(dx, dy);
+                }
+            }
+        });
+        
+        // Set up mouse button callback for ImGui
+        glfwSetMouseButtonCallback(windowPtr, new GLFWMouseButtonCallback() {
+            @Override
+            public void invoke(long window, int button, int action, int mods) {
+                // Forward mouse button events to ImGui
+                if (imGuiGlfw != null) {
+                    imGuiGlfw.mouseButtonCallback(button, action, mods);
+                }
+            }
+        });
+        
+        // Set up keyboard callback for ImGui
+        glfwSetKeyCallback(windowPtr, new GLFWKeyCallback() {
+            @Override
+            public void invoke(long window, int key, int scancode, int action, int mods) {
+                // Forward keyboard events to ImGui
+                if (imGuiGlfw != null) {
+                    imGuiGlfw.keyCallback(key, scancode, action, mods);
+                }
+            }
+        });
+        
+        // Set up character callback for ImGui text input
+        glfwSetCharCallback(windowPtr, new GLFWCharCallback() {
+            @Override
+            public void invoke(long window, int c) {
+                // Forward character events to ImGui for text input
+                if (imGuiGlfw != null) {
+                    imGuiGlfw.charCallback(c);
                 }
             }
         });
