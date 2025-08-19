@@ -233,7 +233,18 @@ public class RenderManager implements AutoCloseable {
     }
     
     private void drawModelObject(ModelEditorObject modelObject) {
+        int meshIndex = 0;
         for (MeshModel.Mesh mesh : ((MeshModel) modelObject.getModel()).getMeshes()) {
+            // Check if this specific mesh is selected
+            boolean meshSelected = false;
+            if (!modelObject.getSubIds().isEmpty() && meshIndex < modelObject.getSubIds().size()) {
+                int meshId = modelObject.getSubIds().get(meshIndex);
+                meshSelected = (meshId == EditorObject.getSelected());
+            }
+            
+            // Set selection state for this mesh
+            objectShader.setBool("isSelected", meshSelected);
+            
             updateObjectShader(mesh.getMaterial());
             if (mesh.getMaterial().getType().equals(Material.Type.REFLECT_REFRACT)) {
                 objectShader.setFloat("opacity", 0.75f);
@@ -241,6 +252,7 @@ public class RenderManager implements AutoCloseable {
                 objectShader.setFloat("opacity", 1.f);
             }
             mesh.draw();
+            meshIndex++;
         }
     }
     
