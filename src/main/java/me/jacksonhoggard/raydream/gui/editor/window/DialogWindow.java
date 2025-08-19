@@ -1,7 +1,9 @@
 package me.jacksonhoggard.raydream.gui.editor.window;
 
 import me.jacksonhoggard.raydream.SceneManager;
+import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.render.RenderCancelListener;
+import me.jacksonhoggard.raydream.util.Logger;
 import me.jacksonhoggard.raydream.util.ProgressListener;
 
 import javax.imageio.ImageIO;
@@ -16,17 +18,54 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 public class DialogWindow {
+    private static final Logger logger = ApplicationContext.getInstance().getLoggingService().getLogger(DialogWindow.class);
 
     private static JFrame frame;
     private static String lastDir;
 
+    private static final ImageIcon imageIcon = new ImageIcon();
+    private static final JLabel imageLabel = new JLabel(imageIcon);
+
     private static int progress = 0;
     private static final JProgressBar progressBar = new JProgressBar(0, 100);
-    private static final ProgressListener progressListener = progress -> {
-        DialogWindow.progress = progress;
-        progressBar.setValue(progress);
-        if(progress >= 100)
-            closeFrame();
+    private static final ProgressListener progressListener = new ProgressListener() {
+        @Override
+        public void progressUpdated(int progress, BufferedImage image) {
+            DialogWindow.progress = progress;
+            progressBar.setValue(progress);
+            
+            // Get screen dimensions
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            int maxWidth = (int) (screenSize.width * 0.90); // 90% of screen width
+            int maxHeight = (int) (screenSize.height * 0.90); // 90% of screen height
+
+            // Calculate scaled dimensions
+            int imageWidth = image.getWidth();
+            int imageHeight = image.getHeight();
+            int progressBarHeight = progressBar.getSize().height;
+            
+            double scale = Math.min((double) maxWidth / imageWidth, 
+                      (double) (maxHeight - progressBarHeight) / imageHeight);
+            scale = Math.min(scale, 1.0); // Don't scale up
+            
+            int scaledWidth = (int) (imageWidth * scale);
+            int scaledHeight = (int) (imageHeight * scale);
+            int totalHeight = progressBarHeight + scaledHeight;
+            
+            // Scale the image to fit the calculated dimensions
+            Image scaledImage = image.getScaledInstance(scaledWidth, scaledHeight, Image.SCALE_SMOOTH);
+            imageIcon.setImage(scaledImage);
+            
+            if(!frame.getSize().equals(new Dimension(scaledWidth, totalHeight))) {
+                frame.setSize(scaledWidth, totalHeight);
+                frame.setLocationRelativeTo(null);
+            }
+
+            imageLabel.repaint();
+
+            if(progress >= 100)
+                closeFrame();
+        }
     };
 
     public static String openFileChooser(String description, String... extensions) {
@@ -88,6 +127,8 @@ public class DialogWindow {
     }
 
     public static void showError(String message, Exception e) {
+        logger.error("Error dialog shown: " + message, e);
+        
         closeFrame();
         frame = new JFrame("Error");
         frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
@@ -145,6 +186,7 @@ public class DialogWindow {
             }
         });
         frame.getContentPane().add(closeButton);
+        frame.getContentPane().add(imageLabel);
         frame.setVisible(true);
     }
 
@@ -186,6 +228,7 @@ public class DialogWindow {
                 imgWidth = image.getWidth();
                 imgHeight = image.getHeight();
             } catch (IOException e) {
+                logger.error("Error loading image: " + path, e);
                 throw new RuntimeException("Error loading image: ", e);
             }
         }

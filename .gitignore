@@ -4,6 +4,8 @@ out/
 !**/src/test/**/out/
 .idea/
 *.iml
+*.ipr
+*.iws
 target/
 
 ### Eclipse ###
@@ -35,3 +37,6 @@ bin/
 output.png
 *.ini
 *.dream
+*.rdo
+*.log
+logs/

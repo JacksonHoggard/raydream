@@ -18,12 +18,13 @@ public class EditorObjectMaterial {
     private float indexOfRefraction;
     private float k;
     private float metalness;
+    private float roughness; // For matte reflections
     private Material.Type type;
     private Texture texture;
     private Texture bumpMap;
     private float bumpScale;
 
-    public EditorObjectMaterial(float[] color, float ambient, float diffuse, float specular, float specularExponent, float indexOfRefraction, float k, float metalness, Material.Type type, float bumpScale) {
+    public EditorObjectMaterial(float[] color, float ambient, float diffuse, float specular, float specularExponent, float indexOfRefraction, float k, float metalness, float roughness, Material.Type type, float bumpScale) {
         this.color = color;
         this.ambient = ambient;
         this.diffuse = diffuse;
@@ -32,6 +33,7 @@ public class EditorObjectMaterial {
         this.indexOfRefraction = indexOfRefraction;
         this.k = k;
         this.metalness = metalness;
+        this.roughness = roughness;
         this.type = type;
         this.bumpScale = bumpScale;
     }
@@ -49,6 +51,7 @@ public class EditorObjectMaterial {
         this.indexOfRefraction = material.indexOfRefraction;
         this.k = material.k;
         this.metalness = material.metalness;
+        this.roughness = material.roughness;
         this.type = material.type;
         this.texture = material.texture;
         this.bumpMap = material.bumpMap;
@@ -64,6 +67,7 @@ public class EditorObjectMaterial {
         this.indexOfRefraction = 0;
         this.k = 0;
         this.metalness = 0;
+        this.roughness = 0;
         this.type = Material.Type.OTHER;
         this.bumpScale = 0;
     }
@@ -76,6 +80,7 @@ public class EditorObjectMaterial {
                 specular,
                 specularExponent,
                 metalness,
+                roughness,
                 indexOfRefraction,
                 k,
                 type,
@@ -122,6 +127,14 @@ public class EditorObjectMaterial {
 
     public void setMetalness(float metalness) {
         this.metalness = metalness;
+    }
+
+    public float getRoughness() {
+        return roughness;
+    }
+
+    public void setRoughness(float roughness) {
+        this.roughness = roughness;
     }
 
     public float getSpecularExponent() {
@@ -184,12 +197,12 @@ public class EditorObjectMaterial {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof EditorObjectMaterial that)) return false;
-        return Float.compare(ambient, that.ambient) == 0 && Float.compare(diffuse, that.diffuse) == 0 && Float.compare(specular, that.specular) == 0 && Float.compare(specularExponent, that.specularExponent) == 0 && Float.compare(indexOfRefraction, that.indexOfRefraction) == 0 && Float.compare(k, that.k) == 0 && Float.compare(metalness, that.metalness) == 0 && Objects.deepEquals(color, that.color) && type == that.type && Objects.equals(texture, that.texture);
+        return Float.compare(ambient, that.ambient) == 0 && Float.compare(diffuse, that.diffuse) == 0 && Float.compare(specular, that.specular) == 0 && Float.compare(specularExponent, that.specularExponent) == 0 && Float.compare(indexOfRefraction, that.indexOfRefraction) == 0 && Float.compare(k, that.k) == 0 && Float.compare(metalness, that.metalness) == 0 && Float.compare(roughness, that.roughness) == 0 && Objects.deepEquals(color, that.color) && type == that.type && Objects.equals(texture, that.texture);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(Arrays.hashCode(color), ambient, diffuse, specular, specularExponent, indexOfRefraction, k, metalness, type, texture);
+        return Objects.hash(Arrays.hashCode(color), ambient, diffuse, specular, specularExponent, indexOfRefraction, k, metalness, roughness, type, texture);
     }
 
     public String toSaveEntry(String path) {
@@ -208,6 +221,7 @@ public class EditorObjectMaterial {
                 "| ior: " + indexOfRefraction + "\n" +
                 "| k: " + k + "\n" +
                 "| metalness: " + metalness + "\n" +
+                "| roughness: " + roughness + "\n" +
                 "| type: " + type + "\n" +
                 "| texture: " + texPath + "\n" +
                 "| bump: " + bumpPath + "\n" +

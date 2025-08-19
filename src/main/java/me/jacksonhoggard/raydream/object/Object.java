@@ -1,5 +1,6 @@
 package me.jacksonhoggard.raydream.object;
 
+import me.jacksonhoggard.raydream.acceleration.ImprovedBVH;
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Matrix4D;
 import me.jacksonhoggard.raydream.math.Vector3D;
@@ -203,5 +204,9 @@ public abstract class Object implements IObject {
 
     public Vector3D getMax() {
         return max;
+    }
+
+    public ImprovedBVH.BoundingBox getBounds() {
+        return new ImprovedBVH.BoundingBox(min, max);
     }
 }

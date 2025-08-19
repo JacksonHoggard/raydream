@@ -7,8 +7,8 @@ import imgui.extension.imguizmo.flag.Operation;
 import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImBoolean;
+import me.jacksonhoggard.raydream.config.ApplicationConfig;
 import me.jacksonhoggard.raydream.gui.MenuBar;
-import me.jacksonhoggard.raydream.gui.Window;
 import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
@@ -20,7 +20,9 @@ import static org.lwjgl.glfw.GLFW.*;
 
 public class EditorWindow {
     private static EditorCamera camera;
-    private static float camDistance = 8;
+    private static float camDistance = ApplicationConfig.DEFAULT_CAMERA_DISTANCE;
+    private static float camYAngle = 165.f / 180.f * (float) Math.PI;
+    private static float camXAngle = 32.f / 180.f * (float) Math.PI;
 
     private static final float[] IDENTITY_MATRIX = {
             1.f, 0.f, 0.f, 0.f,
@@ -53,14 +55,18 @@ public class EditorWindow {
         height = (ImGui.getMainViewport().getSizeY() - MenuBar.getHeight()) / 2;
 
         if (firstFrame) {
-            VIEW_MANIPULATE_SIZE[0] *= Window.getScale();
-            VIEW_MANIPULATE_SIZE[1] *= Window.getScale();
+            // Use a default scale factor since we don't have access to Window instance
+            float scale = 1.0f; // Default scale, can be made configurable
+            VIEW_MANIPULATE_SIZE[0] *= scale;
+            VIEW_MANIPULATE_SIZE[1] *= scale;
             firstFrame = false;
         }
         if(shouldReset) {
-            camera = new EditorCamera(60, width / height, 0.1f, 100.f);
-            float camYAngle = 165.f / 180.f * (float) Math.PI;
-            float camXAngle = 32.f / 180.f * (float) Math.PI;
+            camera = new EditorCamera(ApplicationConfig.DEFAULT_FOV, width / height,
+                                    ApplicationConfig.DEFAULT_NEAR_PLANE, ApplicationConfig.DEFAULT_FAR_PLANE);
+            // Reset camera angles to default
+            camYAngle = 165.f / 180.f * (float) Math.PI;
+            camXAngle = 32.f / 180.f * (float) Math.PI;
             Vector3D eye = new Vector3D(
                     (float) (Math.cos(camYAngle) * Math.cos(camXAngle) * camDistance),
                     (float) (Math.sin(camXAngle) * camDistance),
@@ -173,6 +179,7 @@ public class EditorWindow {
     }
 
     public static void cursorMoveCamera(float deltaX, float deltaY) {
+        float sensitivity = ApplicationConfig.ROTATION_SENSITIVITY;
         float[] temp = camera.getViewMatrix().getMatrixArray();
         Vector3D right = new Vector3D(
                 temp[0], temp[4], temp[8]
@@ -186,8 +193,8 @@ public class EditorWindow {
                 eyeArr[0], eyeArr[1], eyeArr[2]
         );
 
-        right.mult(deltaX);
-        up.mult(deltaY);
+        right.mult(deltaX * sensitivity);
+        up.mult(deltaY * sensitivity);
 
         eye.add(right);
         eye.add(up);
@@ -254,5 +261,9 @@ public class EditorWindow {
 
     public static float getCamDistance() {
         return camDistance;
+    }
+    
+    public static boolean isHovering() {
+        return isHovering;
     }
 }

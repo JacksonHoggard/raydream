@@ -29,14 +29,15 @@ public class PlaneEditorObject extends EditorObject {
     public PlaneEditorObject() throws IOException {
         this(
                 new EditorObjectMaterial(
-                        new float[] {0.8f, 0.8f, 0.8f},
+                        new float[] {0.6f, 0.4f, 0.2f}, // Wood-like brown color
                         0.1f,
-                        0.4f,
-                        0.5f,
-                        32,
+                        0.6f, // Higher diffuse for wood
+                        0.3f, // Lower specular for wood
+                        16,   // Lower specular exponent for wood
                         3.638f,
                         0.177f,
-                        0.3f,
+                        0.1f, // Low metalness for wood
+                        0.7f, // High roughness for matte reflection (like hardwood)
                         Material.Type.REFLECT,
                         1.f
                 )

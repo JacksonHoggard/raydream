@@ -122,14 +122,23 @@ public class Triangle {
 
     public double intersect(Ray ray) {
         double nDotRDir = normalNotNormal.dot(ray.direction());
+        
+        // Avoid division by very small numbers to prevent numerical instability
+        if(Math.abs(nDotRDir) < 1e-8) {
+            return -1.0D;
+        }
+        
         // Compute distance to point hit
         double t = -(normalNotNormal.dot(ray.origin()) + d) / nDotRDir;
-        if(t < 0) // point is behind ray
+        if(t < 1e-8) // point is behind ray or too close (numerical tolerance)
             return -1.0D;
 
         Vector3D v = new Vector3D();
         calcBarycentric(ray.at(t), v);
-        if(v.y >= 0.0d && v.z >= 0.0d && (v.y + v.z) <= 1.0d)
+        
+        // Add small epsilon tolerance for barycentric coordinate test
+        double epsilon = 1e-8;
+        if(v.y >= -epsilon && v.z >= -epsilon && (v.y + v.z) <= 1.0d + epsilon)
             return t;
 
         return -1.0D;

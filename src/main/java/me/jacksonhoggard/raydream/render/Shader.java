@@ -1,6 +1,8 @@
 package me.jacksonhoggard.raydream.render;
 
+import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.gui.editor.material.Texture;
+import me.jacksonhoggard.raydream.util.Logger;
 import me.jacksonhoggard.raydream.util.Util;
 
 import java.io.IOException;
@@ -11,6 +13,8 @@ import java.nio.file.Paths;
 import static org.lwjgl.opengl.GL20.*;
 
 public class Shader {
+    private static final Logger logger = ApplicationContext.getInstance().getLoggingService().getLogger(Shader.class);
+    
     private final int programId;
     private final int vertexShaderId;
     private final int fragmentShaderId;
@@ -70,7 +74,7 @@ public class Shader {
         // Validate the shader program
         glValidateProgram(programId);
         if (glGetProgrami(programId, GL_VALIDATE_STATUS) == GL_FALSE) {
-            System.err.println("Warning validating Shader code: " + glGetProgramInfoLog(programId, 1024));
+            logger.warn("Warning validating Shader code: " + glGetProgramInfoLog(programId, 1024));
         }
     }
 

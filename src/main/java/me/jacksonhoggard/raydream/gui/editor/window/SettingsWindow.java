@@ -4,17 +4,23 @@ import imgui.ImGui;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImFloat;
 import imgui.type.ImInt;
-import me.jacksonhoggard.raydream.SceneManager;
+import me.jacksonhoggard.raydream.config.ApplicationConfig;
+import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.gui.MenuBar;
 import me.jacksonhoggard.raydream.gui.Window;
 import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
 import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.render.Scene;
+import me.jacksonhoggard.raydream.service.SceneService;
+import me.jacksonhoggard.raydream.util.Logger;
+
+import java.io.IOException;
 
 import java.nio.file.Path;
 
 public class SettingsWindow {
+    private static final Logger logger = ApplicationContext.getInstance().getLoggingService().getLogger(SettingsWindow.class);
 
     private static float width;
     private static float height;
@@ -28,12 +34,13 @@ public class SettingsWindow {
     private static float[] skyColor = new float[] {0, 0, 0, 1.f};
     private static float[] ambientColor = new float[] {1.f, 1.f, 1.f};
     private static float aperture = 100;
-    private static int imgWidth = 1280;
-    private static int imgHeight = 720;
+    private static int imgWidth = ApplicationConfig.DEFAULT_WINDOW_WIDTH;
+    private static int imgHeight = ApplicationConfig.DEFAULT_WINDOW_HEIGHT;
     private static int sampleDepth = 2;
-    private static int bounces = 8;
+    private static int bounces = ApplicationConfig.DEFAULT_MAX_BOUNCE_DEPTH;
     private static int numShadowRays = 8;
-    private static int threads = 4;
+    private static int threads = ApplicationConfig.DEFAULT_THREAD_COUNT;
+    private static final SceneService sceneService = ApplicationContext.getInstance().getSceneService();
 
     public static void show() {
         posX = EditorWindow.getPosX() + EditorWindow.getWidth();
@@ -99,35 +106,40 @@ public class SettingsWindow {
             if(path != null) {
                 if(!(path.endsWith(".jpg") || path.endsWith(".png") || path.endsWith(".jpeg")))
                     path += ".png";
-                DialogWindow.showProgressBar("Render Progress", 250, 100, Scene.getRenderCancelListener());
-                SceneManager.renderScene(
-                        ObjectWindow.objects,
-                        ObjectWindow.lights,
-                        new PointLight(
-                                new Vector3D(),
-                                new Vector3D(
-                                        ambientColor[0],
-                                        ambientColor[1],
-                                        ambientColor[2]
-                                ),
-                                1
-                        ),
-                        new Vector3D(
-                                skyColor[0],
-                                skyColor[1],
-                                skyColor[2]
-                        ),
-                        camera,
-                        imgWidth,
-                        imgHeight,
-                        aperture,
-                        path,
-                        sampleDepth,
-                        bounces,
-                        numShadowRays,
-                        threads,
-                        DialogWindow.getProgressListener()
-                );
+                DialogWindow.showProgressBar("Render Progress", 250, 70, Scene.getRenderCancelListener());
+                try {
+                    sceneService.renderScene(
+                            ObjectWindow.objects,
+                            ObjectWindow.lights,
+                            new PointLight(
+                                    new Vector3D(),
+                                    new Vector3D(
+                                            ambientColor[0],
+                                            ambientColor[1],
+                                            ambientColor[2]
+                                    ),
+                                    1
+                            ),
+                            new Vector3D(
+                                    skyColor[0],
+                                    skyColor[1],
+                                    skyColor[2]
+                            ),
+                            camera,
+                            imgWidth,
+                            imgHeight,
+                            aperture,
+                            path,
+                            sampleDepth,
+                            bounces,
+                            numShadowRays,
+                            threads,
+                            DialogWindow.getProgressListener()
+                    );
+                } catch (IOException e) {
+                    logger.error("Failed to render scene", e);
+                    // TODO: Show error dialog to user
+                }
                 if(!Scene.getRenderCancelListener().isCanceled())
                     DialogWindow.openImage(Path.of(path).getFileName().toString(), path, imgWidth, imgHeight);
             }
@@ -144,12 +156,12 @@ public class SettingsWindow {
         skyColor = new float[] {0, 0, 0, 1.f};
         ambientColor = new float[] {1.f, 1.f, 1.f};
         aperture = 100;
-        imgWidth = 1280;
-        imgHeight = 720;
+        imgWidth = ApplicationConfig.DEFAULT_WINDOW_WIDTH;
+        imgHeight = ApplicationConfig.DEFAULT_WINDOW_HEIGHT;
         sampleDepth = 2;
-        bounces = 8;
+        bounces = ApplicationConfig.DEFAULT_MAX_BOUNCE_DEPTH;
         numShadowRays = 8;
-        threads = 4;
+        threads = ApplicationConfig.DEFAULT_THREAD_COUNT;
     }
 
     public static String toSaveEntry() {

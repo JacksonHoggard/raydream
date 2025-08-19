@@ -183,6 +183,9 @@ public class PropWindow {
             inputFloat.set(material.getMetalness());
             ImGui.inputFloat("Metalness", inputFloat);
             material.setMetalness(inputFloat.get());
+            inputFloat.set(material.getRoughness());
+            ImGui.inputFloat("Roughness", inputFloat);
+            material.setRoughness(inputFloat.get());
             if(material.getBumpMap() != null) {
                 inputFloat.set(material.getBumpScale());
                 ImGui.inputFloat("Bump Scale", inputFloat);
