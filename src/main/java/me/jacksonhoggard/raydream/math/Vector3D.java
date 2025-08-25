@@ -16,6 +16,12 @@ public class Vector3D {
         this.z = z;
     }
 
+    public Vector3D(double t) {
+        this.x = t;
+        this.y = t;
+        this.z = t;
+    }
+
     public Vector3D(Vector3D v) {
         this.x = v.x;
         this.y = v.y;

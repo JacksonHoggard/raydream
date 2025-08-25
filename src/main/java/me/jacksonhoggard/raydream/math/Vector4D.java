@@ -17,6 +17,13 @@ public class Vector4D {
         this.w = w;
     }
 
+    public Vector4D(double t) {
+        this.x = t;
+        this.y = t;
+        this.z = t;
+        this.w = t;
+    }
+
     public Vector4D(Vector4D v) {
         this.x = v.x;
         this.y = v.y;

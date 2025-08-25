@@ -16,6 +16,12 @@ public class Vector3F {
         this.z = z;
     }
 
+    public Vector3F(float t) {
+        this.x = t;
+        this.y = t;
+        this.z = t;
+    }
+
     public Vector3F(Vector3F v) {
         this.x = v.x;
         this.y = v.y;

@@ -14,6 +14,11 @@ public class Vector2D {
         this.y = y;
     }
 
+    public Vector2D(double t) {
+        this.x = t;
+        this.y = t;
+    }
+
     public Vector2D(Vector2D v) {
         this.x = v.x;
         this.y = v.y;
