@@ -303,7 +303,7 @@ public class EditorObjectMaterial {
                 "| albedo: " + albedo[0] + " " + albedo[1] + " " + albedo[2] + "\n" +
                 "| subsurface: " + subsurface + "\n" +
                 "| metallic: " + metallic + "\n" +
-                "| specular: " + specular + "\n" +
+                "| specular: " + specular[0] + " " + specular[1] + " " + specular[2] + "\n" +
                 "| specularTint: " + specularTint + "\n" +
                 "| roughness: " + roughness + "\n" +
                 "| anisotropic: " + anisotropic + "\n" +

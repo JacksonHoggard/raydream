@@ -25,12 +25,12 @@ public class Triangle {
         this.t1 = t1;
         this.t2 = t2;
         Vector3D edge1 = Vector3D.sub(v1, v0);
-        Vector3D edge2 = Vector3D.sub(v2, v1);
+        Vector3D edge2 = Vector3D.sub(v2, v0);
         if(t0 != null && t1 != null && t2 != null) {
             double du1 = t1.x - t0.x;
             double dv1 = t1.y - t0.y;
-            double du2 = t2.x - t1.x;
-            double dv2 = t2.y - t1.y;
+            double du2 = t2.x - t0.x;
+            double dv2 = t2.y - t0.y;
             double f = 1.d / (du1 * dv2 - du2 * dv1);
             this.tangent = new Vector3D(
                     f * (dv2 * edge1.x - dv1 * edge2.x),
@@ -115,9 +115,22 @@ public class Triangle {
     }
 
     public Vector3D getBitangent(Vector3D normal) {
-        if(tangent.cross(bitangent).dot(normal) > 0.0d)
-            tangent.negate();
+        // Ensure proper handedness - if the cross product of tangent and bitangent
+        // doesn't align with the normal, we need to flip the bitangent
+        Vector3D cross = tangent.cross(bitangent);
+        if(cross.dot(normal) < 0.0d) {
+            return new Vector3D(bitangent).negate();
+        }
         return bitangent;
+    }
+
+    // Helper method to get corrected tangent when handedness matters
+    public Vector3D getCorrectedTangent(Vector3D normal) {
+        Vector3D cross = tangent.cross(bitangent);
+        if(cross.dot(normal) < 0.0d) {
+            return new Vector3D(tangent).negate();
+        }
+        return tangent;
     }
 
     public double intersect(Ray ray) {

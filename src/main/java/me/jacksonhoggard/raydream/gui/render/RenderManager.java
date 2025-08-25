@@ -173,6 +173,9 @@ public class RenderManager implements AutoCloseable {
     }
     
     private void setupLightsForObjects() {
+        int numActiveLights = ObjectWindow.lights.size();
+        objectShader.setInt("numActiveLights", numActiveLights);
+        
         int n = 0;
         for (EditorLight light : ObjectWindow.lights) {
             objectShader.setVec3("lights[" + n + "].position", new float[]{
@@ -185,11 +188,7 @@ public class RenderManager implements AutoCloseable {
             n++;
         }
         
-        if (ObjectWindow.lights.isEmpty()) {
-            for (int i = 0; i < 100; i++) {
-                objectShader.setFloat("lights[" + i + "].brightness", 0.f);
-            }
-        }
+        // No need to zero out unused lights since we're using numActiveLights
     }
     
     private float calculateObjectDistance(EditorObject object, EditorCamera camera) {
