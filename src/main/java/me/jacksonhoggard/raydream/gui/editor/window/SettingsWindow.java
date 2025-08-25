@@ -33,6 +33,7 @@ public class SettingsWindow {
     private static float[] up = new float[] {0, 1, 0};
     private static float[] skyColor = new float[] {0, 0, 0, 1.f};
     private static float[] ambientColor = new float[] {1.f, 1.f, 1.f};
+    private static float ambientCoefficient = 0.1f;
     private static float aperture = 100;
     private static int imgWidth = ApplicationConfig.DEFAULT_WINDOW_WIDTH;
     private static int imgHeight = ApplicationConfig.DEFAULT_WINDOW_HEIGHT;
@@ -74,6 +75,9 @@ public class SettingsWindow {
         imgHeight = inputInt.get();
         ImGui.colorEdit3("Sky Color", skyColor);
         ImGui.colorEdit3("Ambient Color", ambientColor);
+        inputFloat.set(ambientCoefficient);
+        ImGui.inputFloat("Ambient Intensity", inputFloat);
+        ambientCoefficient = inputFloat.get();
 
         camera.setAspect((float) imgWidth / (float) imgHeight);
         camera.setLookFrom(lookFrom[0], lookFrom[1], lookFrom[2]);
@@ -120,6 +124,7 @@ public class SettingsWindow {
                                     ),
                                     1
                             ),
+                            ambientCoefficient,
                             new Vector3D(
                                     skyColor[0],
                                     skyColor[1],
@@ -216,6 +221,10 @@ public class SettingsWindow {
 
     public static float[] getAmbientColor() {
         return ambientColor;
+    }
+
+    public static float getAmbientCoefficient() {
+        return ambientCoefficient;
     }
 
     public static void setImgWidth(int imgWidth) {

@@ -90,12 +90,18 @@ public class RenderManager implements AutoCloseable {
     private void drawCamera(EditorCamera editorCamera) {
         objectShader.use();
         objectShader.setVec3("ambientLight.color", SettingsWindow.getAmbientColor());
-        objectShader.setVec3("material.color", new float[]{1.f, 1.f, 1.f});
-        objectShader.setFloat("material.ambient", 0.5f);
-        objectShader.setFloat("material.diffuse", 0.5f);
-        objectShader.setFloat("material.specular", 0.5f);
-        objectShader.setFloat("material.specularExponent", 32);
-        objectShader.setFloat("material.metalness", 0);
+        objectShader.setVec3("material.albedo", new float[]{1.f, 1.f, 1.f});
+        objectShader.setFloat("material.subsurface", 0.5f);
+        objectShader.setFloat("material.metallic", 1.0f);
+        objectShader.setVec3("material.specular", new float[]{0.5f, 0.5f, 0.5f});
+        objectShader.setFloat("material.specularTint", 0.5f);
+        objectShader.setFloat("material.roughness", 0.5f);
+        objectShader.setFloat("material.anisotropic", 0.0f);
+        objectShader.setFloat("material.sheen", 0.0f);
+        objectShader.setFloat("material.sheenTint", 0.0f);
+        objectShader.setFloat("material.clearCoat", 0.0f);
+        objectShader.setFloat("material.clearCoatGloss", 0.0f);
+        objectShader.setFloat("material.indexOfRefraction", 1.5f);
         objectShader.setFloat("opacity", 1.f);
         objectShader.setMatrix4("model", PreviewWindow.getCamera().getModelMatrix().getMatrixArray());
         objectShader.setMatrix4("view", editorCamera.getViewMatrix().getMatrixArray());
@@ -138,6 +144,7 @@ public class RenderManager implements AutoCloseable {
         // Setup lights for objects
         setupLightsForObjects();
         objectShader.setVec3("ambientLight.color", SettingsWindow.getAmbientColor());
+        objectShader.setFloat("ambientCoefficient", SettingsWindow.getAmbientCoefficient());
         
         // Separate opaque and transparent objects
         Map<Float, EditorObject> transparentObjects = new HashMap<>();
@@ -257,12 +264,18 @@ public class RenderManager implements AutoCloseable {
     }
     
     private void updateObjectShader(EditorObjectMaterial material) {
-        objectShader.setVec3("material.color", material.getColor());
-        objectShader.setFloat("material.ambient", material.getAmbient());
-        objectShader.setFloat("material.diffuse", material.getDiffuse());
-        objectShader.setFloat("material.specular", material.getSpecular());
-        objectShader.setFloat("material.specularExponent", material.getSpecularExponent());
-        objectShader.setFloat("material.metalness", material.getMetalness());
+        objectShader.setVec3("material.albedo", material.getAlbedo());
+        objectShader.setFloat("material.subsurface", material.getSubsurface());
+        objectShader.setFloat("material.metallic", material.getMetallic());
+        objectShader.setVec3("material.specular", material.getSpecular());
+        objectShader.setFloat("material.specularTint", material.getSpecularTint());
+        objectShader.setFloat("material.roughness", material.getRoughness());
+        objectShader.setFloat("material.anisotropic", material.getAnisotropic());
+        objectShader.setFloat("material.sheen", material.getSheen());
+        objectShader.setFloat("material.sheenTint", material.getSheenTint());
+        objectShader.setFloat("material.clearcoat", material.getClearcoat());
+        objectShader.setFloat("material.clearcoatGloss", material.getClearcoatGloss());
+        objectShader.setFloat("material.indexOfRefraction", material.getIndexOfRefraction());
         objectShader.setInt("tex", 0);
         objectShader.setBool("hasTexture", material.getTexture() != null);
     }

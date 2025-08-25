@@ -14,29 +14,54 @@ public class Material {
         OTHER
     }
 
-    private final Vector3D color;
+    // Disney BRDF
+    private final Vector3D albedo;
+    private final double subsurface;
+    private final double metallic;
+    private final Vector3D specular;
+    private final double specularTint;
+    private final double roughness;
+    private final double anisotropic;
+    private final double sheen;
+    private final double sheenTint;
+    private final double clearcoat;
+    private final double clearcoatGloss;
+
+    // Other parameters
     private final double indexOfRefraction;
-    private final double k;
-    private double ambient;
-    private double lambertian;
-    private double specular;
-    private double specularExponent;
-    private final double metalness;
-    private final double roughness; // For matte reflections
     private final Type type;
     private final Texture texture;
     private final BumpMap bumpMap;
 
-    public Material(Vector3D color, double ambient, double lambertian, double specular, double specularExponent, double metalness, double roughness, double indexOfRefraction, double k, Type type, Texture texture, BumpMap bumpMap) {
-        this.color = color;
-        this.ambient = ambient;
-        this.lambertian = lambertian;
+    public Material(
+        Vector3D albedo,
+        double subsurface,
+        double metallic,
+        Vector3D specular,
+        double specularTint,
+        double roughness,
+        double anisotropic,
+        double sheen,
+        double sheenTint,
+        double clearcoat,
+        double clearcoatGloss,
+        double indexOfRefraction,
+        Type type,
+        Texture texture,
+        BumpMap bumpMap
+    ) {
+        this.albedo = albedo;
+        this.subsurface = subsurface;
+        this.metallic = metallic;
         this.specular = specular;
-        this.specularExponent = specularExponent;
-        this.indexOfRefraction = indexOfRefraction;
-        this.k = k;
-        this.metalness = metalness;
+        this.specularTint = specularTint;
         this.roughness = roughness;
+        this.anisotropic = anisotropic;
+        this.sheen = sheen;
+        this.sheenTint = sheenTint;
+        this.clearcoat = clearcoat;
+        this.clearcoatGloss = clearcoatGloss;
+        this.indexOfRefraction = indexOfRefraction;
         this.type = type;
         this.texture = texture;
         this.bumpMap = bumpMap;
@@ -94,13 +119,6 @@ public class Material {
         
         // Calculate F0 (reflectance at normal incidence)
         double F0 = Math.pow((indexOfRefraction - 1) / (indexOfRefraction + 1), 2);
-        
-        // Account for extinction coefficient if present (for complex metals)
-        if (k > 0) {
-            double n2 = indexOfRefraction * indexOfRefraction;
-            double k2 = k * k;
-            F0 = ((n2 + k2) - 2 * indexOfRefraction + 1) / ((n2 + k2) + 2 * indexOfRefraction + 1);
-        }
         
         // Schlick's approximation
         return F0 + (1 - F0) * Math.pow(1 - cosTheta, 5);
@@ -168,42 +186,54 @@ public class Material {
         return type;
     }
 
-    public Vector3D getColor(Vector2D texCoord) {
+    public Vector3D getAlbedo(Vector2D texCoord) {
         if(texture != null)
             return texture.getColorAt(texCoord.x, texCoord.y);
-        return color;
+        return albedo;
     }
 
-    public double getIndexOfRefraction() {
-        return indexOfRefraction;
+    public double getSubsurface() {
+        return subsurface;
     }
 
-    public double getMetalness() {
-        return metalness;
+    public double getMetallic() {
+        return metallic;
+    }
+
+    public Vector3D getSpecular() {
+        return specular;
+    }
+
+    public double getSpecularTint() {
+        return specularTint;
     }
 
     public double getRoughness() {
         return roughness;
     }
 
-    public double getAmbient() {
-        return ambient;
+    public double getAnisotropic() {
+        return anisotropic;
     }
 
-    public double getLambertian() {
-        return lambertian;
+    public double getSheen() {
+        return sheen;
     }
 
-    public double getSpecular() {
-        return specular;
+    public double getSheenTint() {
+        return sheenTint;
     }
 
-    public double getSpecularExponent() {
-        return specularExponent;
+    public double getClearcoat() {
+        return clearcoat;
     }
 
-    public double getK() {
-        return k;
+    public double getClearcoatGloss() {
+        return clearcoatGloss;
+    }
+
+    public double getIndexOfRefraction() {
+        return indexOfRefraction;
     }
 
     public Texture getTexture() {

@@ -10,123 +10,154 @@ import java.util.Objects;
 
 public class EditorObjectMaterial {
 
-    private float[] color;
-    private float ambient;
-    private float diffuse;
-    private float specular;
-    private float specularExponent;
+    // Disney BRDF
+    private float[] albedo;
+    private float subsurface;
+    private float metallic;
+    private float[] specular;
+    private float specularTint;
+    private float roughness;
+    private float anisotropic;
+    private float sheen;
+    private float sheenTint;
+    private float clearcoat;
+    private float clearcoatGloss;
+
+    // Other parameters
     private float indexOfRefraction;
-    private float k;
-    private float metalness;
-    private float roughness; // For matte reflections
     private Material.Type type;
     private Texture texture;
     private Texture bumpMap;
     private float bumpScale;
 
-    public EditorObjectMaterial(float[] color, float ambient, float diffuse, float specular, float specularExponent, float indexOfRefraction, float k, float metalness, float roughness, Material.Type type, float bumpScale) {
-        this.color = color;
-        this.ambient = ambient;
-        this.diffuse = diffuse;
+    public EditorObjectMaterial(
+        float[] color,
+        float subsurface,
+        float metallic,
+        float[] specular,
+        float specularTint,
+        float roughness,
+        float anisotropic,
+        float sheen,
+        float sheenTint,
+        float clearcoat,
+        float clearcoatGloss,
+        float indexOfRefraction,
+        Material.Type type,
+        float bumpScale
+    ) {
+        this.albedo = color;
+        this.subsurface = subsurface;
+        this.metallic = metallic;
         this.specular = specular;
-        this.specularExponent = specularExponent;
-        this.indexOfRefraction = indexOfRefraction;
-        this.k = k;
-        this.metalness = metalness;
+        this.specularTint = specularTint;
         this.roughness = roughness;
+        this.anisotropic = anisotropic;
+        this.sheen = sheen;
+        this.sheenTint = sheenTint;
+        this.clearcoat = clearcoat;
+        this.clearcoatGloss = clearcoatGloss;
+        this.indexOfRefraction = indexOfRefraction;
         this.type = type;
         this.bumpScale = bumpScale;
     }
 
     public EditorObjectMaterial(EditorObjectMaterial material) {
-        this.color = new float[] {
-                material.color[0],
-                material.color[1],
-                material.color[2]
+        this.albedo = new float[] {
+                material.albedo[0],
+                material.albedo[1],
+                material.albedo[2]
         };
-        this.ambient = material.ambient;
-        this.diffuse = material.diffuse;
+        this.subsurface = material.subsurface;
+        this.metallic = material.metallic;
         this.specular = material.specular;
-        this.specularExponent = material.specularExponent;
-        this.indexOfRefraction = material.indexOfRefraction;
-        this.k = material.k;
-        this.metalness = material.metalness;
+        this.specularTint = material.specularTint;
         this.roughness = material.roughness;
+        this.anisotropic = material.anisotropic;
+        this.sheen = material.sheen;
+        this.sheenTint = material.sheenTint;
+        this.clearcoat = material.clearcoat;
+        this.clearcoatGloss = material.clearcoatGloss;
+        this.indexOfRefraction = material.indexOfRefraction;
         this.type = material.type;
-        this.texture = material.texture;
-        this.bumpMap = material.bumpMap;
         this.bumpScale = material.bumpScale;
     }
 
     public EditorObjectMaterial() {
-        this.color = new float[3];
-        this.ambient = 0;
-        this.diffuse = 0;
-        this.specular = 0;
-        this.specularExponent = 0;
-        this.indexOfRefraction = 0;
-        this.k = 0;
-        this.metalness = 0;
+        this.albedo = new float[3];
+        this.subsurface = 0;
+        this.metallic = 0;
+        this.specular = new float[3];
+        this.specularTint = 0;
         this.roughness = 0;
+        this.anisotropic = 0;
+        this.sheen = 0;
+        this.sheenTint = 0;
+        this.clearcoat = 0;
+        this.clearcoatGloss = 0;
+        this.indexOfRefraction = 0;
         this.type = Material.Type.OTHER;
         this.bumpScale = 0;
     }
 
     public Material toRayDreamMaterial() {
         return new Material(
-                new Vector3D(color[0], color[1], color[2]),
-                ambient,
-                diffuse,
-                specular,
-                specularExponent,
-                metalness,
+                new Vector3D(albedo[0], albedo[1], albedo[2]),
+                subsurface,
+                metallic,
+                new Vector3D(specular[0], specular[1], specular[2]),
+                specularTint,
                 roughness,
+                anisotropic,
+                sheen,
+                sheenTint,
+                clearcoat,
+                clearcoatGloss,
                 indexOfRefraction,
-                k,
                 type,
                 texture != null ? Util.loadTexture(texture.getPath()) : null,
                 bumpMap != null ? Util.loadBumpMap(bumpMap.getPath(), bumpScale) : null
         );
     }
 
-    public float getAmbient() {
-        return ambient;
+    public float[] getAlbedo() {
+        return albedo;
     }
 
-    public void setAmbient(float ambient) {
-        this.ambient = ambient;
+    public void setAlbedo(float[] color) {
+        this.albedo = color;
     }
 
-    public float[] getColor() {
-        return color;
+    public void setSubsurface(float subsurface) {
+        this.subsurface = subsurface;
     }
 
-    public void setColor(float[] color) {
-        this.color = color;
+    public void setMetallic(float metallic) {
+        this.metallic = metallic;
     }
 
-    public float getDiffuse() {
-        return diffuse;
+    public float getSubsurface() {
+        return subsurface;
     }
 
-    public void setDiffuse(float diffuse) {
-        this.diffuse = diffuse;
+    public float getMetallic() {
+        return metallic;
     }
 
-    public float getSpecular() {
-        return specular;
-    }
-
-    public void setSpecular(float specular) {
+    public void setSpecular(float[] specular) {
         this.specular = specular;
     }
 
-    public float getMetalness() {
-        return metalness;
+    public float[] getSpecular() {
+        return specular;
     }
 
-    public void setMetalness(float metalness) {
-        this.metalness = metalness;
+    public float getSpecularTint() {
+        return specularTint;
+    }
+
+    public void setSpecularTint(float specularTint) {
+        this.specularTint = specularTint;
     }
 
     public float getRoughness() {
@@ -137,12 +168,44 @@ public class EditorObjectMaterial {
         this.roughness = roughness;
     }
 
-    public float getSpecularExponent() {
-        return specularExponent;
+    public float getAnisotropic() {
+        return anisotropic;
     }
 
-    public void setSpecularExponent(float specularExponent) {
-        this.specularExponent = specularExponent;
+    public void setAnisotropic(float anisotropic) {
+        this.anisotropic = anisotropic;
+    }
+
+    public float getSheen() {
+        return sheen;
+    }
+
+    public void setSheen(float sheen) {
+        this.sheen = sheen;
+    }
+
+    public float getSheenTint() {
+        return sheenTint;
+    }
+
+    public void setSheenTint(float sheenTint) {
+        this.sheenTint = sheenTint;
+    }
+
+    public float getClearcoat() {
+        return clearcoat;
+    }
+
+    public void setClearcoat(float clearcoat) {
+        this.clearcoat = clearcoat;
+    }
+
+    public float getClearcoatGloss() {
+        return clearcoatGloss;
+    }
+
+    public void setClearcoatGloss(float clearcoatGloss) {
+        this.clearcoatGloss = clearcoatGloss;
     }
 
     public float getIndexOfRefraction() {
@@ -151,14 +214,6 @@ public class EditorObjectMaterial {
 
     public void setIndexOfRefraction(float indexOfRefraction) {
         this.indexOfRefraction = indexOfRefraction;
-    }
-
-    public float getK() {
-        return k;
-    }
-
-    public void setK(float k) {
-        this.k = k;
     }
 
     public void setType(Material.Type type) {
@@ -197,12 +252,44 @@ public class EditorObjectMaterial {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof EditorObjectMaterial that)) return false;
-        return Float.compare(ambient, that.ambient) == 0 && Float.compare(diffuse, that.diffuse) == 0 && Float.compare(specular, that.specular) == 0 && Float.compare(specularExponent, that.specularExponent) == 0 && Float.compare(indexOfRefraction, that.indexOfRefraction) == 0 && Float.compare(k, that.k) == 0 && Float.compare(metalness, that.metalness) == 0 && Float.compare(roughness, that.roughness) == 0 && Objects.deepEquals(color, that.color) && type == that.type && Objects.equals(texture, that.texture);
+        return Float.compare(subsurface, that.subsurface) == 0
+        && Float.compare(metallic, that.metallic) == 0
+        && Objects.deepEquals(specular, that.specular)
+        && Float.compare(indexOfRefraction, that.indexOfRefraction) == 0
+        && Float.compare(specularTint, that.specularTint) == 0
+        && Float.compare(bumpScale, that.bumpScale) == 0
+        && Float.compare(anisotropic, that.anisotropic) == 0
+        && Float.compare(sheen, that.sheen) == 0
+        && Float.compare(sheenTint, that.sheenTint) == 0
+        && Float.compare(clearcoat, that.clearcoat) == 0
+        && Float.compare(clearcoatGloss, that.clearcoatGloss) == 0
+        && Float.compare(roughness, that.roughness) == 0
+        && Objects.deepEquals(albedo, that.albedo)
+        && type == that.type
+        && Objects.equals(texture, that.texture)
+        && Objects.equals(bumpMap, that.bumpMap);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(Arrays.hashCode(color), ambient, diffuse, specular, specularExponent, indexOfRefraction, k, metalness, roughness, type, texture);
+        return Objects.hash(
+            Arrays.hashCode(albedo),
+            subsurface,
+            metallic,
+            specular,
+            specularTint,
+            roughness,
+            anisotropic,
+            sheen,
+            sheenTint,
+            clearcoat,
+            clearcoatGloss,
+            indexOfRefraction,
+            type,
+            texture,
+            bumpMap,
+            bumpScale
+        );
     }
 
     public String toSaveEntry(String path) {
@@ -213,15 +300,18 @@ public class EditorObjectMaterial {
         if(bumpMap != null)
             bumpPath = Paths.get(path).relativize(Paths.get(bumpMap.getPath())).toString();
         return "material:\n" +
-                "| color: " + color[0] + " " + color[1] + " " + color[2] + "\n" +
-                "| ambient: " + ambient + "\n" +
-                "| diffuse: " + diffuse + "\n" +
+                "| albedo: " + albedo[0] + " " + albedo[1] + " " + albedo[2] + "\n" +
+                "| subsurface: " + subsurface + "\n" +
+                "| metallic: " + metallic + "\n" +
                 "| specular: " + specular + "\n" +
-                "| exponent: " + specularExponent + "\n" +
-                "| ior: " + indexOfRefraction + "\n" +
-                "| k: " + k + "\n" +
-                "| metalness: " + metalness + "\n" +
+                "| specularTint: " + specularTint + "\n" +
                 "| roughness: " + roughness + "\n" +
+                "| anisotropic: " + anisotropic + "\n" +
+                "| sheen: " + sheen + "\n" +
+                "| sheenTint: " + sheenTint + "\n" +
+                "| clearcoat: " + clearcoat + "\n" +
+                "| clearcoatGloss: " + clearcoatGloss + "\n" +
+                "| indexOfRefraction: " + indexOfRefraction + "\n" +
                 "| type: " + type + "\n" +
                 "| texture: " + texPath + "\n" +
                 "| bump: " + bumpPath + "\n" +

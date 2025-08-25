@@ -14,7 +14,6 @@ import me.jacksonhoggard.raydream.render.Scene;
 import me.jacksonhoggard.raydream.util.ProgressListener;
 import me.jacksonhoggard.raydream.util.io.SceneReader;
 
-import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -136,7 +135,23 @@ public class SceneService {
         EditorWindow.reset();
     }
 
-    public void renderScene(ArrayList<EditorObject> objects, ArrayList<EditorLight> lights, PointLight ambientLight, Vector3D skyColor, EditorCamera camera, int width, int height, float aperture, String filename, int sampleDepth, int bounces, int numShadowRays, int threads, ProgressListener progressListener) throws IOException {
+    public void renderScene(
+        ArrayList<EditorObject> objects,
+        ArrayList<EditorLight> lights,
+        PointLight ambientLight,
+        float ambientCoefficient,
+        Vector3D skyColor,
+        EditorCamera camera,
+        int width,
+        int height,
+        float aperture,
+        String filename,
+        int sampleDepth,
+        int bounces,
+        int numShadowRays,
+        int threads,
+        ProgressListener progressListener
+    ) throws IOException {
         // Convert editor camera to render camera
         me.jacksonhoggard.raydream.render.Camera renderCamera = new me.jacksonhoggard.raydream.render.Camera(
             camera.getLookFrom(), 
@@ -171,8 +186,8 @@ public class SceneService {
             }
         }
         me.jacksonhoggard.raydream.object.Object[] renderObjects = renderObjectsList.toArray(new me.jacksonhoggard.raydream.object.Object[0]);
-        
-        Scene scene = new Scene(renderCamera, ambientLight, renderLights, renderObjects, skyColor, width, height);
+
+        Scene scene = new Scene(renderCamera, ambientLight, ambientCoefficient, renderLights, renderObjects, skyColor, width, height);
         scene.render(filename, sampleDepth, bounces, numShadowRays, threads, progressListener);
     }
 }

@@ -392,36 +392,49 @@ public class SceneReader {
         while(!(line = reader.readLine()).trim().startsWith("/") && line.trim().startsWith("|")) {
             String[] params = line.trim().split("\\s+");
             switch(params[1]) {
-                case "color:":
-                    material.setColor(new float[] {
+                case "albedo:":
+                    material.setAlbedo(new float[] {
                             Float.parseFloat(params[2]),
                             Float.parseFloat(params[3]),
                             Float.parseFloat(params[4])
                     });
                     break;
-                case "ambient:":
-                    material.setAmbient(Float.parseFloat(params[2]));
+                case "subsurface:":
+                     material.setSubsurface(Float.parseFloat(params[2]));
                     break;
-                case "diffuse:":
-                     material.setDiffuse(Float.parseFloat(params[2]));
+                case "metallic:":
+                    material.setMetallic(Float.parseFloat(params[2]));
                     break;
                 case "specular:":
-                    material.setSpecular(Float.parseFloat(params[2]));
+                    material.setSpecular(new float[] {
+                            Float.parseFloat(params[2]),
+                            Float.parseFloat(params[3]),
+                            Float.parseFloat(params[4])
+                    });
                     break;
-                case "exponent:":
-                    material.setSpecularExponent(Float.parseFloat(params[2]));
-                    break;
-                case "metalness:":
-                    material.setMetalness(Float.parseFloat(params[2]));
+                case "specularTint:":
+                    material.setSpecularTint(Float.parseFloat(params[2]));
                     break;
                 case "roughness:":
                     material.setRoughness(Float.parseFloat(params[2]));
                     break;
-                case "ior:":
-                    material.setIndexOfRefraction(Float.parseFloat(params[2]));
+                case "anisotropic:":
+                    material.setAnisotropic(Float.parseFloat(params[2]));
                     break;
-                case "k:":
-                    material.setK(Float.parseFloat(params[2]));
+                case "sheen:":
+                    material.setSheen(Float.parseFloat(params[2]));
+                    break;
+                case "sheenTint:":
+                    material.setSheenTint(Float.parseFloat(params[2]));
+                    break;
+                case "clearcoat:":
+                    material.setClearcoat(Float.parseFloat(params[2]));
+                    break;
+                case "clearcoatGloss:":
+                    material.setClearcoatGloss(Float.parseFloat(params[2]));
+                    break;
+                case "indexOfRefraction:":
+                    material.setIndexOfRefraction(Float.parseFloat(params[2]));
                     break;
                 case "type:":
                     material.setType(Material.Type.valueOf(params[2]));

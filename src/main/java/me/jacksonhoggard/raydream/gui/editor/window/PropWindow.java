@@ -156,36 +156,39 @@ public class PropWindow {
             ImGui.pushItemWidth(ImGui.getContentRegionAvailX());
             EditorObjectMaterial material = selectedObject.getMaterial();
             if(material.getTexture() == null) {
-                ImGui.colorEdit3("Color", material.getColor());
+                ImGui.colorEdit3("Albedo", material.getAlbedo());
             }
-            inputFloat.set(material.getAmbient());
-            ImGui.inputFloat("Ambient", inputFloat);
-            material.setAmbient(inputFloat.get());
-            inputFloat.set(material.getDiffuse());
-            ImGui.inputFloat("Diffuse", inputFloat);
-            material.setDiffuse(inputFloat.get());
-            inputFloat.set(material.getSpecular());
-            ImGui.inputFloat("Specular", inputFloat);
-            material.setSpecular(inputFloat.get());
-            inputFloat.set(material.getSpecularExponent());
-            ImGui.inputFloat("Specular Exponent", inputFloat);
-            material.setSpecularExponent(inputFloat.get());
-            if(material.getType().ordinal() != 2) {
-                inputFloat.set(material.getIndexOfRefraction());
-                ImGui.inputFloat("Index of Refraction", inputFloat);
-                material.setIndexOfRefraction(inputFloat.get());
-            }
-            if(material.getType().ordinal() == 0) {
-                inputFloat.set(material.getK());
-                ImGui.inputFloat("K", inputFloat);
-                material.setK(inputFloat.get());
-            }
-            inputFloat.set(material.getMetalness());
-            ImGui.inputFloat("Metalness", inputFloat);
-            material.setMetalness(inputFloat.get());
+            inputFloat.set(material.getSubsurface());
+            ImGui.inputFloat("Subsurface", inputFloat);
+            material.setSubsurface(inputFloat.get());
+            inputFloat.set(material.getMetallic());
+            ImGui.inputFloat("Metallic", inputFloat);
+            material.setMetallic(inputFloat.get());
+            ImGui.colorEdit3("Specular", material.getSpecular());
+            inputFloat.set(material.getSpecularTint());
+            ImGui.inputFloat("Specular Tint", inputFloat);
+            material.setSpecularTint(inputFloat.get());
             inputFloat.set(material.getRoughness());
             ImGui.inputFloat("Roughness", inputFloat);
             material.setRoughness(inputFloat.get());
+            inputFloat.set(material.getAnisotropic());
+            ImGui.inputFloat("Anisotropic", inputFloat);
+            material.setAnisotropic(inputFloat.get());
+            inputFloat.set(material.getSheen());
+            ImGui.inputFloat("Sheen", inputFloat);
+            material.setSheen(inputFloat.get());
+            inputFloat.set(material.getSheenTint());
+            ImGui.inputFloat("Sheen Tint", inputFloat);
+            material.setSheenTint(inputFloat.get());
+            inputFloat.set(material.getClearcoat());
+            ImGui.inputFloat("Clearcoat", inputFloat);
+            material.setClearcoat(inputFloat.get());
+            inputFloat.set(material.getClearcoatGloss());
+            ImGui.inputFloat("Clearcoat Gloss", inputFloat);
+            material.setClearcoatGloss(inputFloat.get());
+            inputFloat.set(material.getIndexOfRefraction());
+            ImGui.inputFloat("Index of Refraction", inputFloat);
+            material.setIndexOfRefraction(inputFloat.get());
             if(material.getBumpMap() != null) {
                 inputFloat.set(material.getBumpScale());
                 ImGui.inputFloat("Bump Scale", inputFloat);

@@ -12,7 +12,6 @@ import me.jacksonhoggard.raydream.object.Transform;
 import java.io.IOException;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
 import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
@@ -30,16 +29,19 @@ public class PlaneEditorObject extends EditorObject {
         this(
                 new EditorObjectMaterial(
                         new float[] {0.6f, 0.4f, 0.2f}, // Wood-like brown color
-                        0.1f,
-                        0.6f, // Higher diffuse for wood
-                        0.3f, // Lower specular for wood
-                        16,   // Lower specular exponent for wood
-                        3.638f,
-                        0.177f,
-                        0.1f, // Low metalness for wood
-                        0.7f, // High roughness for matte reflection (like hardwood)
-                        Material.Type.REFLECT,
-                        1.f
+                        0.0f,
+                        0.0f,
+                        new float[] { 0.5f, 0.5f, 0.5f },
+                        0.0f,
+                        0.5f,
+                        0.0f,
+                        0.0f,
+                        0.5f,
+                        0.0f,
+                        1.0f,
+                        1.5f,
+                        Material.Type.OTHER,
+                        1.0f
                 )
         );
     }

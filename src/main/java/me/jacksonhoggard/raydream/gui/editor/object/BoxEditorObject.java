@@ -28,17 +28,20 @@ public class BoxEditorObject extends EditorObject {
     public BoxEditorObject() throws IOException {
         this(
                 new EditorObjectMaterial(
-                        new float[]{1.f, 0.f, 0.f},
-                        0.1f,
-                        0.4f,
+                        new float[] { 1.0f, 0.0f, 0.0f },
+                        0.0f,
+                        0.0f,
+                        new float[] { 0.5f, 0.5f, 0.5f },
+                        0.0f,
                         0.5f,
-                        32,
-                        3.638f,
-                        0.177f,
-                        0.3f,
-                        0.f, // roughness
+                        0.0f,
+                        0.0f,
+                        0.5f,
+                        0.0f,
+                        1.0f,
+                        1.5f,
                         Material.Type.REFLECT,
-                        1.f
+                        1.0f
                 )
         );
     }

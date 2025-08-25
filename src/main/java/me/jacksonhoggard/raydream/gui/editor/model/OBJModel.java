@@ -44,24 +44,30 @@ public class OBJModel extends MeshModel {
                         materials.put(mtlName, currentMaterial);
                     currentMaterial = new EditorObjectMaterial(
                         new float[3],
-                        0.3f,
-                        0.6f,
+                        0.0f,
+                        0.0f,
+                        new float[] { 0.5f, 0.5f, 0.5f },
+                        0.0f,
                         0.5f,
-                        32,
+                        0.0f,
+                        0.0f,
+                        0.5f,
+                        0.0f,
                         1.0f,
-                        0.5f,
-                        0.f,
-                        0.f, // roughness
+                        1.5f,
                         Material.Type.OTHER,
-                        1.f
+                        1.0f
                     );
                     mtlName = tokens[1];
                     break;
                 case "Kd":
-                    currentMaterial.setColor(parseColor(tokens));
+                    currentMaterial.setAlbedo(parseColor(tokens));
+                    break;
+                case "Ks":
+                    currentMaterial.setSpecular(parseColor(tokens));
                     break;
                 case "Ns":
-                    currentMaterial.setSpecularExponent(Float.parseFloat(tokens[1]));
+                    currentMaterial.setSpecularTint(Float.parseFloat(tokens[1]) / 1000.0F);
                     break;
                 case "Ni":
                     currentMaterial.setIndexOfRefraction(Float.parseFloat(tokens[1]));
@@ -251,16 +257,19 @@ public class OBJModel extends MeshModel {
         if(currentMaterial == null)
             currentMaterial = new EditorObjectMaterial(
                     new float[3],
-                    0.3f,
-                    0.6f,
+                    0.0f,
+                    0.0f,
+                    new float[] { 0.5f, 0.5f, 0.5f },
+                    0.0f,
                     0.5f,
-                    32,
+                    0.0f,
+                    0.0f,
+                    0.5f,
+                    0.0f,
                     1.0f,
-                    0.5f,
-                    0.f,
-                    0.f, // roughness
+                    1.5f,
                     Material.Type.OTHER,
-                    1.f
+                    1.0f
             );
         if(!triangles.isEmpty()) {
             EditorObjectMaterial finalCurrentMaterial = new EditorObjectMaterial(currentMaterial);

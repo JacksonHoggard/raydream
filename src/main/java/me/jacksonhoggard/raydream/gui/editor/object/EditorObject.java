@@ -9,7 +9,6 @@ import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.gui.editor.model.MeshModel;
-import me.jacksonhoggard.raydream.gui.editor.model.OBJModel;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Transform;
 

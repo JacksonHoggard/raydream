@@ -7,10 +7,8 @@ import me.jacksonhoggard.raydream.object.Model;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Service for caching frequently accessed resources to improve performance.

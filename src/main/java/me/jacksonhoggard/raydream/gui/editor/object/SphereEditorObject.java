@@ -10,6 +10,8 @@ import me.jacksonhoggard.raydream.object.Sphere;
 import java.io.IOException;
 
 import static org.lwjgl.opengl.GL11.*;
+import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
+import static org.lwjgl.opengl.GL13.glActiveTexture;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL30.glBindVertexArray;
 import static org.lwjgl.opengl.GL31.GL_PRIMITIVE_RESTART;
@@ -29,16 +31,19 @@ public class SphereEditorObject extends EditorObject {
         this(
                 new EditorObjectMaterial(
                         new float[]{0.f, 1.f, 1.f},
-                        0.1f,
-                        0.4f,
+                        0.0f,
+                        0.0f,
+                        new float[] { 0.5f, 0.5f, 0.5f },
+                        0.0f,
                         0.5f,
-                        32,
-                        3.638f,
-                        0.177f,
-                        0.3f,
-                        0.f, // roughness
-                        Material.Type.REFLECT,
-                        1.f
+                        0.0f,
+                        0.0f,
+                        0.5f,
+                        0.0f,
+                        1.0f,
+                        1.5f,
+                        Material.Type.OTHER,
+                        1.0f
                 )
         );
     }
