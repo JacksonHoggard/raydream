@@ -27,6 +27,12 @@ public final class ApplicationConfig {
     public static final double BILATERAL_SPATIAL_SIGMA = 2.0; // Spatial smoothing
     public static final double BILATERAL_INTENSITY_SIGMA = 0.05; // Intensity similarity threshold
 
+    // Dithering Configuration
+    public static final boolean ENABLE_DITHERING = false; // Enable/disable dithering
+    public static final double DITHERING_STRENGTH = 0.5; // Strength multiplier for dithering (0.0 to 1.0)
+    public static final double DITHERING_THRESHOLD_LOW = 0.02; // Skip dithering below this value
+    public static final double DITHERING_THRESHOLD_HIGH = 0.98; // Skip dithering above this value
+
     // Camera Configuration
     public static final float DEFAULT_FOV = 60.0f;
     public static final float DEFAULT_NEAR_PLANE = 0.1f;

@@ -125,13 +125,26 @@ public class Util {
     }
 
     /**
-     * Apply ordered dithering to reduce color banding
+     * Apply subtle ordered dithering to reduce color banding
+     * Only applies dithering when there's potential for visible banding
      * @param value color value (0-1)
      * @param x pixel x coordinate
      * @param y pixel y coordinate
      * @return dithered color value
      */
     public static double applyDithering(double value, int x, int y) {
+        // Check if dithering is enabled
+        if (!me.jacksonhoggard.raydream.config.ApplicationConfig.ENABLE_DITHERING) {
+            return value;
+        }
+        
+        // Only apply dithering if the value is in a range where banding might be visible
+        // Skip dithering for very dark or very bright values where it's less noticeable
+        if (value < me.jacksonhoggard.raydream.config.ApplicationConfig.DITHERING_THRESHOLD_LOW || 
+            value > me.jacksonhoggard.raydream.config.ApplicationConfig.DITHERING_THRESHOLD_HIGH) {
+            return value;
+        }
+        
         // 4x4 Bayer matrix for ordered dithering
         int[][] bayerMatrix = {
             {0, 8, 2, 10},
@@ -141,7 +154,8 @@ public class Util {
         };
         
         double threshold = bayerMatrix[x % 4][y % 4] / 16.0;
-        double ditherAmount = 1.0 / 255.0; // One step in 8-bit color space
+        // Use configurable dithering strength
+        double ditherAmount = me.jacksonhoggard.raydream.config.ApplicationConfig.DITHERING_STRENGTH / 255.0;
         
         return value + (threshold - 0.5) * ditherAmount;
     }

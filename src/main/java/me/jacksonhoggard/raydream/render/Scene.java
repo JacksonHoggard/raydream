@@ -150,10 +150,12 @@ public class Scene {
             for(int i = 0; i < width; i++) {
                 Vector3D pixelColor = imageData[j][i];
                 
-                // Apply dithering to reduce banding artifacts
-                pixelColor.x = Util.applyDithering(pixelColor.x, i, j);
-                pixelColor.y = Util.applyDithering(pixelColor.y, i, j);
-                pixelColor.z = Util.applyDithering(pixelColor.z, i, j);
+                // Apply dithering to reduce banding artifacts (configurable)
+                if (ApplicationConfig.ENABLE_DITHERING) {
+                    pixelColor.x = Util.applyDithering(pixelColor.x, i, j);
+                    pixelColor.y = Util.applyDithering(pixelColor.y, i, j);
+                    pixelColor.z = Util.applyDithering(pixelColor.z, i, j);
+                }
                 
                 // Apply gamma correction for more accurate color display
                 double invGamma = 1.0 / ApplicationConfig.GAMMA_CORRECTION;
