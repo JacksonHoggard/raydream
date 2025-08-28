@@ -3,11 +3,6 @@ package me.jacksonhoggard.raydream.util;
 import me.jacksonhoggard.raydream.config.ApplicationConfig;
 import me.jacksonhoggard.raydream.math.Vector3D;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
@@ -125,7 +120,7 @@ public final class MathUtils {
         Vector3D v;
         do {
             v = randomVector();
-        } while (v.dot(v) > 1.0); // Use dot product with itself instead of lengthSquared
+        } while (v.dot(v) > 1.0D); // Use dot product with itself instead of lengthSquared
         return v.normalized();
     }
 
@@ -136,7 +131,7 @@ public final class MathUtils {
      */
     public static Vector3D randomHemisphere(Vector3D normal) {
         Vector3D v = randomUnitVector();
-        if (v.dot(normal) < 0.0) {
+        if (v.dot(normal) < 0.0D) {
             v.negate();
         }
         return v;

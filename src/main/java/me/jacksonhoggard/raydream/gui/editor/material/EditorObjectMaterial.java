@@ -84,20 +84,20 @@ public class EditorObjectMaterial {
     }
 
     public EditorObjectMaterial() {
-        this.albedo = new float[3];
-        this.subsurface = 0;
-        this.metallic = 0;
-        this.specular = new float[3];
-        this.specularTint = 0;
-        this.roughness = 0;
-        this.anisotropic = 0;
-        this.sheen = 0;
-        this.sheenTint = 0;
-        this.clearcoat = 0;
-        this.clearcoatGloss = 0;
-        this.indexOfRefraction = 0;
+        this.albedo = new float[]{0.8f, 0.8f, 0.8f}; // Default gray
+        this.subsurface = 0.0f;
+        this.metallic = 0.0f;
+        this.specular = new float[]{0.5f, 0.5f, 0.5f}; // Default specular
+        this.specularTint = 0.0f;
+        this.roughness = 0.5f; // Default medium roughness
+        this.anisotropic = 0.0f;
+        this.sheen = 0.0f;
+        this.sheenTint = 0.5f;
+        this.clearcoat = 0.0f;
+        this.clearcoatGloss = 1.0f;
+        this.indexOfRefraction = 1.5f; // Default glass IOR
         this.type = Material.Type.OTHER;
-        this.bumpScale = 0;
+        this.bumpScale = 1.0f;
     }
 
     public Material toRayDreamMaterial() {

@@ -126,16 +126,13 @@ public class Material {
 
     public Ray reflectRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
         Vector3D direction = reflect(rayIn, normal).normalized();
-        
         // Apply roughness to create matte reflections
         if (roughness > 0.0) {
-            direction = perturbReflectionDirection(direction, roughness);
+            direction = perturbReflectionDirection(direction, normal, roughness);
         }
-        
-        // Improved bias calculation for reflection rays
-        Vector3D origin = Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
-        // Add small directional bias to prevent self-intersection
-        origin.add(Vector3D.mult(direction, ApplicationConfig.RAY_OFFSET_EPSILON * 0.1));
+        Vector3D origin = direction.dot(normal) < 0.0D ?
+                Vector3D.sub(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON)) :
+                Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
         return new Ray(origin, direction);
     }
     
@@ -146,39 +143,20 @@ public class Material {
      * @param roughness the surface roughness (0.0 = perfect mirror, 1.0 = very rough)
      * @return perturbed reflection direction
      */
-    private Vector3D perturbReflectionDirection(Vector3D perfectReflection, double roughness) {
-        if (roughness <= 0.0) {
-            return perfectReflection;
-        }
-        
-        // For very rough surfaces, use cosine-weighted hemisphere sampling around the reflection direction
-        // For smoother surfaces, interpolate between perfect reflection and random hemisphere
-        if (roughness >= 0.9) {
-            // Very rough - use hemisphere sampling around the reflection direction
-            return MathUtils.randomHemisphere(perfectReflection);
-        } else {
-            // Generate a random vector in the hemisphere around the perfect reflection
-            Vector3D randomInHemisphere = MathUtils.randomHemisphere(perfectReflection);
-            
-            // Use a power function to make the roughness falloff more realistic
-            double blend = Math.pow(roughness, 0.5); // Square root gives a more natural falloff
-            
-            // Interpolate between perfect reflection and random direction
-            return Vector3D.add(
-                Vector3D.mult(perfectReflection, 1.0 - blend),
-                Vector3D.mult(randomInHemisphere, blend)
-            ).normalized();
-        }
+    private Vector3D perturbReflectionDirection(Vector3D perfectReflection, Vector3D normal, double roughness) {
+        // Use a more conservative roughness mapping to avoid excessive noise
+        double effectiveRoughness = roughness * roughness; // Square the roughness for more gradual falloff
+        // Generate a random vector in the hemisphere around the surface normal
+        Vector3D randomInHemisphere = MathUtils.randomHemisphere(normal);
+        // Interpolate between perfect reflection and random direction
+        return MathUtils.lerp(perfectReflection, randomInHemisphere, effectiveRoughness).normalize();
     }
     
     public Ray refractRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
-        Vector3D direction = refract(rayIn, normal, indexOfRefraction).normalized();
-        // Improved bias calculation for refraction rays
+        Vector3D direction = refract(rayIn, normal, indexOfRefraction).normalize();
         Vector3D origin = direction.dot(normal) < 0 ?
                 Vector3D.sub(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON)) :
                 Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
-        // Add small directional bias to prevent self-intersection
-        origin.add(Vector3D.mult(direction, ApplicationConfig.RAY_OFFSET_EPSILON * 0.1));
         return new Ray(origin, direction);
     }
 

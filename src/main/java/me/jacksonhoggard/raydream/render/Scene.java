@@ -472,12 +472,11 @@ public class Scene {
             Vector3D refractionColor = new Vector3D();
             switch(material.getType()) {
                 case REFLECT -> {
-                    //double kr = material.fresnelMetal(ray, shaderNormal);
+                    double kr = material.fresnelMetal(ray, shaderNormal);
                     trace(material.reflectRay(ray, pointHit, normalHit), bounce - 1, reflectionColor);
                     Vector3D shading = new Vector3D();
                     shade(shading, ray, objectHit, pointHit, shaderNormal, bvhHit.texCoord(), tangentWS, bitangentWS);
-                    //color.add(shading.add(Vector3D.mult(reflectionColor, kr)));
-                    color.add(shading.add(reflectionColor));
+                    color.add(shading.add(Vector3D.mult(reflectionColor, kr)));
                     return;
                 }
                 case REFLECT_REFRACT -> {
