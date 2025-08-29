@@ -46,8 +46,7 @@ public class DialogWindow {
             
             double scale = Math.min((double) maxWidth / imageWidth, 
                       (double) (maxHeight - progressBarHeight) / imageHeight);
-            scale = Math.min(scale, 1.0); // Don't scale up
-            
+
             int scaledWidth = (int) (imageWidth * scale);
             int scaledHeight = (int) (imageHeight * scale);
             int totalHeight = progressBarHeight + scaledHeight;
