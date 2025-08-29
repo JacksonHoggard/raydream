@@ -4,7 +4,6 @@ import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.material.BumpMap;
 import me.jacksonhoggard.raydream.material.Texture;
 import me.jacksonhoggard.raydream.math.Vector3D;
-import org.lwjgl.glfw.GLFWImage;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;

@@ -2,7 +2,6 @@ package me.jacksonhoggard.raydream.gui.editor.light;
 
 import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorLightMaterial;
-import me.jacksonhoggard.raydream.gui.editor.model.BoxModel;
 import me.jacksonhoggard.raydream.gui.editor.model.SphereModel;
 import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.light.PointLight;
@@ -66,7 +65,6 @@ public class EditorPointLight extends EditorLight {
 
     @Override
     public String toSaveEntry() {
-        double[] translation = getTransform().translation().toArray();
         return "+ light: point\n" +
                 "label: " + label.get() + "\n" +
                 getTransformSaveEntry() + getMaterial().toSaveEntry() + ";\n";

@@ -1,14 +1,11 @@
 package me.jacksonhoggard.raydream.render;
 
 import me.jacksonhoggard.raydream.core.ApplicationContext;
-import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.util.Logger;
 import me.jacksonhoggard.raydream.util.Util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
 
 import static org.lwjgl.opengl.GL20.*;
 
