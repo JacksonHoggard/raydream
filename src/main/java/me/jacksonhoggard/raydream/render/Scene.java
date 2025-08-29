@@ -104,7 +104,7 @@ public class Scene {
         for(int j = 0; j < height; j++) {
             for(int i = 0; i < width; i++) {
                 pixelColors.add(new Vector3D());
-                tasks.add(new TraceRayTask(pixelColors.getLast(), bounces, sampleDepth, numShadowRays, i, j));
+                tasks.add(new TraceRayTask(pixelColors.getLast(), bounces, sampleDepth, Math.max(numShadowRays, 1), i, j));
             }
         }
         Collections.shuffle(tasks);
@@ -434,13 +434,13 @@ public class Scene {
             // Check if light is hit before an object
             if(objectHit != null && bvhHit != null && minLightDist < bvhHit.t()) {
                 // If light is hit return the color of the light
-                double brightness = minLightBrightness / minLightDist;
+                double brightness = minLightBrightness / (1.0D + (minLightDist * minLightDist));
                 color.add(Vector3D.mult(minLightColor, brightness));
                 return;
             }
             // If a light is hit, but no object is hit
             if(objectHit == null && minLightColor != null) {
-                double brightness = minLightBrightness / minLightDist;
+                double brightness = minLightBrightness / (1.0D + (minLightDist * minLightDist));
                 color.add(Vector3D.mult(minLightColor, brightness));
                 return;
             }
@@ -511,23 +511,25 @@ public class Scene {
                 int cols = (int) Math.sqrt(maxShadowRays);
                 int rows = maxShadowRays / cols;
                 int numHits = 0;
+                Vector3D closestPointOnLight = light.closestPoint(pointHit);
+                double lightDist = Vector3D.sub(closestPointOnLight, pointHit).length();
                 for(int j = 0; j < rows; j++) {
                     for(int i = 0; i < cols; i++) {
                         Vector3D shadowDir = Vector3D.sub(light.pointOnLight(i, j, cols, rows), pointHit).normalize();
                         // Improved shadow ray origin with better bias calculation
                         Vector3D shadowOrigin = Vector3D.add(pointHit, Vector3D.mult(normalHit, ApplicationConfig.RAY_OFFSET_EPSILON));
-                        // Add small directional bias to prevent self-intersection
-                        shadowOrigin.add(Vector3D.mult(shadowDir, ApplicationConfig.RAY_OFFSET_EPSILON * 0.1));
                         Ray shadowRay = new Ray(shadowOrigin, shadowDir);
-                        double lightDist = light.intersect(shadowRay);
-                        if(lightDist < 0)
+                        double shadowToLightDist = light.intersect(shadowRay);
+                        if(shadowToLightDist < 0.0D)
                             continue;
-                        if(bvh.intersectShadowRay(shadowRay, lightDist))
+                        if(bvh.intersectShadowRay(shadowRay, shadowToLightDist))
                             continue;
                         numHits++;
                     }
                 }
-                BSDF.brdf(tempColor, ray, objectHit, pointHit, normalHit, texCoord, light, x, y);
+                double falloff = light.getBrightness() / (1.0D + (lightDist * lightDist));
+                BSDF.brdf(tempColor, ray, objectHit, pointHit, normalHit, texCoord, closestPointOnLight, x, y);
+                tempColor.mult(falloff).mult(light.getColor()); // factor in light intensity
                 tempColor.mult(numHits / (double) maxShadowRays);
                 out.add(tempColor);
             }

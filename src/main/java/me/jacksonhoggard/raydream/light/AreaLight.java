@@ -64,6 +64,18 @@ public class AreaLight extends Light {
         return Object.transformPointToOS(pointOS, transformMatrix);
     }
 
+    @Override
+    public Vector3D closestPoint(Vector3D point) {
+        Vector3D pointOS = Object.transformPointToOS(point, inverseTransformMatrix);
+        Vector3D closestPoint = new Vector3D(
+            Math.min(Math.max(pointOS.x, -0.5D), 0.5D),
+            Math.min(Math.max(pointOS.y, -0.5D), 0.5D),
+            0
+        );
+        closestPoint = Object.transformPointToOS(closestPoint, transformMatrix);
+        return closestPoint;
+    }
+
     public Transform getTransform() {
         return transform;
     }

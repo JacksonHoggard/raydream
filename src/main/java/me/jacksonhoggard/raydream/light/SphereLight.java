@@ -31,6 +31,13 @@ public class SphereLight extends Light {
         return Vector3D.add(getPosition(), random.mult(radius - 0.00001D));
     }
 
+    @Override
+    public Vector3D closestPoint(Vector3D point) {
+        Vector3D dirToPoint = Vector3D.sub(point, getPosition()).normalize();
+        Vector3D closestPoint = Vector3D.sub(getPosition(), Vector3D.mult(dirToPoint, radius));
+        return closestPoint;
+    }
+
     public double getRadius() {
         return radius;
     }

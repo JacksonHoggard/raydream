@@ -1,7 +1,6 @@
 package me.jacksonhoggard.raydream.render;
 
 import me.jacksonhoggard.raydream.object.Object;
-import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector2D;
@@ -16,7 +15,7 @@ public class BSDF {
             Vector3D pointHit,
             Vector3D normalHit,
             Vector2D texCoord,
-            Light light,
+            Vector3D pointOnLight,
             Vector3D x,
             Vector3D y
         )
@@ -24,7 +23,7 @@ public class BSDF {
         Material material = objectHit.getMaterial();
         Vector3D albedo = material.getAlbedo(texCoord);
 
-        Vector3D l = Vector3D.sub(light.getPosition(), pointHit).normalized();
+        Vector3D l = Vector3D.sub(pointOnLight, pointHit).normalized();
         Vector3D v = ray.direction().negated().normalized();
 
         double NdotL = normalHit.dot(l);
@@ -38,7 +37,7 @@ public class BSDF {
         Vector3D cdlin = mon2lin(albedo);
         double cdlum = 0.3 * cdlin.x + 0.6 * cdlin.y + 0.1 * cdlin.z; // Luminance
 
-        Vector3D ctint = cdlum > 0 ? Vector3D.div(cdlin, cdlum) : new Vector3D(1); // Normalize luminance to isolate hue + saturation
+        Vector3D ctint = cdlum > 0.0D ? Vector3D.div(cdlin, cdlum) : new Vector3D(1); // Normalize luminance to isolate hue + saturation
         Vector3D cspec0 = mix(Vector3D.mult(material.getSpecular(), 0.8D).mult(mix(new Vector3D(1), ctint, material.getSpecularTint())), cdlin, material.getMetallic());
         Vector3D csheen = mix(new Vector3D(1), ctint, material.getSheenTint());
 
@@ -55,8 +54,8 @@ public class BSDF {
 
         // Specular
         double aspect = Math.sqrt(1.0D - material.getAnisotropic() * 0.9D);
-        double ax = Math.max(0.001, Math.pow(material.getRoughness(), 2) / aspect);
-        double ay = Math.max(0.001, Math.pow(material.getRoughness(), 2) * aspect);
+        double ax = Math.max(0.001D, Math.pow(material.getRoughness(), 2) / aspect);
+        double ay = Math.max(0.001D, Math.pow(material.getRoughness(), 2) * aspect);
         double ds = gtr2Aniso(NdotH, h.dot(x), h.dot(y), ax, ay);
         double fh = schlickFresnel(LdotH);
         Vector3D fs = mix(cspec0, new Vector3D(1), fh);

@@ -19,12 +19,6 @@ public abstract class Object implements IObject {
     public Object(Transform transform, Material material, Vector3D min, Vector3D max) {
         this.transform = transform;
         this.material = material;
-        float[] temp = new float[]{
-                1.f, 0, 0, 0,
-                0, 1.f, 0, 0,
-                0, 0, 1.f, 0,
-                0, 0, 0, 1.f
-        };
         Matrix4D transformMatrix = composeModelMatrix(transform);
 
         this.inverseTransformMatrix = new Matrix4D(transformMatrix.inverse().getMatrixArray());

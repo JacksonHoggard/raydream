@@ -26,4 +26,9 @@ public class PointLight extends Light {
     public Vector3D pointOnLight(int i, int j, int cols, int rows) {
         return getPosition();
     }
+
+    @Override
+    public Vector3D closestPoint(Vector3D point) {
+        return getPosition();
+    }
 }

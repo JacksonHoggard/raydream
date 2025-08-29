@@ -7,4 +7,6 @@ public interface ILight {
     double intersect(Ray ray);
 
     Vector3D pointOnLight(int i, int j, int cols, int rows);
+
+    Vector3D closestPoint(Vector3D point);
 }
