@@ -168,6 +168,9 @@ public class PropWindow {
             inputFloat.set(material.getSpecularTint());
             ImGui.inputFloat("Specular Tint", inputFloat);
             material.setSpecularTint(inputFloat.get());
+            inputFloat.set(material.getSpecularTransmission());
+            ImGui.inputFloat("Specular Transmission", inputFloat);
+            material.setSpecularTransmission(inputFloat.get());
             inputFloat.set(material.getRoughness());
             ImGui.inputFloat("Roughness", inputFloat);
             material.setRoughness(inputFloat.get());

@@ -415,6 +415,9 @@ public class SceneReader {
                 case "specularTint:":
                     material.setSpecularTint(Float.parseFloat(params[2]));
                     break;
+                case "specularTransmission:":
+                    material.setSpecularTransmission(Float.parseFloat(params[2]));
+                    break;
                 case "roughness:":
                     material.setRoughness(Float.parseFloat(params[2]));
                     break;

@@ -503,7 +503,7 @@ public class Scene {
             color.add(shading);
         }
 
-        private void shade(Vector3D out, Ray ray, Object objectHit, Vector3D pointHit, Vector3D normalHit, Vector2D texCoord, Vector3D x, Vector3D y) {
+        private void shade(Vector3D out, Ray ray, Object objectHit, Vector3D pointHit, Vector3D normalHit, Vector2D texCoord, Vector3D tangent, Vector3D bitangent) {
             out.set(Vector3D.mult(objectHit.getMaterial().getAlbedo(texCoord), ambientCoefficient).mult(ambient.getColor()));
             for(Light light : lights) {
                 int maxShadowRays = light.getClass().equals(PointLight.class) ? 1 : numShadowRays;
@@ -528,7 +528,7 @@ public class Scene {
                     }
                 }
                 double falloff = light.getBrightness() / (1.0D + (lightDist * lightDist));
-                BSDF.brdf(tempColor, ray, objectHit, pointHit, normalHit, texCoord, closestPointOnLight, x, y);
+                BSDF.bsdf(tempColor, ray, objectHit, pointHit, normalHit, texCoord, closestPointOnLight, tangent, bitangent);
                 tempColor.mult(falloff).mult(light.getColor()); // factor in light intensity
                 tempColor.mult(numHits / (double) maxShadowRays);
                 out.add(tempColor);

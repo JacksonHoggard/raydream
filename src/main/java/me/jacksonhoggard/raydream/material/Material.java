@@ -20,6 +20,7 @@ public class Material {
     private final double metallic;
     private final Vector3D specular;
     private final double specularTint;
+    private final double specularTransmission;
     private final double roughness;
     private final double anisotropic;
     private final double sheen;
@@ -39,6 +40,7 @@ public class Material {
         double metallic,
         Vector3D specular,
         double specularTint,
+        double specularTransmission,
         double roughness,
         double anisotropic,
         double sheen,
@@ -55,6 +57,7 @@ public class Material {
         this.metallic = metallic;
         this.specular = specular;
         this.specularTint = specularTint;
+        this.specularTransmission = specularTransmission;
         this.roughness = roughness;
         this.anisotropic = anisotropic;
         this.sheen = sheen;
@@ -184,6 +187,10 @@ public class Material {
 
     public double getSpecularTint() {
         return specularTint;
+    }
+
+    public double getSpecularTransmission() {
+        return specularTransmission;
     }
 
     public double getRoughness() {

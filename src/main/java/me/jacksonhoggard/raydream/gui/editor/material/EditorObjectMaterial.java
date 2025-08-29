@@ -16,6 +16,7 @@ public class EditorObjectMaterial {
     private float metallic;
     private float[] specular;
     private float specularTint;
+    private float specularTransmission;
     private float roughness;
     private float anisotropic;
     private float sheen;
@@ -36,6 +37,7 @@ public class EditorObjectMaterial {
         float metallic,
         float[] specular,
         float specularTint,
+        float specularTransmission,
         float roughness,
         float anisotropic,
         float sheen,
@@ -51,6 +53,7 @@ public class EditorObjectMaterial {
         this.metallic = metallic;
         this.specular = specular;
         this.specularTint = specularTint;
+        this.specularTransmission = specularTransmission;
         this.roughness = roughness;
         this.anisotropic = anisotropic;
         this.sheen = sheen;
@@ -72,6 +75,7 @@ public class EditorObjectMaterial {
         this.metallic = material.metallic;
         this.specular = material.specular;
         this.specularTint = material.specularTint;
+        this.specularTransmission = material.specularTransmission;
         this.roughness = material.roughness;
         this.anisotropic = material.anisotropic;
         this.sheen = material.sheen;
@@ -89,6 +93,7 @@ public class EditorObjectMaterial {
         this.metallic = 0.0f;
         this.specular = new float[]{0.5f, 0.5f, 0.5f}; // Default specular
         this.specularTint = 0.0f;
+        this.specularTransmission = 0.0f;
         this.roughness = 0.5f; // Default medium roughness
         this.anisotropic = 0.0f;
         this.sheen = 0.0f;
@@ -96,7 +101,7 @@ public class EditorObjectMaterial {
         this.clearcoat = 0.0f;
         this.clearcoatGloss = 1.0f;
         this.indexOfRefraction = 1.5f; // Default glass IOR
-        this.type = Material.Type.OTHER;
+        this.type = Material.Type.REFLECT;
         this.bumpScale = 1.0f;
     }
 
@@ -107,6 +112,7 @@ public class EditorObjectMaterial {
                 metallic,
                 new Vector3D(specular[0], specular[1], specular[2]),
                 specularTint,
+                specularTransmission,
                 roughness,
                 anisotropic,
                 sheen,
@@ -158,6 +164,14 @@ public class EditorObjectMaterial {
 
     public void setSpecularTint(float specularTint) {
         this.specularTint = specularTint;
+    }
+
+    public float getSpecularTransmission() {
+        return specularTransmission;
+    }
+
+    public void setSpecularTransmission(float specularTransmission) {
+        this.specularTransmission = specularTransmission;
     }
 
     public float getRoughness() {
@@ -257,6 +271,7 @@ public class EditorObjectMaterial {
         && Objects.deepEquals(specular, that.specular)
         && Float.compare(indexOfRefraction, that.indexOfRefraction) == 0
         && Float.compare(specularTint, that.specularTint) == 0
+        && Float.compare(specularTransmission, that.specularTransmission) == 0
         && Float.compare(bumpScale, that.bumpScale) == 0
         && Float.compare(anisotropic, that.anisotropic) == 0
         && Float.compare(sheen, that.sheen) == 0
@@ -305,6 +320,7 @@ public class EditorObjectMaterial {
                 "| metallic: " + metallic + "\n" +
                 "| specular: " + specular[0] + " " + specular[1] + " " + specular[2] + "\n" +
                 "| specularTint: " + specularTint + "\n" +
+                "| specularTransmission: " + specularTransmission + "\n" +
                 "| roughness: " + roughness + "\n" +
                 "| anisotropic: " + anisotropic + "\n" +
                 "| sheen: " + sheen + "\n" +

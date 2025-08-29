@@ -34,7 +34,7 @@ public class SphereLight extends Light {
     @Override
     public Vector3D closestPoint(Vector3D point) {
         Vector3D dirToPoint = Vector3D.sub(point, getPosition()).normalize();
-        Vector3D closestPoint = Vector3D.sub(getPosition(), Vector3D.mult(dirToPoint, radius));
+        Vector3D closestPoint = Vector3D.add(getPosition(), Vector3D.mult(dirToPoint, radius));
         return closestPoint;
     }
 
