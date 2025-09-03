@@ -12,6 +12,7 @@ public class EditorObjectMaterial {
 
     // Disney BRDF
     private float[] albedo;
+    private float[] emittance;
     private float subsurface;
     private float metallic;
     private float[] specular;
@@ -25,14 +26,15 @@ public class EditorObjectMaterial {
     private float clearcoatGloss;
 
     // Other parameters
+    private boolean thin;
     private float indexOfRefraction;
-    private Material.Type type;
     private Texture texture;
     private Texture bumpMap;
     private float bumpScale;
 
     public EditorObjectMaterial(
         float[] color,
+        float[] emittance,
         float subsurface,
         float metallic,
         float[] specular,
@@ -44,11 +46,12 @@ public class EditorObjectMaterial {
         float sheenTint,
         float clearcoat,
         float clearcoatGloss,
+        boolean thin,
         float indexOfRefraction,
-        Material.Type type,
         float bumpScale
     ) {
         this.albedo = color;
+        this.emittance = emittance;
         this.subsurface = subsurface;
         this.metallic = metallic;
         this.specular = specular;
@@ -61,7 +64,7 @@ public class EditorObjectMaterial {
         this.clearcoat = clearcoat;
         this.clearcoatGloss = clearcoatGloss;
         this.indexOfRefraction = indexOfRefraction;
-        this.type = type;
+        this.thin = thin;
         this.bumpScale = bumpScale;
     }
 
@@ -83,7 +86,7 @@ public class EditorObjectMaterial {
         this.clearcoat = material.clearcoat;
         this.clearcoatGloss = material.clearcoatGloss;
         this.indexOfRefraction = material.indexOfRefraction;
-        this.type = material.type;
+        this.thin = material.thin;
         this.bumpScale = material.bumpScale;
     }
 
@@ -101,13 +104,14 @@ public class EditorObjectMaterial {
         this.clearcoat = 0.0f;
         this.clearcoatGloss = 1.0f;
         this.indexOfRefraction = 1.5f; // Default glass IOR
-        this.type = Material.Type.REFLECT;
+        this.thin = false;
         this.bumpScale = 1.0f;
     }
 
     public Material toRayDreamMaterial() {
         return new Material(
                 new Vector3D(albedo[0], albedo[1], albedo[2]),
+                new Vector3D(emittance[0], emittance[1], emittance[2]),
                 subsurface,
                 metallic,
                 new Vector3D(specular[0], specular[1], specular[2]),
@@ -119,8 +123,8 @@ public class EditorObjectMaterial {
                 sheenTint,
                 clearcoat,
                 clearcoatGloss,
+                thin,
                 indexOfRefraction,
-                type,
                 texture != null ? Util.loadTexture(texture.getPath()) : null,
                 bumpMap != null ? Util.loadBumpMap(bumpMap.getPath(), bumpScale) : null
         );
@@ -230,12 +234,20 @@ public class EditorObjectMaterial {
         this.indexOfRefraction = indexOfRefraction;
     }
 
-    public void setType(Material.Type type) {
-        this.type = type;
+    public float[] getEmittance() {
+        return emittance;
     }
 
-    public Material.Type getType() {
-        return type;
+    public void setEmittance(float[] emittance) {
+        this.emittance = emittance;
+    }
+
+    public void setThin(boolean thin) {
+        this.thin = thin;
+    }
+
+    public boolean isThin() {
+        return thin;
     }
 
     public Texture getTexture() {
@@ -280,7 +292,7 @@ public class EditorObjectMaterial {
         && Float.compare(clearcoatGloss, that.clearcoatGloss) == 0
         && Float.compare(roughness, that.roughness) == 0
         && Objects.deepEquals(albedo, that.albedo)
-        && type == that.type
+        && thin == that.thin
         && Objects.equals(texture, that.texture)
         && Objects.equals(bumpMap, that.bumpMap);
     }
@@ -300,7 +312,7 @@ public class EditorObjectMaterial {
             clearcoat,
             clearcoatGloss,
             indexOfRefraction,
-            type,
+            thin,
             texture,
             bumpMap,
             bumpScale
@@ -316,6 +328,7 @@ public class EditorObjectMaterial {
             bumpPath = Paths.get(path).relativize(Paths.get(bumpMap.getPath())).toString();
         return "material:\n" +
                 "| albedo: " + albedo[0] + " " + albedo[1] + " " + albedo[2] + "\n" +
+                "| emittance: " + emittance[0] + " " + emittance[1] + " " + emittance[2] + "\n" +
                 "| subsurface: " + subsurface + "\n" +
                 "| metallic: " + metallic + "\n" +
                 "| specular: " + specular[0] + " " + specular[1] + " " + specular[2] + "\n" +
@@ -328,7 +341,7 @@ public class EditorObjectMaterial {
                 "| clearcoat: " + clearcoat + "\n" +
                 "| clearcoatGloss: " + clearcoatGloss + "\n" +
                 "| indexOfRefraction: " + indexOfRefraction + "\n" +
-                "| type: " + type + "\n" +
+                "| thin: " + thin + "\n" +
                 "| texture: " + texPath + "\n" +
                 "| bump: " + bumpPath + "\n" +
                 "| bScale: " + bumpScale + "\n" +

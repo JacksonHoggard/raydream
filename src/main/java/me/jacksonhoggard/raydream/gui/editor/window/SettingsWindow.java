@@ -9,7 +9,6 @@ import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.gui.MenuBar;
 import me.jacksonhoggard.raydream.gui.Window;
 import me.jacksonhoggard.raydream.gui.editor.EditorCamera;
-import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.render.Scene;
 import me.jacksonhoggard.raydream.service.SceneService;
@@ -33,12 +32,12 @@ public class SettingsWindow {
     private static float[] up = new float[] {0, 1, 0};
     private static float[] skyColor = new float[] {0, 0, 0, 1.f};
     private static float[] ambientColor = new float[] {1.f, 1.f, 1.f};
-    private static float ambientCoefficient = 0.1f;
     private static float aperture = 100;
     private static int imgWidth = ApplicationConfig.DEFAULT_WINDOW_WIDTH;
     private static int imgHeight = ApplicationConfig.DEFAULT_WINDOW_HEIGHT;
     private static int sampleDepth = 2;
     private static int bounces = ApplicationConfig.DEFAULT_MAX_BOUNCE_DEPTH;
+    private static int rrStartDepth = 5;
     private static int numShadowRays = 8;
     private static int threads = ApplicationConfig.DEFAULT_THREAD_COUNT;
     private static final SceneService sceneService = ApplicationContext.getInstance().getSceneService();
@@ -74,10 +73,6 @@ public class SettingsWindow {
         ImGui.inputInt("Height", inputInt);
         imgHeight = inputInt.get();
         ImGui.colorEdit3("Sky Color", skyColor);
-        ImGui.colorEdit3("Ambient Color", ambientColor);
-        inputFloat.set(ambientCoefficient);
-        ImGui.inputFloat("Ambient Intensity", inputFloat);
-        ambientCoefficient = inputFloat.get();
 
         camera.setAspect((float) imgWidth / (float) imgHeight);
         camera.setLookFrom(lookFrom[0], lookFrom[1], lookFrom[2]);
@@ -99,9 +94,9 @@ public class SettingsWindow {
         inputInt.set(bounces);
         ImGui.inputInt("Bounces", inputInt);
         bounces = inputInt.get();
-        inputInt.set(numShadowRays);
-        ImGui.inputInt("# of Shadow Rays", inputInt);
-        numShadowRays = inputInt.get();
+        inputInt.set(rrStartDepth);
+        ImGui.inputInt("Russian-Roulette Start Depth", inputInt);
+        rrStartDepth = inputInt.get();
         inputInt.set(threads);
         ImGui.inputInt("# of Threads", inputInt);
         threads = inputInt.get();
@@ -115,16 +110,6 @@ public class SettingsWindow {
                     sceneService.renderScene(
                             ObjectWindow.objects,
                             ObjectWindow.lights,
-                            new PointLight(
-                                    new Vector3D(),
-                                    new Vector3D(
-                                            ambientColor[0],
-                                            ambientColor[1],
-                                            ambientColor[2]
-                                    ),
-                                    1
-                            ),
-                            ambientCoefficient,
                             new Vector3D(
                                     skyColor[0],
                                     skyColor[1],
@@ -139,6 +124,7 @@ public class SettingsWindow {
                             bounces,
                             numShadowRays,
                             threads,
+                            rrStartDepth,
                             DialogWindow.getProgressListener()
                     );
                 } catch (IOException e) {
@@ -219,14 +205,6 @@ public class SettingsWindow {
         return skyColor;
     }
 
-    public static float[] getAmbientColor() {
-        return ambientColor;
-    }
-
-    public static float getAmbientCoefficient() {
-        return ambientCoefficient;
-    }
-
     public static void setImgWidth(int imgWidth) {
         SettingsWindow.imgWidth = imgWidth;
     }
@@ -282,5 +260,13 @@ public class SettingsWindow {
 
     public static void setFov(float fov) {
         PreviewWindow.getCamera().setFov(fov);
+    }
+
+    public static void setRrStartDepth(int rrStartDepth) {
+        SettingsWindow.rrStartDepth = rrStartDepth;
+    }
+
+    public static int getRrStartDepth() {
+        return rrStartDepth;
     }
 }

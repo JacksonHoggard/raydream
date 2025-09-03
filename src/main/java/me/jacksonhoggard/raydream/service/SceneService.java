@@ -7,7 +7,6 @@ import me.jacksonhoggard.raydream.gui.editor.object.ModelEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.window.EditorWindow;
 import me.jacksonhoggard.raydream.gui.editor.window.ObjectWindow;
 import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
-import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Model;
 import me.jacksonhoggard.raydream.render.Scene;
@@ -138,8 +137,6 @@ public class SceneService {
     public void renderScene(
         ArrayList<EditorObject> objects,
         ArrayList<EditorLight> lights,
-        PointLight ambientLight,
-        float ambientCoefficient,
         Vector3D skyColor,
         EditorCamera camera,
         int width,
@@ -150,6 +147,7 @@ public class SceneService {
         int bounces,
         int numShadowRays,
         int threads,
+        int rrStartDepth,
         ProgressListener progressListener
     ) throws IOException {
         // Convert editor camera to render camera
@@ -187,7 +185,7 @@ public class SceneService {
         }
         me.jacksonhoggard.raydream.object.Object[] renderObjects = renderObjectsList.toArray(new me.jacksonhoggard.raydream.object.Object[0]);
 
-        Scene scene = new Scene(renderCamera, ambientLight, ambientCoefficient, renderLights, renderObjects, skyColor, width, height);
+        Scene scene = new Scene(renderCamera, renderLights, renderObjects, skyColor, rrStartDepth, width, height);
         scene.render(filename, sampleDepth, bounces, numShadowRays, threads, progressListener);
     }
 }

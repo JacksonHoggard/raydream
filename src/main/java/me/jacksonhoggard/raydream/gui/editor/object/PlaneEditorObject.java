@@ -4,7 +4,6 @@ import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.gui.editor.model.PlaneModel;
-import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Plane;
 import me.jacksonhoggard.raydream.object.Transform;
@@ -28,7 +27,8 @@ public class PlaneEditorObject extends EditorObject {
     public PlaneEditorObject() throws IOException {
         this(
                 new EditorObjectMaterial(
-                        new float[] {0.6f, 0.4f, 0.2f}, // Wood-like brown color
+                        new float[] {0.6f, 0.4f, 0.2f},
+                        new float[] {0.0f, 0.0f, 0.0f},
                         0.0f,
                         0.0f,
                         new float[] { 0.5f, 0.5f, 0.5f },
@@ -40,8 +40,8 @@ public class PlaneEditorObject extends EditorObject {
                         0.5f,
                         0.0f,
                         1.0f,
+                        false,
                         1.5f,
-                        Material.Type.OTHER,
                         1.0f
                 )
         );

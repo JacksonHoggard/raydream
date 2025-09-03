@@ -2,6 +2,9 @@ package me.jacksonhoggard.raydream.math;
 
 public class Vector3F {
 
+    public static final Vector3F ZERO = new Vector3F(0, 0, 0);
+    public static final Vector3F ONE = new Vector3F(1, 1, 1);
+
     public float x, y, z;
 
     public Vector3F() {

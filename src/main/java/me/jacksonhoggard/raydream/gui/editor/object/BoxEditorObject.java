@@ -4,7 +4,6 @@ import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.BoxModel;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
-import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Box;
 import me.jacksonhoggard.raydream.object.Object;
@@ -29,6 +28,7 @@ public class BoxEditorObject extends EditorObject {
         this(
                 new EditorObjectMaterial(
                         new float[] { 1.0f, 0.0f, 0.0f },
+                        new float[] { 0.0f, 0.0f, 0.0f },
                         0.0f,
                         0.0f,
                         new float[] { 0.5f, 0.5f, 0.5f },
@@ -40,8 +40,8 @@ public class BoxEditorObject extends EditorObject {
                         0.5f,
                         0.0f,
                         1.0f,
+                        false,
                         1.5f,
-                        Material.Type.REFLECT,
                         1.0f
                 )
         );

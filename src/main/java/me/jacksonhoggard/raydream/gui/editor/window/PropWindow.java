@@ -6,8 +6,8 @@ import imgui.extension.imguizmo.flag.Mode;
 import imgui.extension.imguizmo.flag.Operation;
 import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiWindowFlags;
+import imgui.type.ImBoolean;
 import imgui.type.ImFloat;
-import imgui.type.ImInt;
 import me.jacksonhoggard.raydream.gui.MenuBar;
 import me.jacksonhoggard.raydream.gui.Window;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
@@ -18,7 +18,6 @@ import me.jacksonhoggard.raydream.gui.editor.material.EditorLightMaterial;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
-import me.jacksonhoggard.raydream.material.Material;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -36,15 +35,13 @@ public class PropWindow {
 
     private static final ImFloat inputFloat = new ImFloat();
     private static final float[] inputSnapValue = new float[]{1f, 1f, 1f};
+    private static final ImBoolean inputBoolean = new ImBoolean();
 
     private static EditorObject selectedObject;
     private static EditorLight selectedLight;
     public static final int TRANSFORM_TAB = 0;
     public static final int MATERIAL_TAB = 1;
     private static int selectedTab = 0;
-
-    private static final ImInt selectedMaterialType = new ImInt();
-    private static final String[] MATERIAL_TYPES = new String[] {"Reflect", "Reflect & Refract", "Non-reflective"};
 
     public static void show() {
         width = ImGui.getMainViewport().getSizeX() / 5.f;
@@ -158,6 +155,7 @@ public class PropWindow {
             if(material.getTexture() == null) {
                 ImGui.colorEdit3("Albedo", material.getAlbedo());
             }
+            ImGui.colorEdit3("Emittance", material.getEmittance());
             inputFloat.set(material.getSubsurface());
             ImGui.inputFloat("Subsurface", inputFloat);
             material.setSubsurface(inputFloat.get());
@@ -192,25 +190,13 @@ public class PropWindow {
             inputFloat.set(material.getIndexOfRefraction());
             ImGui.inputFloat("Index of Refraction", inputFloat);
             material.setIndexOfRefraction(inputFloat.get());
+            inputBoolean.set(material.isThin());
+            ImGui.checkbox("Thin", inputBoolean);
+            material.setThin(inputBoolean.get());
             if(material.getBumpMap() != null) {
                 inputFloat.set(material.getBumpScale());
                 ImGui.inputFloat("Bump Scale", inputFloat);
                 material.setBumpScale(inputFloat.get());
-            }
-
-            selectedMaterialType.set(material.getType().ordinal());
-            if (ImGui.combo("Type", selectedMaterialType, MATERIAL_TYPES)) {
-                switch (selectedMaterialType.get()) {
-                    case 0:
-                        material.setType(Material.Type.REFLECT);
-                        break;
-                    case 1:
-                        material.setType(Material.Type.REFLECT_REFRACT);
-                        break;
-                    case 2:
-                        material.setType(Material.Type.OTHER);
-                        break;
-                }
             }
             ImGui.popItemWidth();
             if(material.getTexture() == null) {

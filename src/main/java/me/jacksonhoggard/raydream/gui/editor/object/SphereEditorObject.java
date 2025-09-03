@@ -3,7 +3,6 @@ package me.jacksonhoggard.raydream.gui.editor.object;
 import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.SphereModel;
-import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Sphere;
 
@@ -31,9 +30,10 @@ public class SphereEditorObject extends EditorObject {
         this(
                 new EditorObjectMaterial(
                         new float[]{0.f, 1.f, 1.f},
+                        new float[]{0.0f, 0.0f, 0.0f},
                         0.0f,
                         0.0f,
-                        new float[] { 0.5f, 0.5f, 0.5f },
+                        new float[]{0.5f, 0.5f, 0.5f},
                         0.0f,
                         0.5f,
                         0.5f,
@@ -42,8 +42,8 @@ public class SphereEditorObject extends EditorObject {
                         0.5f,
                         0.0f,
                         1.0f,
+                        false,
                         1.5f,
-                        Material.Type.OTHER,
                         1.0f
                 )
         );

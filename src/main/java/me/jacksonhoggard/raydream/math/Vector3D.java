@@ -2,6 +2,9 @@ package me.jacksonhoggard.raydream.math;
 
 public class Vector3D {
 
+    public static final Vector3D ZERO = new Vector3D(0, 0, 0);
+    public static final Vector3D ONE = new Vector3D(1, 1, 1);
+
     public double x, y, z;
 
     public Vector3D() {
@@ -78,6 +81,15 @@ public class Vector3D {
         this.y *= t;
         this.z *= t;
         return this;
+    }
+
+    public Vector3D mult(Matrix3D matrix) {
+        double[] m = matrix.getMatrixArray();
+        return new Vector3D(
+                x*m[0] + y*m[1] + z*m[2], // x'
+                x*m[3] + y*m[4] + z*m[5], // y'
+                x*m[6] + y*m[7] + z*m[8]  // z'
+        );
     }
 
     public Vector3D div(double t) {

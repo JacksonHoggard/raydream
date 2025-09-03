@@ -1,6 +1,10 @@
 package me.jacksonhoggard.raydream.math;
 
 public class Vector4D {
+
+    public static final Vector4D ZERO = new Vector4D(0, 0, 0, 0);
+    public static final Vector4D ONE = new Vector4D(1, 1, 1, 1);
+
     public double x, y, z, w;
 
     public Vector4D() {

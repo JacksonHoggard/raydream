@@ -4,14 +4,15 @@ import me.jacksonhoggard.raydream.acceleration.ImprovedBVH;
 import me.jacksonhoggard.raydream.config.ApplicationConfig;
 import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.light.Light;
-import me.jacksonhoggard.raydream.light.PointLight;
 import me.jacksonhoggard.raydream.material.*;
 import me.jacksonhoggard.raydream.math.Ray;
-import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.*;
 import me.jacksonhoggard.raydream.object.Object;
+import me.jacksonhoggard.raydream.render.BSDF.BSDFSample;
+import me.jacksonhoggard.raydream.render.sample.LightSample;
 import me.jacksonhoggard.raydream.util.Logger;
+import me.jacksonhoggard.raydream.util.MathUtils;
 import me.jacksonhoggard.raydream.util.ProgressListener;
 import me.jacksonhoggard.raydream.util.Util;
 
@@ -34,11 +35,10 @@ public class Scene {
     private static final Logger logger = ApplicationContext.getInstance().getLoggingService().getLogger(Scene.class);
     
     private final Camera camera;
-    private final Light ambient;
-    private final double ambientCoefficient;
     private final Light[] lights;
     private final Object[] objects;
     private final Vector3D skyColor;
+    private final int rrStart;
     private final ImprovedBVH bvh;
     private final BufferedImage image;
     private final int width;
@@ -70,20 +70,18 @@ public class Scene {
 
     public Scene(
         Camera camera,
-        Light ambient,
-        double ambientCoefficient,
         Light[] lights,
         Object[] objects,
         Vector3D skyColor,
+        int rrStart,
         int width,
         int height
     ) {
         this.camera = camera;
-        this.ambient = ambient;
-        this.ambientCoefficient = ambientCoefficient;
         this.lights = lights;
         this.objects = objects;
         this.skyColor = skyColor;
+        this.rrStart = rrStart;
         this.image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         this.width = width;
         this.height = height;
@@ -104,7 +102,7 @@ public class Scene {
         for(int j = 0; j < height; j++) {
             for(int i = 0; i < width; i++) {
                 pixelColors.add(new Vector3D());
-                tasks.add(new TraceRayTask(pixelColors.getLast(), bounces, sampleDepth, Math.max(numShadowRays, 1), i, j));
+                tasks.add(new TraceRayTask(pixelColors.getLast(), bounces, sampleDepth, i, j));
             }
         }
         Collections.shuffle(tasks);
@@ -240,12 +238,33 @@ public class Scene {
         return filtered;
     }
 
-    public Camera getCamera() {
-        return camera;
+    public LightSample sampleLight(Vector3D pointHit) {
+        // Sample a light source and return its properties
+        Light light = getRandomLight();
+        Vector3D lightPoint = light.pointOnLight(0, 0, 1, 1);
+        Vector3D lightVec = Vector3D.sub(pointHit, lightPoint);
+        Vector3D wi = lightVec.normalized();
+        double distance = pointHit.distance(lightPoint);
+        Vector3D le = Vector3D.mult(light.getColor(), light.getBrightness());
+        double pDir = 1.0D / light.getArea();
+        Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(wi.negated(), 0.0001D)), wi.negated());
+        boolean visible = bvh.intersectShadowRay(shadowRay, distance);
+
+        return new LightSample(wi, le, pDir, visible);
     }
 
-    public Light getAmbient() {
-        return ambient;
+    private Light getRandomLight() {
+        if (lights.length == 0) return null;
+        int index = (int) (Math.random() * lights.length);
+        return lights[index];
+    }
+
+    public ImprovedBVH getBvh() {
+        return bvh;
+    }
+
+    public Camera getCamera() {
+        return camera;
     }
 
     public Object[] getObjects() {
@@ -265,18 +284,16 @@ public class Scene {
         private final int bounces;
         private final int sampleDepth;
         private int samples;
-        private final int numShadowRays;
         private Ray ray;
         private final int i, j;
 
-        public TraceRayTask(Vector3D pixelColor, int bounces, int sampleDepth, int numShadowRays, int i, int j) {
+        public TraceRayTask(Vector3D pixelColor, int bounces, int sampleDepth, int i, int j) {
             this.pixelColor = pixelColor;
             this.bounces = bounces;
             this.sampleDepth = sampleDepth;
             this.i = i;
             this.j = j;
             this.samples = 0;
-            this.numShadowRays = numShadowRays;
             this.ray = new Ray(new Vector3D(), new Vector3D());
         }
 
@@ -319,7 +336,7 @@ public class Scene {
             
             // First sample at pixel center for base quality
             camera.shootRay(ray, i, j, 0.5D, 0.5D);
-            trace(ray, bounces, pixelColor);
+            trace(ray, bounces, pixelColor, new Vector3D(1.0), false);
             samples = 1;
             
             if(maxSamples == 1)
@@ -350,7 +367,7 @@ public class Scene {
                 } else {
                     camera.shootRay(ray, i, j, stratumX, stratumY);
                 }
-                trace(ray, bounces, tempColor);
+                trace(ray, bounces, tempColor, new Vector3D(1.0), false);
                 
                 colorSum.add(tempColor);
                 colorSumSquared.add(new Vector3D(
@@ -370,8 +387,8 @@ public class Scene {
                 double jitterY = Util.vanDerCorput(sample, 3);
                 
                 camera.shootRay(ray, i, j, jitterX, jitterY);
-                trace(ray, bounces, tempColor);
-                
+                trace(ray, bounces, tempColor, new Vector3D(1.0), false);
+
                 colorSum.add(tempColor);
                 colorSumSquared.add(new Vector3D(
                     tempColor.x * tempColor.x,
@@ -411,45 +428,22 @@ public class Scene {
          * @param bounce current bounce
          * @param color pointer to the color to be calculated by the function
          */
-        private void trace(Ray ray, int bounce, Vector3D color) {
+        private void trace(Ray ray, int bounce, Vector3D color, Vector3D beta, boolean prevDelta) {
             // Return if no more bounces
             if(bounce <= 0)
                 return;
             // Find intersections using ImprovedBVH
-            Hit bvhHit = bvh.intersect(ray, 0.0001, Double.MAX_VALUE);
+            Hit bvhHit = bvh.intersect(ray, 0.00001D, Double.MAX_VALUE);
             Vector3D pointHit = bvhHit != null ? bvhHit.point() : null;
             Object objectHit = bvhHit != null ? bvhHit.object() : null;
             Vector3D normalHit = bvhHit != null ? bvhHit.normal() : null;
-            double minLightDist = Double.MAX_VALUE;
-            Vector3D minLightColor = null;
-            double minLightBrightness = Double.MAX_VALUE;
-            for(Light light : lights) {
-                double lightDist = light.intersect(ray);
-                if(lightDist > 0.0D && lightDist < minLightDist) {
-                    minLightDist = lightDist;
-                    minLightColor = light.getColor();
-                    minLightBrightness = light.getBrightness();
-                }
-            }
-            // Check if light is hit before an object
-            if(objectHit != null && bvhHit != null && minLightDist < bvhHit.t()) {
-                // If light is hit return the color of the light
-                double brightness = minLightBrightness / (1.0D + (minLightDist * minLightDist));
-                color.add(Vector3D.mult(minLightColor, brightness));
-                return;
-            }
-            // If a light is hit, but no object is hit
-            if(objectHit == null && minLightColor != null) {
-                double brightness = minLightBrightness / (1.0D + (minLightDist * minLightDist));
-                color.add(Vector3D.mult(minLightColor, brightness));
-                return;
-            }
             // If no object or light is hit
             if(objectHit == null) {
-                color.add(skyColor);
+                color.add(Vector3D.mult(skyColor, beta));
                 return;
             }
             Material material = objectHit.getMaterial();
+            Vector3D emittance = material.getEmittance();
             Vector3D shaderNormal = new Vector3D(normalHit);
             Vector3D tangent;
             Vector3D bitangent;
@@ -464,77 +458,117 @@ public class Scene {
             if(material.getBumpMap() != null) {
                 shaderNormal.set(material.getBumpMap().apply(normalHit, tangent, bitangent, bvhHit.texCoord()));
             }
-            normalHit.set(Object.transformNormalToWS(normalHit, objectHit.getNormalMatrix()));
-            shaderNormal.set(Object.transformNormalToWS(shaderNormal, objectHit.getNormalMatrix()));
-            Vector3D tangentWS = Object.transformNormalToWS(tangent, objectHit.getNormalMatrix());
-            Vector3D bitangentWS = Object.transformNormalToWS(bitangent, objectHit.getNormalMatrix());
-            Vector3D reflectionColor = new Vector3D();
-            Vector3D refractionColor = new Vector3D();
-            switch(material.getType()) {
-                case REFLECT -> {
-                    double kr = material.fresnelMetal(ray, shaderNormal);
-                    trace(material.reflectRay(ray, pointHit, normalHit), bounce - 1, reflectionColor);
-                    Vector3D shading = new Vector3D();
-                    shade(shading, ray, objectHit, pointHit, shaderNormal, bvhHit.texCoord(), tangentWS, bitangentWS);
-                    color.add(shading.add(Vector3D.mult(reflectionColor, kr)));
-                    return;
-                }
-                case REFLECT_REFRACT -> {
-                    double kr = material.fresnelDielectric(ray, shaderNormal);
-                    Ray reflectionRay = material.reflectRay(ray, pointHit, normalHit);
-                    Ray refractionRay = material.refractRay(ray, pointHit, normalHit);
-                    trace(reflectionRay, bounce - 1, reflectionColor);
-                    trace(refractionRay, bounce - 1, refractionColor);
-                    Vector3D shading = new Vector3D();
-                    shade(shading, ray, objectHit, pointHit, shaderNormal, bvhHit.texCoord(), tangentWS, bitangentWS);
-                    color.add(shading.add(Vector3D.mult(reflectionColor, kr).add(Vector3D.mult(refractionColor, 1 - kr))));
-                    return;
-                }
-                case OTHER -> {
-                    // Standard diffuse/specular material - no reflection/refraction
-                    Vector3D shading = new Vector3D();
-                    shade(shading, ray, objectHit, pointHit, shaderNormal, bvhHit.texCoord(), tangentWS, bitangentWS);
-                    color.add(shading);
-                    return;
+            normalHit.set(MathUtils.transformNormalToWS(normalHit, objectHit.getNormalMatrix()));
+            shaderNormal.set(MathUtils.transformNormalToWS(shaderNormal, objectHit.getNormalMatrix()));
+            tangent = MathUtils.transformDirectionToWS(tangent, objectHit.getTransformMatrix());
+            bitangent = MathUtils.transformDirectionToWS(bitangent, objectHit.getTransformMatrix());
+
+            Vector3D wo = ray.direction().negated();
+
+            if(emittance.dot(emittance) > 0.0D && normalHit.dot(wo) > 0.0D) {
+                if(bounce == bounces || prevDelta) {
+                    color.add(Vector3D.mult(emittance, beta));
                 }
             }
-            Vector3D shading = new Vector3D();
-            shade(shading, ray, objectHit, pointHit, shaderNormal, bvhHit.texCoord(), tangentWS, bitangentWS);
-            color.add(shading);
-        }
 
-        private void shade(Vector3D out, Ray ray, Object objectHit, Vector3D pointHit, Vector3D normalHit, Vector2D texCoord, Vector3D tangent, Vector3D bitangent) {
-            out.set(Vector3D.mult(objectHit.getMaterial().getAlbedo(texCoord), ambientCoefficient).mult(ambient.getColor()));
-            for(Light light : lights) {
-                int maxShadowRays = light.getClass().equals(PointLight.class) ? 1 : numShadowRays;
-                Vector3D tempColor = new Vector3D();
-                int cols = (int) Math.sqrt(maxShadowRays);
-                int rows = maxShadowRays / cols;
-                int numHits = 0;
-                Vector3D closestPointOnLight = light.closestPoint(pointHit);
-                double lightDist = Vector3D.sub(closestPointOnLight, pointHit).length();
-                for(int j = 0; j < rows; j++) {
-                    for(int i = 0; i < cols; i++) {
-                        Vector3D shadowDir = Vector3D.sub(light.pointOnLight(i, j, cols, rows), pointHit).normalize();
-                        // Improved shadow ray origin with better bias calculation
-                        Vector3D shadowOrigin = Vector3D.add(pointHit, Vector3D.mult(normalHit, ApplicationConfig.RAY_OFFSET_EPSILON));
-                        Ray shadowRay = new Ray(shadowOrigin, shadowDir);
-                        double shadowToLightDist = light.intersect(shadowRay);
-                        if(shadowToLightDist < 0.0D)
-                            continue;
-                        if(bvh.intersectShadowRay(shadowRay, shadowToLightDist))
-                            continue;
-                        numHits++;
+            if(!prevDelta) {
+                LightSample lightSample = sampleLight(pointHit);
+                if(lightSample != null && lightSample.visible()) {
+                    double cosX = Math.max(0.0D, shaderNormal.dot(lightSample.wi()));
+                    if(cosX > 0.0D) {
+                        Vector3D f = BSDF.eval(
+                            material,
+                            material.getAlbedo(bvhHit.texCoord()),
+                            wo,
+                            lightSample.wi(),
+                            material.isThin(),
+                            shaderNormal, tangent, bitangent
+                        );
+                        double pBSDF = BSDF.pdf(
+                            material,
+                            material.getAlbedo(bvhHit.texCoord()),
+                            wo,
+                            lightSample.wi(),
+                            material.isThin(),
+                            shaderNormal, tangent, bitangent
+                        );
+                        double w = powerHeuristic(lightSample.pDir(), pBSDF);
+                        // NEE contribution
+                        Vector3D contrib = Vector3D.mult(f, beta)
+                                                .mult(cosX)
+                                                .mult(lightSample.le())
+                                                .div(Math.max(1e-9, lightSample.pDir()))
+                                                .mult(w);
+                        color.add(contrib);
                     }
                 }
-                double falloff = light.getBrightness() / (1.0D + (lightDist * lightDist));
-                BSDF.bsdf(tempColor, ray, objectHit, pointHit, normalHit, texCoord, closestPointOnLight, tangent, bitangent);
-                tempColor.mult(falloff).mult(light.getColor()); // factor in light intensity
-                tempColor.mult(numHits / (double) maxShadowRays);
-                out.add(tempColor);
             }
+
+            // Sample BSDF to continue the path
+            BSDFSample s = BSDF.sample(
+                ray,
+                material,
+                shaderNormal,
+                bvhHit.texCoord(),
+                tangent,
+                bitangent
+            );
+
+            // If BSDF sample hits a light, add That direct term with MIS
+            for(Light light : lights) {
+                Ray newRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(s.l(), 0.000001D)), s.l());
+                double lightDist = light.intersect(newRay);
+                if(lightDist >= 0.0D) {
+                    if(!bvh.intersectShadowRay(newRay, lightDist)) {
+                        // Add direct lighting contribution
+                        double pDir = 1.0D / light.getArea();
+                        double w = s.delta() ? 1.0D : powerHeuristic(s.pdf(), pDir);
+                        Vector3D le = Vector3D.mult(light.getColor(), light.getBrightness());
+                        Vector3D contrib = Vector3D.mult(s.f(), beta)
+                                                .mult(Math.abs(shaderNormal.dot(s.l())))
+                                                .div(Math.max(1e-9, s.pdf()))
+                                                .mult(le)
+                                                .mult(w);
+                        color.add(contrib);
+                    }
+                } else {
+                    // Environment
+                    Vector3D le = new Vector3D(skyColor);
+                    double pEnvDir = (le.x * 0.212671 + le.y * 0.715160 + le.z * 0.072169) / Math.PI;
+                    double w = s.delta() ? 1.0D : powerHeuristic(s.pdf(), pEnvDir);
+                    Vector3D contrib = Vector3D.mult(s.f(), beta)
+                                                .mult(Math.abs(shaderNormal.dot(s.l())))
+                                                .div(Math.max(1e-9, s.pdf()))
+                                                .mult(le)
+                                                .mult(w);
+                    color.add(contrib);
+                }
+            }
+
+            beta.mult(s.f())
+                .mult(Math.abs(shaderNormal.dot(s.l())))
+                .div(Math.max(1e-9, s.pdf()));
+            Ray newRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(shaderNormal, 0.000001D)), s.l());
+            prevDelta = s.delta();
+
+            // Russian roulette
+            if(bounce <= bounces - rrStart) {
+                double q = Math.clamp(1.0D - Math.clamp((beta.x * 0.212671 + beta.y * 0.715160 + beta.z * 0.072169), 0.0D, 1.0D), 0.05D, 0.95D);
+                if(MathUtils.random() < q) {
+                    return;
+                }
+                beta.div(1.0D - q);
+            }
+
+            trace(newRay, bounce - 1, color, beta, prevDelta);
         }
 
+        private static double powerHeuristic(double pdfA, double pdfB) {
+            double a = pdfA * pdfA;
+            double b = pdfB * pdfB;
+            double s = a + b;
+            return (s > 0.0D) ? a / s : 0.0D;
+        }
     //     private static void shadowPhong(Vector3D shadowPhong, Ray ray, Object objectHit, Ray shadowRay, Vector3D pointHit, Vector3D normalHit, Light light, double lightDist, Vector2D texCoord) {
     //         if (lightDist <= 0) return; // Safety check
             

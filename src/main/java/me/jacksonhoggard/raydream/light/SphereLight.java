@@ -11,6 +11,7 @@ public class SphereLight extends Light {
     public SphereLight(Vector3D position, Vector3D color, double brightness, double radius) {
         super(position, color, brightness);
         this.radius = radius;
+        this.area = 4.0D * Math.PI * radius * radius;
     }
 
     @Override

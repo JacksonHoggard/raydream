@@ -13,7 +13,6 @@ import me.jacksonhoggard.raydream.gui.editor.object.PlaneEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.object.SphereEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.window.ObjectWindow;
 import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
-import me.jacksonhoggard.raydream.material.*;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -399,6 +398,13 @@ public class SceneReader {
                             Float.parseFloat(params[4])
                     });
                     break;
+                case "emittance:":
+                    material.setEmittance(new float[] {
+                            Float.parseFloat(params[2]),
+                            Float.parseFloat(params[3]),
+                            Float.parseFloat(params[4])
+                    });
+                    break;
                 case "subsurface:":
                      material.setSubsurface(Float.parseFloat(params[2]));
                     break;
@@ -439,8 +445,8 @@ public class SceneReader {
                 case "indexOfRefraction:":
                     material.setIndexOfRefraction(Float.parseFloat(params[2]));
                     break;
-                case "type:":
-                    material.setType(Material.Type.valueOf(params[2]));
+                case "thin:":
+                    material.setThin(Boolean.parseBoolean(params[2]));
                     break;
                 case "texture:":
                     if(params[2].equals("null"))

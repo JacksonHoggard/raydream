@@ -9,8 +9,6 @@ import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
 import me.jacksonhoggard.raydream.gui.editor.object.ModelEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.window.ObjectWindow;
 import me.jacksonhoggard.raydream.gui.editor.window.PreviewWindow;
-import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
-import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Matrix4F;
 import me.jacksonhoggard.raydream.math.Vector3F;
 import me.jacksonhoggard.raydream.math.Vector4F;
@@ -89,7 +87,7 @@ public class RenderManager implements AutoCloseable {
     
     private void drawCamera(EditorCamera editorCamera) {
         objectShader.use();
-        objectShader.setVec3("ambientLight.color", SettingsWindow.getAmbientColor());
+        objectShader.setVec3("ambientLight.color", new float[]{1.0f, 1.0f, 1.0f});
         objectShader.setVec3("material.albedo", new float[]{1.f, 1.f, 1.f});
         objectShader.setFloat("material.subsurface", 0.5f);
         objectShader.setFloat("material.metallic", 1.0f);
@@ -143,8 +141,8 @@ public class RenderManager implements AutoCloseable {
         
         // Setup lights for objects
         setupLightsForObjects();
-        objectShader.setVec3("ambientLight.color", SettingsWindow.getAmbientColor());
-        objectShader.setFloat("ambientCoefficient", SettingsWindow.getAmbientCoefficient());
+        objectShader.setVec3("ambientLight.color", new float[]{1.0f, 1.0f, 1.0f});
+        objectShader.setFloat("ambientCoefficient", 0.1f);
         
         // Separate opaque and transparent objects
         Map<Float, EditorObject> transparentObjects = new HashMap<>();
@@ -156,7 +154,7 @@ public class RenderManager implements AutoCloseable {
                 continue;
             }
             
-            if (object.getMaterial().getType().equals(Material.Type.REFLECT_REFRACT)) {
+            if (object.getMaterial().getIndexOfRefraction() != 0.0D) {
                 float distance = calculateObjectDistance(object, camera);
                 transparentObjects.put(distance, object);
                 continue;
@@ -252,7 +250,7 @@ public class RenderManager implements AutoCloseable {
             objectShader.setBool("isSelected", meshSelected);
             
             updateObjectShader(mesh.getMaterial());
-            if (mesh.getMaterial().getType().equals(Material.Type.REFLECT_REFRACT)) {
+            if (mesh.getMaterial().getIndexOfRefraction() != 0.0D) {
                 objectShader.setFloat("opacity", 0.75f);
             } else {
                 objectShader.setFloat("opacity", 1.f);

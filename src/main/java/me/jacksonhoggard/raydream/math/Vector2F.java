@@ -2,6 +2,9 @@ package me.jacksonhoggard.raydream.math;
 
 public class Vector2F {
 
+    public static final Vector2F ZERO = new Vector2F(0, 0);
+    public static final Vector2F ONE = new Vector2F(1, 1);
+
     public float x, y;
 
     public Vector2F() {

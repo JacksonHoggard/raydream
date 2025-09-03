@@ -2,7 +2,6 @@ package me.jacksonhoggard.raydream.gui.editor.model;
 
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.material.Texture;
-import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Vector2F;
 import me.jacksonhoggard.raydream.math.Vector3F;
 import me.jacksonhoggard.raydream.util.Util;
@@ -44,6 +43,7 @@ public class OBJModel extends MeshModel {
                         materials.put(mtlName, currentMaterial);
                     currentMaterial = new EditorObjectMaterial(
                         new float[3],
+                        new float[3],
                         0.0f,
                         0.0f,
                         new float[] { 0.5f, 0.5f, 0.5f },
@@ -55,8 +55,8 @@ public class OBJModel extends MeshModel {
                         0.5f,
                         0.0f,
                         1.0f,
+                        false,
                         1.5f,
-                        Material.Type.OTHER,
                         1.0f
                     );
                     mtlName = tokens[1];
@@ -72,13 +72,6 @@ public class OBJModel extends MeshModel {
                     break;
                 case "Ni":
                     currentMaterial.setIndexOfRefraction(Float.parseFloat(tokens[1]));
-                    if(currentMaterial.getType() == Material.Type.OTHER)
-                        currentMaterial.setType(Material.Type.REFLECT);
-                    break;
-                case "d":
-                    float d = Float.parseFloat(tokens[1]);
-                    if(d < 1.f)
-                        currentMaterial.setType(Material.Type.REFLECT_REFRACT);
                     break;
                 case "map_Kd":
                     String texturePath = line.substring(line.indexOf(tokens[1]));
@@ -258,6 +251,7 @@ public class OBJModel extends MeshModel {
         if(currentMaterial == null)
             currentMaterial = new EditorObjectMaterial(
                     new float[3],
+                    new float[3],
                     0.0f,
                     0.0f,
                     new float[] { 0.5f, 0.5f, 0.5f },
@@ -269,8 +263,8 @@ public class OBJModel extends MeshModel {
                     0.5f,
                     0.0f,
                     1.0f,
+                    false,
                     1.5f,
-                    Material.Type.OTHER,
                     1.0f
             );
         if(!triangles.isEmpty()) {

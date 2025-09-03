@@ -5,11 +5,13 @@ import me.jacksonhoggard.raydream.material.Material;
 import me.jacksonhoggard.raydream.math.Matrix4D;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.math.Vector4D;
+import me.jacksonhoggard.raydream.util.MathUtils;
 
 public abstract class Object implements IObject {
 
     private final Transform transform;
     private final Material material;
+    private final Matrix4D transformMatrix;
     private final Matrix4D inverseTransformMatrix;
     private final Matrix4D normalMatrix;
     private final Vector3D centroid;
@@ -19,8 +21,7 @@ public abstract class Object implements IObject {
     public Object(Transform transform, Material material, Vector3D min, Vector3D max) {
         this.transform = transform;
         this.material = material;
-        Matrix4D transformMatrix = composeModelMatrix(transform);
-
+        this.transformMatrix = composeModelMatrix(transform);
         this.inverseTransformMatrix = new Matrix4D(transformMatrix.inverse().getMatrixArray());
         this.normalMatrix = inverseTransformMatrix.transpose();
         this.min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
@@ -36,7 +37,7 @@ public abstract class Object implements IObject {
                 max
         };
         for(Vector3D v : aabb) {
-            v = transformPointToOS(v, transformMatrix);
+            v = MathUtils.transformPointToWS(v, transformMatrix);
             this.min.x = Math.min(this.min.x, v.x);
             this.min.y = Math.min(this.min.y, v.y);
             this.min.z = Math.min(this.min.z, v.z);
@@ -161,17 +162,6 @@ public abstract class Object implements IObject {
         return matrix.transpose();
     }
 
-    public static Vector3D transformNormalToWS(Vector3D normal, Matrix4D normalMatrix) {
-        Vector4D normalWS = new Vector4D(normal.x, normal.y, normal.z, 0);
-        normalWS = normalWS.mult(normalMatrix);
-        return new Vector3D(normalWS.x, normalWS.y, normalWS.z).normalize();
-    }
-
-    public static Vector3D transformPointToOS(Vector3D point, Matrix4D inverseTransformMatrix) {
-        Vector4D pointWS = new Vector4D(point.x, point.y, point.z, 1);
-        Vector4D pointOS = pointWS.mult(inverseTransformMatrix);
-        return new Vector3D(pointOS.x, pointOS.y, pointOS.z);
-    }
     public Material getMaterial() {
         return material;
     }
@@ -182,6 +172,10 @@ public abstract class Object implements IObject {
 
     public Matrix4D getInverseTransformMatrix() {
         return inverseTransformMatrix;
+    }
+
+    public Matrix4D getTransformMatrix() {
+        return transformMatrix;
     }
 
     public Matrix4D getNormalMatrix() {

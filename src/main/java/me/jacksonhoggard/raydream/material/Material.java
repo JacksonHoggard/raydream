@@ -7,15 +7,9 @@ import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.util.MathUtils;
 
 public class Material {
-
-    public enum Type {
-        REFLECT,
-        REFLECT_REFRACT,
-        OTHER
-    }
-
     // Disney BRDF
     private final Vector3D albedo;
+    private final Vector3D emittance;
     private final double subsurface;
     private final double metallic;
     private final Vector3D specular;
@@ -29,13 +23,14 @@ public class Material {
     private final double clearcoatGloss;
 
     // Other parameters
+    private final boolean thin;
     private final double indexOfRefraction;
-    private final Type type;
     private final Texture texture;
     private final BumpMap bumpMap;
 
     public Material(
         Vector3D albedo,
+        Vector3D emittance,
         double subsurface,
         double metallic,
         Vector3D specular,
@@ -47,12 +42,13 @@ public class Material {
         double sheenTint,
         double clearcoat,
         double clearcoatGloss,
+        boolean thin,
         double indexOfRefraction,
-        Type type,
         Texture texture,
         BumpMap bumpMap
     ) {
         this.albedo = albedo;
+        this.emittance = emittance;
         this.subsurface = subsurface;
         this.metallic = metallic;
         this.specular = specular;
@@ -64,8 +60,8 @@ public class Material {
         this.sheenTint = sheenTint;
         this.clearcoat = clearcoat;
         this.clearcoatGloss = clearcoatGloss;
+        this.thin = thin;
         this.indexOfRefraction = indexOfRefraction;
-        this.type = type;
         this.texture = texture;
         this.bumpMap = bumpMap;
     }
@@ -163,14 +159,14 @@ public class Material {
         return new Ray(origin, direction);
     }
 
-    public Type getType() {
-        return type;
-    }
-
     public Vector3D getAlbedo(Vector2D texCoord) {
         if(texture != null)
             return texture.getColorAt(texCoord.x, texCoord.y);
         return albedo;
+    }
+
+    public Vector3D getEmittance() {
+        return emittance;
     }
 
     public double getSubsurface() {
@@ -215,6 +211,10 @@ public class Material {
 
     public double getClearcoatGloss() {
         return clearcoatGloss;
+    }
+
+    public boolean isThin() {
+        return thin;
     }
 
     public double getIndexOfRefraction() {

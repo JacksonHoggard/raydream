@@ -117,7 +117,7 @@ public class Triangle {
     public Vector3D getBitangent(Vector3D normal) {
         // Ensure proper handedness - if the cross product of tangent and bitangent
         // doesn't align with the normal, we need to flip the bitangent
-        Vector3D cross = tangent.cross(bitangent);
+        Vector3D cross = tangent.cross(bitangent).normalize();
         if(cross.dot(normal) < 0.0d) {
             return new Vector3D(bitangent).negate();
         }

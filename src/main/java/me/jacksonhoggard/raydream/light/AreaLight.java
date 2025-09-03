@@ -4,6 +4,7 @@ import me.jacksonhoggard.raydream.math.*;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Transform;
 import me.jacksonhoggard.raydream.object.Triangle;
+import me.jacksonhoggard.raydream.util.MathUtils;
 import me.jacksonhoggard.raydream.util.Util;
 
 public class AreaLight extends Light {
@@ -17,7 +18,7 @@ public class AreaLight extends Light {
         this.transform = transform;
         this.transformMatrix = Object.composeModelMatrix(transform);
         this.inverseTransformMatrix = transformMatrix.inverse();
-        this.getPosition().set(Object.transformPointToOS(new Vector3D(), transformMatrix));
+        this.getPosition().set(MathUtils.transformPointToWS(new Vector3D(), transformMatrix));
         this.t0 = new Triangle(
                 new Vector3D(-0.5, 0.5, 0),
                 new Vector3D(-0.5, -0.5, 0),
@@ -34,6 +35,11 @@ public class AreaLight extends Light {
                 null,
                 null
         );
+        double length = MathUtils.transformPointToWS(new Vector3D(-0.5, -0.5, 0), transformMatrix)
+                                 .distance(MathUtils.transformPointToWS(new Vector3D(-0.5, 0.5, 0), transformMatrix));
+        double width = MathUtils.transformPointToWS(new Vector3D(-0.5, -0.5, 0), transformMatrix)
+                                .distance(MathUtils.transformPointToWS(new Vector3D(0.5, -0.5, 0), transformMatrix));
+        this.area = width * length;
     }
 
     @Override
@@ -61,18 +67,18 @@ public class AreaLight extends Light {
         double x = -0.5D + (i * gridSizeX) + Util.randomRange(0, gridSizeX);
         double y = -0.5D + (j * gridSizeY) + Util.randomRange(0, gridSizeY);
         Vector3D pointOS = new Vector3D(x, y, 0);
-        return Object.transformPointToOS(pointOS, transformMatrix);
+        return MathUtils.transformPointToOS(pointOS, transformMatrix);
     }
 
     @Override
     public Vector3D closestPoint(Vector3D point) {
-        Vector3D pointOS = Object.transformPointToOS(point, inverseTransformMatrix);
+        Vector3D pointOS = MathUtils.transformPointToOS(point, inverseTransformMatrix);
         Vector3D closestPoint = new Vector3D(
             Math.min(Math.max(pointOS.x, -0.5D), 0.5D),
             Math.min(Math.max(pointOS.y, -0.5D), 0.5D),
             0
         );
-        closestPoint = Object.transformPointToOS(closestPoint, transformMatrix);
+        closestPoint = MathUtils.transformPointToOS(closestPoint, transformMatrix);
         return closestPoint;
     }
 
