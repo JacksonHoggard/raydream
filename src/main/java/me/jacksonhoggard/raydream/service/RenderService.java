@@ -30,12 +30,11 @@ public class RenderService {
      * @param filename the output filename
      * @param sampleDepth the sample depth for rendering
      * @param bounces the number of light bounces
-     * @param numShadowRays the number of shadow rays
      * @param threads the number of threads to use
      * @param progressListener listener for progress updates
      * @return a Future representing the render operation
      */
-    public CompletableFuture<Void> renderAsync(Scene scene, String filename, int sampleDepth, int bounces, int numShadowRays, int threads, ProgressListener progressListener) {
+    public CompletableFuture<Void> renderAsync(Scene scene, String filename, int sampleDepth, int bounces, int threads, ProgressListener progressListener) {
         if (isRendering) {
             throw new IllegalStateException("A render operation is already in progress");
         }
@@ -44,7 +43,7 @@ public class RenderService {
 
         return CompletableFuture.runAsync(() -> {
             try {
-                scene.render(filename, sampleDepth, bounces, numShadowRays, threads, progressListener);
+                scene.render(filename, sampleDepth, bounces, threads, progressListener);
             } catch (IOException e) {
                 throw new RuntimeException("Render failed", e);
             } finally {

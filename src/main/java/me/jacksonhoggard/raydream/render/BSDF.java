@@ -78,6 +78,7 @@ public class BSDF {
                 break;
             case TRANSMIT_SPECULAR:
                 SampleDir sampleTrans = sampleGGXTransmissionVNDF(material, albedo, normalHit, v, tangent, bitangent);
+                if(sampleTrans == null) break;
                 wi = sampleTrans.wi;
                 eta = sampleTrans.eta;
                 fLobe = evalTransmission(material, albedo, normalHit, v, wi, eta, tangent, bitangent);
@@ -254,7 +255,7 @@ public class BSDF {
             double ss = 1.25D * (fss * (1.0D / (NdotL + NdotV) - 0.5D) + 0.5D);
 
             Vector3D fDiffuse = Vector3D.mult(
-                cdlin,
+                albedo,
                 (1.0D - material.getSpecularTransmission()) * (1.0D - material.getMetallic()) * (mix(fd, ss, 0.0D)) * (1.0D/Math.PI)
             );
 
@@ -353,11 +354,7 @@ public class BSDF {
         Vector3D h = Vector3D.add(lightDir, viewDir).normalize();
         double LdotH = Math.max(0.0D, lightDir.dot(h));
 
-        Vector3D cdlin = mon2lin(albedo);
-        double cdlum = cdlin.x * 0.2126D + cdlin.y * 0.7152D + cdlin.z * 0.0722D;
-        Vector3D color = cdlum > 0.0D ? Vector3D.div(cdlin, cdlum) : new Vector3D(1); // Normalize luminance to isolate hue + saturation
-
-        Vector3D fLambert = Vector3D.div(color, Math.PI);
+        Vector3D fLambert = Vector3D.div(albedo, Math.PI);
 
         // Diffuse fresnel
         double fL = schlickFresnel(NdotL);
@@ -493,13 +490,10 @@ public class BSDF {
         if(NdotL * NdotV <= 0.0D) {
             return new Vector3D(0.0D);
         }
-        Vector3D cdlin = mon2lin(albedo);
-        double cdlum = cdlin.x * 0.2126D + cdlin.y * 0.7152D + cdlin.z * 0.0722D;
-        Vector3D color = cdlum > 0.0D ? Vector3D.div(cdlin, cdlum) : new Vector3D(1); // Normalize luminance to isolate hue + saturation
         Vector3D tint = new Vector3D(
-            Math.sqrt(color.x),
-            Math.sqrt(color.y),
-            Math.sqrt(color.z)
+            Math.sqrt(albedo.x),
+            Math.sqrt(albedo.y),
+            Math.sqrt(albedo.z)
         );
         
         Vector3D h = Vector3D.add(lightDir, viewDir).normalize();
@@ -537,7 +531,7 @@ public class BSDF {
         } else if(r < lobePick.pDiffuse + lobePick.pSpecular + lobePick.pClearcoat + lobePick.pTransmission) {
             return Lobe.TRANSMIT_SPECULAR;
         }
-        return Lobe.SPECULAR; // Fallback
+        return Lobe.DIFFUSE; // Fallback
     }
 
     /**

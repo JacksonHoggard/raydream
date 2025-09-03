@@ -90,7 +90,7 @@ public class Scene {
         this.bvh = new ImprovedBVH(Arrays.asList(objects));
     }
 
-    public void render(String filename, int sampleDepth, int bounces, int numShadowRays, int threads, ProgressListener listener) throws IOException {
+    public void render(String filename, int sampleDepth, int bounces, int threads, ProgressListener listener) throws IOException {
         progressListener = listener;
         long startTime = System.nanoTime();
 
@@ -241,21 +241,22 @@ public class Scene {
     public LightSample sampleLight(Vector3D pointHit) {
         // Sample a light source and return its properties
         Light light = getRandomLight();
+        if(light == null) return null;
         Vector3D lightPoint = light.pointOnLight(0, 0, 1, 1);
         Vector3D lightVec = Vector3D.sub(pointHit, lightPoint);
         Vector3D wi = lightVec.normalized();
         double distance = pointHit.distance(lightPoint);
-        Vector3D le = Vector3D.mult(light.getColor(), light.getBrightness());
+        Vector3D le = Vector3D.mult(light.getColor(), light.getBrightness() / (distance * distance));
         double pDir = 1.0D / light.getArea();
         Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(wi.negated(), 0.0001D)), wi.negated());
-        boolean visible = bvh.intersectShadowRay(shadowRay, distance);
+        boolean visible = !bvh.intersectShadowRay(shadowRay, distance);
 
         return new LightSample(wi, le, pDir, visible);
     }
 
     private Light getRandomLight() {
         if (lights.length == 0) return null;
-        int index = (int) (Math.random() * lights.length);
+        int index = Math.clamp((int) (Math.random() * lights.length), 0, lights.length - 1);
         return lights[index];
     }
 
@@ -427,6 +428,8 @@ public class Scene {
          * @param ray current ray
          * @param bounce current bounce
          * @param color pointer to the color to be calculated by the function
+         * @param beta throughput of the path
+         * @param prevDelta whether the previous bounce was a delta bounce
          */
         private void trace(Ray ray, int bounce, Vector3D color, Vector3D beta, boolean prevDelta) {
             // Return if no more bounces

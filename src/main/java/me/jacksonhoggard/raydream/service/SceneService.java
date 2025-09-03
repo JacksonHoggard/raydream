@@ -186,6 +186,6 @@ public class SceneService {
         me.jacksonhoggard.raydream.object.Object[] renderObjects = renderObjectsList.toArray(new me.jacksonhoggard.raydream.object.Object[0]);
 
         Scene scene = new Scene(renderCamera, renderLights, renderObjects, skyColor, rrStartDepth, width, height);
-        scene.render(filename, sampleDepth, bounces, numShadowRays, threads, progressListener);
+        scene.render(filename, sampleDepth, bounces, threads, progressListener);
     }
 }
