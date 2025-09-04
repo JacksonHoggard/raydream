@@ -251,7 +251,7 @@ public class Scene {
         Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(wi, 0.0001D)), wi);  // Ray toward light
         boolean visible = !bvh.intersectShadowRay(shadowRay, distance);
 
-        return new LightSample(wi.negate(), le, pDir, visible);
+        return new LightSample(wi, le, pDir, visible);
     }
 
     private Light getRandomLight() {
