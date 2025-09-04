@@ -69,16 +69,27 @@ public class BSDF {
                 break;
             case SPECULAR:
                 wi = sampleGGXReflectionVNDF(material, albedo, normalHit, v, tangent, bitangent);
+                if(wi == null || wi.equals(Vector3D.ZERO)) {
+                    wi = MathUtils.reflect(v, normalHit); // Fallback to perfect reflection
+                }
                 fLobe = evalSpecular(material, albedo, normalHit, v, wi, tangent, bitangent);
                 delta = (material.getRoughness() == 0.0D);
                 break;
             case CLEARCOAT:
                 wi = sampleGTR1Reflection(material, albedo, normalHit, v, tangent, bitangent);
+                if(wi == null || wi.equals(Vector3D.ZERO)) {
+                    wi = MathUtils.reflect(v, normalHit); // Fallback to perfect reflection
+                }
                 fLobe = evalClearcoat(material, albedo, normalHit, v, wi, tangent, bitangent);
                 break;
             case TRANSMIT_SPECULAR:
                 SampleDir sampleTrans = sampleGGXTransmissionVNDF(material, albedo, normalHit, v, tangent, bitangent);
-                if(sampleTrans == null) break;
+                if(sampleTrans == null || sampleTrans.wi == null) {
+                    // Fallback to reflection or return invalid sample
+                    wi = MathUtils.reflect(v, normalHit);
+                    fLobe = new Vector3D(0);
+                    break;
+                }
                 wi = sampleTrans.wi;
                 eta = sampleTrans.eta;
                 fLobe = evalTransmission(material, albedo, normalHit, v, wi, eta, tangent, bitangent);
@@ -105,19 +116,25 @@ public class BSDF {
         // Specular reflection
         double ds = gtr2Aniso(NdotH, tangent.dot(h), bitangent.dot(h), ax, ay);
         double g1v = smithGGGXAniso(NdotV, v.dot(tangent), v.dot(bitangent), ax, ay);
-        double pdfSpec = ds * Math.abs(NdotH) * g1v / (4.0D * Math.abs(VdotH));
+        double pdfSpec = (Math.abs(VdotH) > 1e-9) ? ds * Math.abs(NdotH) * g1v / (4.0D * Math.abs(VdotH)) : 0.0D;
 
         // Clearcoat
         double dr = gtr1(NdotH, mix(0.1D, 0.001D, material.getClearcoatGloss()));
-        double pdfClear = dr * Math.abs(NdotH) / (4.0D * Math.abs(VdotH));
+        double pdfClear = (Math.abs(VdotH) > 1e-9) ? dr * Math.abs(NdotH) / (4.0D * Math.abs(VdotH)) : 0.0D;
 
         // Specular transmission
-        Vector3D wm = Vector3D.add(Vector3D.mult(wi, eta), v).normalize();
-        double wiDotWm = Math.abs(wi.dot(wm));
-        double woDotWm = Math.abs(v.dot(wm));
-        double pdfM = ggxVndfPdfM(v, wm, normalHit, tangent, bitangent, ax, ay);
-        double j = wiDotWm / Math.pow(wiDotWm + woDotWm / material.getIndexOfRefraction(), 2.0D);
-        double pdfTrans = pdfM * j;
+        Vector3D wm;
+        double pdfTrans = 0.0D;
+        if(!isInSameHemisphere(v, wi, normalHit)) {
+            // For transmission, compute proper half-vector
+            wm = Vector3D.add(Vector3D.mult(wi, eta), v).normalize();
+            double wiDotWm = Math.abs(wi.dot(wm));
+            double woDotWm = Math.abs(v.dot(wm));
+            double pdfM = ggxVndfPdfM(v, wm, normalHit, tangent, bitangent, ax, ay);
+            double denom = wiDotWm + woDotWm / material.getIndexOfRefraction();
+            double j = (denom > 1e-9) ? (wiDotWm / (denom * denom)) : 0.0D;
+            pdfTrans = pdfM * j;
+        }
 
         // Build the mixture PDF
         double pdfMix = 0.0D;
@@ -191,17 +208,18 @@ public class BSDF {
             double ax = Math.max(0.001D, Math.pow(material.getRoughness(), 2) / aspect);
             double ay = Math.max(0.001D, Math.pow(material.getRoughness(), 2) * aspect);
 
-            // Determine relative IOR (outside is 1.0, inside is material.getIndexOfRefraction())
-            // If v.z > 0, we're in the outside medium (air), entering the material
+            // Determine relative IOR based on which side of the surface we're on
             double etaOutside = 1.0D;
             double etaInside = Math.max(1.0001D, material.getIndexOfRefraction());
-            double eta = v.z > 0.0D ? (etaOutside / etaInside) : (etaInside / etaOutside);
+            // If view direction is in same hemisphere as normal, we're entering material
+            double eta = (normal.dot(v) > 0.0D) ? (etaOutside / etaInside) : (etaInside / etaOutside);
 
             Vector3D wm = Vector3D.mult(l, eta).add(v).normalize();
             double pdfM = ggxVndfPdfM(v, wm, normal, tangent, bitangent, ax, ay);
             double wiDotM = Math.abs(l.dot(wm));
             double woDotM = Math.abs(v.dot(wm));
-            double j = wiDotM / Math.pow(wiDotM + woDotM/eta, 2.0D);
+            double denom = wiDotM + woDotM/eta;
+            double j = (denom > 1e-9) ? (wiDotM / (denom * denom)) : 0.0D;
             double pdfTransmit = pdfM * j;
 
             return (1.0D - lobePick[1].pReflection) * lobePick[1].pTransmission * pdfTransmit;
@@ -296,11 +314,11 @@ public class BSDF {
         Vector3D fTransmit = new Vector3D();
         if(!isInSameHemisphere(v, l, normal) && (1.0D - material.getMetallic()) * material.getSpecularTransmission() > 0.0D) {
             // generalized half vector for transmission
-            // Determine relative IOR (outside is 1.0, inside is material.getIndexOfRefraction())
-            // If v.z > 0, we're in the outside medium (air), entering the material
+            // Determine relative IOR based on which side of the surface we're on
             double etaOutside = 1.0D;
             double etaInside = Math.max(1.0001D, material.getIndexOfRefraction());
-            double eta = v.z > 0.0D ? (etaOutside / etaInside) : (etaInside / etaOutside);
+            // If view direction is in same hemisphere as normal, we're entering material
+            double eta = (normal.dot(v) > 0.0D) ? (etaOutside / etaInside) : (etaInside / etaOutside);
             Vector3D wm = Vector3D.mult(l, eta).add(v).normalize();
             double NdotM = Math.max(0.0D, normal.dot(wm));
             double dm = gtr2Aniso(NdotM, wm.dot(tangent), wm.dot(bitangent), ax, ay);

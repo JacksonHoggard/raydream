@@ -243,15 +243,15 @@ public class Scene {
         Light light = getRandomLight();
         if(light == null) return null;
         Vector3D lightPoint = light.pointOnLight(0, 0, 1, 1);
-        Vector3D lightVec = Vector3D.sub(pointHit, lightPoint);
-        Vector3D wi = lightVec.normalized();
+        Vector3D lightVec = Vector3D.sub(lightPoint, pointHit);  // FROM surface TO light
+        Vector3D wi = lightVec.normalized();                     // Direction toward light
         double distance = pointHit.distance(lightPoint);
         Vector3D le = Vector3D.mult(light.getColor(), light.getBrightness() / (distance * distance));
         double pDir = 1.0D / light.getArea();
-        Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(wi.negated(), 0.0001D)), wi.negated());
+        Ray shadowRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(wi, 0.0001D)), wi);  // Ray toward light
         boolean visible = !bvh.intersectShadowRay(shadowRay, distance);
 
-        return new LightSample(wi, le, pDir, visible);
+        return new LightSample(wi.negate(), le, pDir, visible);
     }
 
     private Light getRandomLight() {
@@ -330,97 +330,28 @@ public class Scene {
         }
 
         private void takeSamples() {
-            // Determine if this is a high DOF scene requiring more samples
-            boolean isHighDOF = camera.getAperture() > 5.0;
-            int maxSamples = isHighDOF ? 
-                Math.min(ApplicationConfig.MAX_DOF_SAMPLES, sampleDepth * 2) : sampleDepth;
-            
             // First sample at pixel center for base quality
             camera.shootRay(ray, i, j, 0.5D, 0.5D);
             trace(ray, bounces, pixelColor, new Vector3D(1.0), false);
             samples = 1;
             
-            if(maxSamples == 1)
+            if(sampleDepth == 1)
                 return;
-                
-            // Track variance for better convergence detection
-            Vector3D colorSum = new Vector3D(pixelColor);
-            Vector3D colorSumSquared = new Vector3D(
-                pixelColor.x * pixelColor.x, 
-                pixelColor.y * pixelColor.y, 
-                pixelColor.z * pixelColor.z
-            );
             
             Vector3D tempColor = new Vector3D();
-            
-            // Use stratified sampling for first batch of samples
-            int stratifiedSamples = Math.min(16, maxSamples - 1);
-            for(int s = 0; s < stratifiedSamples; s++) {
+            for(int s = 0; s < sampleDepth; s++) {
                 tempColor.set(0, 0, 0);
                 
-                // Stratified sampling within pixel
-                double stratumX = (s % 4) * 0.25 + Util.randomRange(0, 0.25);
-                double stratumY = (s / 4) * 0.25 + Util.randomRange(0, 0.25);
-                
-                // Use stratified aperture sampling for high DOF scenes
-                if(isHighDOF && stratifiedSamples >= 16) {
-                    camera.shootRayStratified(ray, i, j, stratumX, stratumY, s, 16);
-                } else {
-                    camera.shootRay(ray, i, j, stratumX, stratumY);
-                }
+                double x = Util.randomRange(0, 1.0D);
+                double y = Util.randomRange(0, 1.0D);
+                camera.shootRay(ray, i, j, x, y);
                 trace(ray, bounces, tempColor, new Vector3D(1.0), false);
-                
-                colorSum.add(tempColor);
-                colorSumSquared.add(new Vector3D(
-                    tempColor.x * tempColor.x,
-                    tempColor.y * tempColor.y, 
-                    tempColor.z * tempColor.z
-                ));
+                pixelColor.add(tempColor);
                 samples++;
-            }
-            
-            // Continue with Halton sequence for remaining samples
-            for(int sample = samples; sample < maxSamples; sample++) {
-                tempColor.set(0, 0, 0);
-                
-                // Use Halton sequence for better sample distribution
-                double jitterX = Util.vanDerCorput(sample, 2);
-                double jitterY = Util.vanDerCorput(sample, 3);
-                
-                camera.shootRay(ray, i, j, jitterX, jitterY);
-                trace(ray, bounces, tempColor, new Vector3D(1.0), false);
-
-                colorSum.add(tempColor);
-                colorSumSquared.add(new Vector3D(
-                    tempColor.x * tempColor.x,
-                    tempColor.y * tempColor.y, 
-                    tempColor.z * tempColor.z
-                ));
-                samples++;
-                
-                // Check convergence using variance
-                if(samples >= ApplicationConfig.MIN_SAMPLES_BEFORE_CONVERGENCE && 
-                   samples % 8 == 0) { // Check less frequently to reduce overhead
-                    
-                    Vector3D mean = Vector3D.div(colorSum, samples);
-                    Vector3D meanSquared = Vector3D.div(colorSumSquared, samples);
-                    Vector3D variance = Vector3D.sub(meanSquared, new Vector3D(
-                        mean.x * mean.x, mean.y * mean.y, mean.z * mean.z
-                    ));
-                    
-                    double totalVariance = variance.x + variance.y + variance.z;
-                    double convergenceThreshold = isHighDOF ? 
-                        ApplicationConfig.DOF_NOISE_THRESHOLD : 
-                        ApplicationConfig.ADAPTIVE_SAMPLING_TOLERANCE;
-                    
-                    if(totalVariance < convergenceThreshold) {
-                        break;
-                    }
-                }
             }
             
             // Set final pixel color
-            pixelColor.set(Vector3D.div(colorSum, samples));
+            pixelColor.set(Vector3D.div(pixelColor, samples));
         }
 
         /**
@@ -440,9 +371,32 @@ public class Scene {
             Vector3D pointHit = bvhHit != null ? bvhHit.point() : null;
             Object objectHit = bvhHit != null ? bvhHit.object() : null;
             Vector3D normalHit = bvhHit != null ? bvhHit.normal() : null;
-            // If no object or light is hit
+            double minLightDist = Double.MAX_VALUE;
+            Vector3D minLightColor = null;
+            double minLightBrightness = Double.MAX_VALUE;
+            for(Light light : lights) {
+                double lightDist = light.intersect(ray);
+                if(lightDist > 0.0D && lightDist < minLightDist) {
+                    minLightDist = lightDist;
+                    minLightColor = light.getColor();
+                    minLightBrightness = light.getBrightness();
+                }
+            }
+            // Check if light is hit before an object
+            if(objectHit != null && minLightDist < bvhHit.t()) {
+                // If light is hit return the color of the light
+                double brightness = minLightBrightness / minLightDist;
+                color.add(Vector3D.mult(minLightColor, brightness).mult(beta));
+                return;
+            }
+            // If a light is hit, but no object is hit
+            if(objectHit == null && minLightColor != null) {
+                double brightness = minLightBrightness / minLightDist;
+                color.add(Vector3D.mult(minLightColor, brightness).mult(beta));
+                return;
+            }
             if(objectHit == null) {
-                color.add(Vector3D.mult(skyColor, beta));
+                // TODO environment
                 return;
             }
             Material material = objectHit.getMaterial();
@@ -461,6 +415,8 @@ public class Scene {
             if(material.getBumpMap() != null) {
                 shaderNormal.set(material.getBumpMap().apply(normalHit, tangent, bitangent, bvhHit.texCoord()));
             }
+            
+            // Transform all vectors to world space
             normalHit.set(MathUtils.transformNormalToWS(normalHit, objectHit.getNormalMatrix()));
             shaderNormal.set(MathUtils.transformNormalToWS(shaderNormal, objectHit.getNormalMatrix()));
             tangent = MathUtils.transformDirectionToWS(tangent, objectHit.getTransformMatrix());
@@ -468,6 +424,7 @@ public class Scene {
 
             Vector3D wo = ray.direction().negated();
 
+            // Check emittance using transformed normal
             if(emittance.dot(emittance) > 0.0D && normalHit.dot(wo) > 0.0D) {
                 if(bounce == bounces || prevDelta) {
                     color.add(Vector3D.mult(emittance, beta));
@@ -517,6 +474,14 @@ public class Scene {
                 bitangent
             );
 
+            // Check for invalid BSDF sample
+            if(s == null || s.l() == null || s.f() == null || 
+               !Double.isFinite(s.pdf()) || s.pdf() <= 0.0D ||
+               !Double.isFinite(s.f().x) || !Double.isFinite(s.f().y) || !Double.isFinite(s.f().z) ||
+               !Double.isFinite(s.l().x) || !Double.isFinite(s.l().y) || !Double.isFinite(s.l().z)) {
+                return; // Terminate path for invalid samples
+            }
+
             // If BSDF sample hits a light, add That direct term with MIS
             for(Light light : lights) {
                 Ray newRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(s.l(), 0.000001D)), s.l());
@@ -534,24 +499,21 @@ public class Scene {
                                                 .mult(w);
                         color.add(contrib);
                     }
-                } else {
-                    // Environment
-                    Vector3D le = new Vector3D(skyColor);
-                    double pEnvDir = (le.x * 0.212671 + le.y * 0.715160 + le.z * 0.072169) / Math.PI;
-                    double w = s.delta() ? 1.0D : powerHeuristic(s.pdf(), pEnvDir);
-                    Vector3D contrib = Vector3D.mult(s.f(), beta)
-                                                .mult(Math.abs(shaderNormal.dot(s.l())))
-                                                .div(Math.max(1e-9, s.pdf()))
-                                                .mult(le)
-                                                .mult(w);
-                    color.add(contrib);
                 }
             }
 
             beta.mult(s.f())
                 .mult(Math.abs(shaderNormal.dot(s.l())))
                 .div(Math.max(1e-9, s.pdf()));
-            Ray newRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(shaderNormal, 0.000001D)), s.l());
+            
+            // Check for NaN or infinite values in beta
+            if(!Double.isFinite(beta.x) || !Double.isFinite(beta.y) || !Double.isFinite(beta.z)) {
+                return; // Terminate path if beta becomes invalid
+            }
+            
+            // Use proper ray offset direction based on hemisphere
+            Vector3D offsetNormal = shaderNormal.dot(s.l()) > 0 ? shaderNormal : shaderNormal.negated();
+            Ray newRay = new Ray(Vector3D.add(pointHit, Vector3D.mult(offsetNormal, 0.000001D)), s.l());
             prevDelta = s.delta();
 
             // Russian roulette
