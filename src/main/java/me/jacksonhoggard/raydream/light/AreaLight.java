@@ -82,6 +82,13 @@ public class AreaLight extends Light {
         return closestPoint;
     }
 
+    @Override
+    public Vector3D normalAt(Vector3D point) {
+        Vector4D normalOS = new Vector4D(0, 0, 1, 0);
+        normalOS = normalOS.mult(transformMatrix).normalized();
+        return new Vector3D(normalOS.x, normalOS.y, normalOS.z);
+    }
+
     public Transform getTransform() {
         return transform;
     }

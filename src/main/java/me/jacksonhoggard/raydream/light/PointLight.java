@@ -31,4 +31,9 @@ public class PointLight extends Light {
     public Vector3D closestPoint(Vector3D point) {
         return getPosition();
     }
+
+    @Override
+    public Vector3D normalAt(Vector3D point) {
+        return Vector3D.sub(point, getPosition()).normalized();
+    }
 }

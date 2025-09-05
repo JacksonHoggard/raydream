@@ -62,37 +62,31 @@ public class BSDF {
 
         switch(lobe) {
             case DIFFUSE:
-                wi = MathUtils.randomHemisphere(normalHit);
-                fLobe = evalDiffuse(material, albedo, normalHit, v, wi, tangent, bitangent).add(
-                    evalSheen(material, albedo, normalHit, v, wi, tangent, bitangent)
-                );
+                wi = MathUtils.sampleCosineHemisphere(normalHit, tangent, bitangent);
+                fLobe = evalDiffuse(material, cdlin, normalHit, v, wi, tangent, bitangent);
                 break;
             case SPECULAR:
-                wi = sampleGGXReflectionVNDF(material, albedo, normalHit, v, tangent, bitangent);
-                if(wi == null || wi.equals(Vector3D.ZERO)) {
-                    wi = MathUtils.reflect(v, normalHit); // Fallback to perfect reflection
-                }
-                fLobe = evalSpecular(material, albedo, normalHit, v, wi, tangent, bitangent);
+                wi = sampleGGXReflectionVNDF(material, cdlin, normalHit, v, tangent, bitangent);
+                fLobe = evalSpecular(material, cdlin, normalHit, v, wi, tangent, bitangent);
                 delta = (material.getRoughness() == 0.0D);
                 break;
             case CLEARCOAT:
-                wi = sampleGTR1Reflection(material, albedo, normalHit, v, tangent, bitangent);
-                if(wi == null || wi.equals(Vector3D.ZERO)) {
-                    wi = MathUtils.reflect(v, normalHit); // Fallback to perfect reflection
-                }
-                fLobe = evalClearcoat(material, albedo, normalHit, v, wi, tangent, bitangent);
+                wi = sampleGTR1Reflection(material, cdlin, normalHit, v, tangent, bitangent);
+                fLobe = evalClearcoat(material, cdlin, normalHit, v, wi, tangent, bitangent);
                 break;
             case TRANSMIT_SPECULAR:
-                SampleDir sampleTrans = sampleGGXTransmissionVNDF(material, albedo, normalHit, v, tangent, bitangent);
+                SampleDir sampleTrans = sampleGGXTransmissionVNDF(material, cdlin, normalHit, v, tangent, bitangent);
                 if(sampleTrans == null || sampleTrans.wi == null) {
                     // Fallback to reflection or return invalid sample
-                    wi = MathUtils.reflect(v, normalHit);
-                    fLobe = new Vector3D(0);
+                    wi = sampleGGXReflectionVNDF(material, cdlin, normalHit, v, tangent, bitangent);
+                    fLobe = evalSpecular(material, cdlin, normalHit, v, wi, tangent, bitangent);
+                    delta = (material.getRoughness() == 0.0D);
+                    lobe = Lobe.SPECULAR;
                     break;
                 }
                 wi = sampleTrans.wi;
                 eta = sampleTrans.eta;
-                fLobe = evalTransmission(material, albedo, normalHit, v, wi, eta, tangent, bitangent);
+                fLobe = evalTransmission(material, cdlin, normalHit, v, wi, eta, tangent, bitangent);
                 delta = (material.getRoughness() == 0.0D);
                 break;
         }
@@ -131,7 +125,7 @@ public class BSDF {
             double wiDotWm = Math.abs(wi.dot(wm));
             double woDotWm = Math.abs(v.dot(wm));
             double pdfM = ggxVndfPdfM(v, wm, normalHit, tangent, bitangent, ax, ay);
-            double denom = wiDotWm + woDotWm / material.getIndexOfRefraction();
+            double denom = wiDotWm + woDotWm / Math.max(1e-9, eta);
             double j = (denom > 1e-9) ? (wiDotWm / (denom * denom)) : 0.0D;
             pdfTrans = pdfM * j;
         }
@@ -139,11 +133,13 @@ public class BSDF {
         // Build the mixture PDF
         double pdfMix = 0.0D;
         if(isInSameHemisphere(v, wi, normalHit)) {
-            pdfMix += reflection.pDiffuse * pdfDiffuse;
-            pdfMix += reflection.pSpecular * pdfSpec;
-            pdfMix += reflection.pClearcoat * pdfClear;
+            pdfMix += reflection.pReflection * (
+                reflection.pDiffuse * pdfDiffuse +
+                reflection.pSpecular * pdfSpec +
+                reflection.pClearcoat * pdfClear
+            );
         } else {
-            pdfMix += transmission.pTransmission * pdfTrans;
+            pdfMix += (1.0D - reflection.pReflection) * (transmission.pTransmission * pdfTrans);
         }
 
         // Package result
@@ -183,12 +179,16 @@ public class BSDF {
             Vector3D h = Vector3D.add(l, v).normalize();
             double NdotH = Math.max(0.0D, normal.dot(h));
             double VdotH = Math.max(0.0D, v.dot(h));
+            double NdotV = Math.max(0.0D, normal.dot(v));
 
             // GGX reflection (VNDF)
             double aspect = Math.sqrt(Math.max(0.0, 1.0D - 0.9D * material.getAnisotropic()));
             double ax = Math.max(0.001D, Math.pow(material.getRoughness(), 2) / aspect);
             double ay = Math.max(0.001D, Math.pow(material.getRoughness(), 2) * aspect);
-            double pdfSpec = ggxVndfPdfM(v, h, normal, tangent, bitangent, ax, ay);
+            double d = gtr2Aniso(NdotH, h.dot(tangent), h.dot(bitangent), ax, ay);
+            double g1v = smithGGGXAniso(NdotV, v.dot(tangent), v.dot(bitangent), ax, ay);
+            double pdfSpec = (Math.abs(VdotH) > 1e-9) ?
+                d * Math.abs(NdotH) * g1v / (4.0D * Math.abs(VdotH)) : 0.0D;
 
             // Clearcoat
             double ac = mix(0.1D, 0.001D, material.getClearcoatGloss());
@@ -347,7 +347,7 @@ public class BSDF {
             ).mult(
                 g * dm * scale
             ).div(
-                Math.max(1e-9, (NdotL * NdotV))
+                Math.max(1e-9, Math.abs(NdotL) * Math.abs(NdotV))
             );
         }
 
@@ -393,34 +393,6 @@ public class BSDF {
         );
 
         return fDiffuse;
-    }
-
-    private static Vector3D evalSheen(
-        Material material,
-        Vector3D albedo,
-        Vector3D normal,
-        Vector3D viewDir,
-        Vector3D lightDir,
-        Vector3D tangent,
-        Vector3D bitangent
-    ) {
-        double NdotL = Math.max(0.0D, normal.dot(lightDir));
-        double NdotV = Math.max(0.0D, normal.dot(viewDir));
-        if(NdotL <= 0.0D || NdotV <= 0.0D)
-            return new Vector3D(0.0D);
-        
-        Vector3D h = Vector3D.add(lightDir, viewDir).normalize();
-        double LdotH = Math.max(0.0D, lightDir.dot(h));
-
-        Vector3D cdlin = mon2lin(albedo);
-        double cdlum = cdlin.x * 0.2126D + cdlin.y * 0.7152D + cdlin.z * 0.0722D;
-        Vector3D ctint = cdlum > 0.0D ? Vector3D.div(cdlin, cdlum) : new Vector3D(1); // Normalize luminance to isolate hue + saturation
-        Vector3D csheen = mix(new Vector3D(1), ctint, material.getSheenTint());
-
-        // Sheen
-        Vector3D fSheen = csheen.mult(material.getSheen()).mult(schlickFresnel(LdotH));
-
-        return fSheen;
     }
 
     private static Vector3D evalSpecular(
@@ -505,7 +477,7 @@ public class BSDF {
     ) {
         double NdotL = normal.dot(lightDir);
         double NdotV = normal.dot(viewDir);
-        if(NdotL * NdotV <= 0.0D) {
+        if(NdotL * NdotV >= 0.0D) {
             return new Vector3D(0.0D);
         }
         Vector3D tint = new Vector3D(
@@ -514,42 +486,52 @@ public class BSDF {
             Math.sqrt(albedo.z)
         );
         
-        Vector3D h = Vector3D.add(lightDir, viewDir).normalize();
-        double NdotH = normal.dot(h);
-        double LdotH = lightDir.dot(h);
-        double VdotH = viewDir.dot(h);
+        Vector3D wm = Vector3D.add(Vector3D.mult(lightDir, eta), viewDir).normalize();
+        double NdotM = normal.dot(wm);
+        double LdotM = Math.abs(lightDir.dot(wm));
+        double VdotM = Math.abs(viewDir.dot(wm));
 
         double aspect = Math.sqrt(1.0D - material.getAnisotropic() * 0.9D);
         double ax = Math.max(0.001D, Math.pow(material.getRoughness(), 2) / aspect);
         double ay = Math.max(0.001D, Math.pow(material.getRoughness(), 2) * aspect);
+        double d = gtr2Aniso(NdotM, tangent.dot(wm), bitangent.dot(wm), ax, ay);
+        double g = smithGGGXAniso(Math.abs(NdotL), lightDir.dot(tangent), lightDir.dot(bitangent), ax, ay)
+                    * smithGGGXAniso(Math.abs(NdotV), viewDir.dot(tangent), viewDir.dot(bitangent), ax, ay);
+        
+        double ft = schlickFresnel(VdotM);
+        Vector3D f = mix(
+            Vector3D.mult(material.getSpecular(), 0.8D).mult(mix(new Vector3D(1), tint, material.getSpecularTint())),
+            new Vector3D(1),
+            ft
+        );
 
-        double d = gtr2Aniso(NdotH, tangent.dot(h), bitangent.dot(h), ax, ay);
-        double g = smithGGGXAniso(NdotV, viewDir.dot(tangent), viewDir.dot(bitangent), ax, ay)
-                    * smithGGGXAniso(NdotL, lightDir.dot(tangent), lightDir.dot(bitangent), ax, ay);
-        double denom = (Math.abs(LdotH) + Math.abs(VdotH)/eta);
-        double xi = (denom > 0.0D) ? (Math.abs(LdotH) * Math.abs(VdotH) / (denom*denom)) : 0.0D;
-        double ft = 1.0D - schlickFresnel(Math.abs(LdotH));
-        double scale = eta*eta;
+        double denom = (LdotM + VdotM/Math.max(1e-9, eta));
+        double xi = (denom > 0.0D) ? (LdotM * VdotM) / (denom * denom) : 0.0D;
+        double scale = (eta * eta);
         return Vector3D.mult(
             tint,
             d * g * ft * scale * xi
         ).div(
-            Math.max(1e-6, (NdotL * NdotV))
+            Math.max(1e-6, (Math.abs(NdotL) * Math.abs(NdotV)))
         );
     }
 
     private static Lobe pickLobe(LobePick lobePick) {
-        double r = MathUtils.random();
-        if(r < lobePick.pDiffuse) {
-            return Lobe.DIFFUSE;
-        } else if(r < lobePick.pDiffuse + lobePick.pSpecular) {
-            return Lobe.SPECULAR;
-        } else if(r < lobePick.pDiffuse + lobePick.pSpecular + lobePick.pClearcoat) {
-            return Lobe.CLEARCOAT;
-        } else if(r < lobePick.pDiffuse + lobePick.pSpecular + lobePick.pClearcoat + lobePick.pTransmission) {
-            return Lobe.TRANSMIT_SPECULAR;
-        }
-        return Lobe.DIFFUSE; // Fallback
+        Lobe pick = null;
+        do {
+            double r = MathUtils.random();
+            if(r < lobePick.pDiffuse) {
+                pick = Lobe.DIFFUSE;
+            } else if(r < lobePick.pDiffuse + lobePick.pSpecular) {
+                pick = Lobe.SPECULAR;
+            } else if(r < lobePick.pDiffuse + lobePick.pSpecular + lobePick.pClearcoat) {
+                pick = Lobe.CLEARCOAT;
+            } else if(r < lobePick.pDiffuse + lobePick.pSpecular + lobePick.pClearcoat + lobePick.pTransmission) {
+                pick = Lobe.TRANSMIT_SPECULAR;
+            }
+        } while(pick == null);
+
+        return pick;
     }
 
     /**
@@ -648,7 +630,7 @@ public class BSDF {
         // Only sample reflection if wo is in the top hemisphere
         double NdotV = normal.dot(viewDir);
         if(NdotV <= 0.0D) {
-            return Vector3D.ZERO;
+            return new Vector3D();
         }
 
         // Roughness -> anisotropic alphas
@@ -703,13 +685,13 @@ public class BSDF {
         // Unstretch back to anisotropic space -> microfacet normal m
         Vector3D m = new Vector3D(ax * nh.x, ay * nh.y, Math.max(0.0D, nh.z)).normalize();
         if(m.z <= 0.0D) {
-            return Vector3D.ZERO;
+            return new Vector3D();
         }
 
         // Reflect wo about m
         Vector3D wiLocal = MathUtils.reflect(v.negated(), m); // incident = -wo
         if(wiLocal.z <= 0.0D) {
-            return Vector3D.ZERO;
+            return new Vector3D();
         }
 
         // Transform wi back to world space
@@ -727,7 +709,7 @@ public class BSDF {
         // Only sample reflection if wo is in the top hemisphere
         double NdotV = normal.dot(viewDir);
         if(NdotV <= 0.0D) {
-            return Vector3D.ZERO;
+            return new Vector3D();
         }
 
         // Roughness
@@ -761,7 +743,7 @@ public class BSDF {
         // Reflect wo about m
         Vector3D wiLocal = MathUtils.reflect(v.negated(), m); // incident = -wo
         if(wiLocal.z <= 0.0D) {
-            return Vector3D.ZERO;
+            return new Vector3D();
         }
 
         // Transform wi back to world space
@@ -855,12 +837,12 @@ public class BSDF {
         Vector3D wiLocal = new Vector3D();
         if(!MathUtils.refractThroughMicrofacet(v, m, eta, wiLocal)) {
             // Total internal reflection occurred
-            return new SampleDir(null, 0.0D, 0.0D);
+            return new SampleDir(null, 0.0D, 1.0D);
         }
 
         // Transmission must end up in the opposite hemisphere
         if(wiLocal.z * v.z >= 0.0D) {
-            return new SampleDir(null, 0.0D, 0.0D);
+            return new SampleDir(null, 0.0D, 1.0D);
         }
 
         // Directional PDF for transmission

@@ -39,6 +39,12 @@ public class SphereLight extends Light {
         return closestPoint;
     }
 
+    @Override
+    public Vector3D normalAt(Vector3D point) {
+        Vector3D dirToPoint = Vector3D.sub(point, getPosition()).normalize();
+        return dirToPoint;
+    }
+
     public double getRadius() {
         return radius;
     }

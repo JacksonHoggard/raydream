@@ -26,6 +26,7 @@ public final class MathUtils {
 
     /**
      * Fast approximate equality check for doubles.
+     * 
      * @param a first value
      * @param b second value
      * @return true if values are approximately equal
@@ -36,8 +37,9 @@ public final class MathUtils {
 
     /**
      * Fast approximate equality check for doubles with custom epsilon.
-     * @param a first value
-     * @param b second value
+     * 
+     * @param a       first value
+     * @param b       second value
      * @param epsilon tolerance
      * @return true if values are approximately equal
      */
@@ -47,9 +49,10 @@ public final class MathUtils {
 
     /**
      * Clamps a value between min and max.
+     * 
      * @param value the value to clamp
-     * @param min minimum value
-     * @param max maximum value
+     * @param min   minimum value
+     * @param max   maximum value
      * @return clamped value
      */
     public static double clamp(double value, double min, double max) {
@@ -58,6 +61,7 @@ public final class MathUtils {
 
     /**
      * Linear interpolation between two values.
+     * 
      * @param a start value
      * @param b end value
      * @param t interpolation factor (0.0 to 1.0)
@@ -69,6 +73,7 @@ public final class MathUtils {
 
     /**
      * Linear interpolation between two vectors.
+     * 
      * @param a start vector
      * @param b end vector
      * @param t interpolation factor (0.0 to 1.0)
@@ -76,15 +81,15 @@ public final class MathUtils {
      */
     public static Vector3D lerp(Vector3D a, Vector3D b, double t) {
         return new Vector3D(
-            lerp(a.x, b.x, t),
-            lerp(a.y, b.y, t),
-            lerp(a.z, b.z, t)
-        );
+                lerp(a.x, b.x, t),
+                lerp(a.y, b.y, t),
+                lerp(a.z, b.z, t));
     }
 
     /**
      * Generates a random double between 0.0 and 1.0.
      * Uses ThreadLocalRandom for better performance in multithreaded environments.
+     * 
      * @return random double [0.0, 1.0)
      */
     public static double random() {
@@ -93,6 +98,7 @@ public final class MathUtils {
 
     /**
      * Generates a random double between min and max.
+     * 
      * @param min minimum value (inclusive)
      * @param max maximum value (exclusive)
      * @return random double in range [min, max)
@@ -103,6 +109,7 @@ public final class MathUtils {
 
     /**
      * Generates a random unit vector on the unit sphere.
+     * 
      * @return random unit vector
      */
     public static Vector3D randomUnitVector() {
@@ -119,6 +126,7 @@ public final class MathUtils {
 
     /**
      * Generates a random vector in the unit hemisphere oriented by the normal.
+     * 
      * @param normal the hemisphere orientation
      * @return random vector in hemisphere
      */
@@ -128,6 +136,17 @@ public final class MathUtils {
             v.negate();
         }
         return v;
+    }
+
+    public static Vector3D sampleCosineHemisphere(Vector3D n, Vector3D T, Vector3D B) {
+        double u1 = Math.random(), u2 = Math.random();
+        double r = Math.sqrt(u1);
+        double phi = 2.0 * Math.PI * u2;
+        double x = r * Math.cos(phi);
+        double y = r * Math.sin(phi);
+        double z = Math.sqrt(Math.max(0.0, 1.0 - u1));
+        // local -> world
+        return Vector3D.mult(T, x).add(Vector3D.mult(B, y)).add(Vector3D.mult(n, z)).normalize();
     }
 
     public static Vector3D transformNormalToWS(Vector3D normal, Matrix4D normalMatrix) {
@@ -162,8 +181,9 @@ public final class MathUtils {
 
     /**
      * Reflects a vector about a normal.
+     * 
      * @param incident the incident vector
-     * @param normal the surface normal
+     * @param normal   the surface normal
      * @return reflected vector
      */
     public static Vector3D reflect(Vector3D incident, Vector3D normal) {
@@ -172,8 +192,9 @@ public final class MathUtils {
 
     /**
      * Refracts a vector through a surface with given refractive indices.
+     * 
      * @param incident the incident vector (normalized)
-     * @param normal the surface normal (normalized)
+     * @param normal   the surface normal (normalized)
      * @param etaRatio ratio of refractive indices (eta_incident / eta_transmitted)
      * @return refracted vector or null for total internal reflection
      */
@@ -191,33 +212,34 @@ public final class MathUtils {
 
     /**
      * Refracts a vector through a microfacet with given parameters.
-     * @param wi the incident vector (normalized)
-     * @param m the microfacet normal (normalized)
+     * 
+     * @param wi  the incident vector (normalized)
+     * @param m   the microfacet normal (normalized)
      * @param eta the refractive index ratio (eta_incident / eta_transmitted)
-     * @param wt the transmitted vector (output)
-     * @return true if refraction occurred, false if total internal reflection happened
+     * @param wt  the transmitted vector (output)
+     * @return true if refraction occurred, false if total internal reflection
+     *         happened
      */
     public static boolean refractThroughMicrofacet(Vector3D wi, Vector3D m, double eta, Vector3D wt) {
         double cosI = wi.dot(m);
-        double sin2I = Math.max(0.0D, 1.0D - cosI*cosI);
-        double sin2T = eta*eta * sin2I;
-        if(sin2T >= 1.0D) // total internal reflection
+        double sin2I = Math.max(0.0D, 1.0D - cosI * cosI);
+        double sin2T = eta * eta * sin2I;
+        if (sin2T >= 1.0D) // total internal reflection
             return false;
-        
+
         double cosT = Math.sqrt(Math.max(0.0D, 1.0D - sin2T));
         wt.set(
-            Vector3D.add(
-                Vector3D.mult(wi, -eta),
-                Vector3D.mult(m, eta * cosI - cosT)
-            ).normalize()
-        );
+                Vector3D.add(
+                        Vector3D.mult(wi, -eta),
+                        Vector3D.mult(m, eta * cosI - cosT)).normalize());
 
         return true;
     }
 
     /**
      * Calculates Fresnel reflectance using Schlick's approximation.
-     * @param cosine cosine of incident angle
+     * 
+     * @param cosine          cosine of incident angle
      * @param refractiveIndex refractive index
      * @return Fresnel reflectance [0.0, 1.0]
      */
@@ -228,10 +250,12 @@ public final class MathUtils {
     }
 
     /**
-     * Calculates the full Fresnel reflectance for a dielectric material using the complete Fresnel equations.
+     * Calculates the full Fresnel reflectance for a dielectric material using the
+     * complete Fresnel equations.
+     * 
      * @param cosThetaI cosine of the incident angle
-     * @param ni refractive index of the incident medium
-     * @param nt refractive index of the transmitted medium
+     * @param ni        refractive index of the incident medium
+     * @param nt        refractive index of the transmitted medium
      * @return Fresnel reflectance [0.0, 1.0]
      */
     public static double dielectric(double cosThetaI, double ni, double nt) {
@@ -261,9 +285,9 @@ public final class MathUtils {
         return (rParallel * rParallel + rPerpendicular * rPerpendicular) / 2.0;
     }
 
-
     /**
      * Converts degrees to radians.
+     * 
      * @param degrees angle in degrees
      * @return angle in radians
      */
@@ -273,6 +297,7 @@ public final class MathUtils {
 
     /**
      * Converts radians to degrees.
+     * 
      * @param radians angle in radians
      * @return angle in degrees
      */
@@ -282,7 +307,9 @@ public final class MathUtils {
 
     // Assume vectors are in a y-up tangent space
     /**
-     * Returns the cosine of theta (angle from y-axis) for a vector in tangent space.
+     * Returns the cosine of theta (angle from y-axis) for a vector in tangent
+     * space.
+     * 
      * @param w vector in tangent space
      * @return cosine of theta
      */
@@ -292,6 +319,7 @@ public final class MathUtils {
 
     /**
      * Returns the squared cosine of theta for a vector in tangent space.
+     * 
      * @param w vector in tangent space
      * @return squared cosine of theta
      */
@@ -301,6 +329,7 @@ public final class MathUtils {
 
     /**
      * Returns the absolute cosine of theta for a vector in tangent space.
+     * 
      * @param w vector in tangent space
      * @return absolute cosine of theta
      */
@@ -310,6 +339,7 @@ public final class MathUtils {
 
     /**
      * Returns the squared sine of theta for a vector in tangent space.
+     * 
      * @param w vector in tangent space
      * @return squared sine of theta
      */
@@ -319,6 +349,7 @@ public final class MathUtils {
 
     /**
      * Returns the sine of theta for a vector in tangent space.
+     * 
      * @param w vector in tangent space
      * @return sine of theta
      */
@@ -328,6 +359,7 @@ public final class MathUtils {
 
     /**
      * Returns the tangent of theta for a vector in tangent space.
+     * 
      * @param w vector in tangent space
      * @return tangent of theta
      */
@@ -337,6 +369,7 @@ public final class MathUtils {
 
     /**
      * Returns the squared tangent of theta for a vector in tangent space.
+     * 
      * @param w vector in tangent space
      * @return squared tangent of theta
      */
@@ -346,6 +379,7 @@ public final class MathUtils {
 
     /**
      * Returns the cosine of phi (azimuthal angle) for a vector in tangent space.
+     * 
      * @param w vector in tangent space
      * @return cosine of phi
      */
@@ -356,6 +390,7 @@ public final class MathUtils {
 
     /**
      * Returns the sine of phi (azimuthal angle) for a vector in tangent space.
+     * 
      * @param w vector in tangent space
      * @return sine of phi
      */
@@ -366,6 +401,7 @@ public final class MathUtils {
 
     /**
      * Returns the squared cosine of phi for a vector in tangent space.
+     * 
      * @param w vector in tangent space
      * @return squared cosine of phi
      */
@@ -376,6 +412,7 @@ public final class MathUtils {
 
     /**
      * Returns the squared sine of phi for a vector in tangent space.
+     * 
      * @param w vector in tangent space
      * @return squared sine of phi
      */

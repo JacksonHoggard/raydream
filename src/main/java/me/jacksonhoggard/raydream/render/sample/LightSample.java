@@ -6,5 +6,8 @@ public record LightSample(
     Vector3D wi,
     Vector3D le,
     double pDir,
-    boolean visible
+    boolean visible,
+    Vector3D pointOnLight,
+    Vector3D normalAtPointOnLight,
+    double distanceToLight
 ) {}
