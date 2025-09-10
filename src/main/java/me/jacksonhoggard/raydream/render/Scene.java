@@ -374,7 +374,6 @@ public class Scene {
                 normalHit.negate();
                 shaderNormal.negate();
                 tangent.negate();
-                bitangent.negate();
             }
 
             // Check emittance using transformed normal
@@ -389,14 +388,6 @@ public class Scene {
                 if (lightSample != null && lightSample.visible()) {
                     double cosX = Math.max(0.0D, shaderNormal.dot(lightSample.wi()));
                     if (cosX > 0.0D) {
-                        double NgDotV = Math.max(1e-6, normalHit.dot(wo));
-                        double NgDotL = Math.max(1e-6, normalHit.dot(lightSample.wi()));
-                        double NsDotV = Math.max(1e-6, shaderNormal.dot(wo));
-                        double NsDotL = Math.max(1e-6, shaderNormal.dot(lightSample.wi()));
-
-                        double corr = (NgDotV * NgDotL) / Math.max(1e-6, NsDotV * NsDotL);
-                        // Clamp to avoid overcompensation
-                        corr = Math.min(corr, 4.0);
                         Vector3D f = BSDF.eval(
                                 material,
                                 material.getAlbedo(bvhHit.texCoord()),
@@ -411,8 +402,6 @@ public class Scene {
                                 lightSample.wi(),
                                 material.isThin(),
                                 shaderNormal, tangent, bitangent);
-                        f.mult(corr);
-                        pBSDF *= corr;
                         double w = powerHeuristic(lightSample.pDir(), pBSDF);
                         // NEE contribution
                         Vector3D contrib = Vector3D.mult(f, beta)
