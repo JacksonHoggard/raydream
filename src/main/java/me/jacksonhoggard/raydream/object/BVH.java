@@ -1,258 +1,267 @@
 package me.jacksonhoggard.raydream.object;
 
+import me.jacksonhoggard.raydream.config.ApplicationConfig;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.math.Vector4D;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
+/**
+ * Improved Bounding Volume Hierarchy implementation for efficient ray-object intersection.
+ * This replaces the original BVH with better splitting heuristics and memory layout.
+ */
 public class BVH {
 
-    private final Node root;
+    private BVHNode root;
+    private final List<Primitive> primitives;
 
-    public BVH(Object[] objects) {
-        this.root = new Node();
-        root.firstObject = 0;
-        root.objectCount = objects.length;
-        root.left = null;
-        root.right = null;
-        updateNodeBounds(root, objects);
-        subdivide(root, objects);
+    public BVH(List<Primitive> primitives) {
+        this.primitives = new ArrayList<>(primitives);
+        this.root = buildBVH(this.primitives, 0);
     }
 
-    public Hit intersect(Ray ray, Object[] objects) {
-        List<Node> stack = new ArrayList<>();
-        Node currentNode = root;
-        Hit out = new Hit(null, null, null, null, null, Double.MAX_VALUE);
-        while(true) {
-            if(currentNode.isLeaf()) {
-                for(int i = currentNode.firstObject; i < currentNode.firstObject + currentNode.objectCount; i++) {
-                    Vector4D rOriginOS = new Vector4D(ray.origin().x, ray.origin().y, ray.origin().z, 1);
-                    Vector4D rDirOS = new Vector4D(ray.direction().x, ray.direction().y, ray.direction().z, 0);
-                    rOriginOS = rOriginOS.mult(objects[i].getInverseTransformMatrix());
-                    rDirOS = rDirOS.mult(objects[i].getInverseTransformMatrix());
-                    Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
-                    Hit hit = objects[i].intersect(rayOS);
-                    if (hit.object() != null && hit.t() > 0 && hit.t() < out.t()) {
-                        if(hit.object() instanceof Model)
-                            out = new Hit(hit.object(), hit.triangle(), ray.at(hit.t()), hit.normal(), hit.texCoord(), hit.t());
-                        else
-                            out = new Hit(hit.object(), null, ray.at(hit.t()), hit.normal(), hit.texCoord(), hit.t());
+    /**
+     * Finds the closest intersection along a ray.
+     * @param ray the ray to intersect
+     * @param tMin minimum distance
+     * @param tMax maximum distance
+     * @return intersection result or null if no intersection
+     */
+    public Hit intersect(Ray ray, double tMin, double tMax) {
+        if (root == null) return null;
+        return intersectNode(root, ray, tMin, tMax);
+    }
+
+    /**
+     * Shadow ray intersection that properly handles object space transformations
+     * @param ray the shadow ray
+     * @param maxDistance maximum distance to check
+     * @return true if ray is blocked, false if clear path
+     */
+    public boolean intersectShadowRay(Ray ray, double maxDistance) {
+        if (root == null) return false;
+        return intersectShadowNode(root, ray, 0.0001, maxDistance);
+    }
+
+    private BVHNode buildBVH(List<Primitive> primitives, int depth) {
+        if (primitives.isEmpty()) return null;
+
+        BVHNode node = new BVHNode();
+        node.bounds = calculateBounds(primitives);
+
+        // Leaf node condition
+        if (primitives.size() <= ApplicationConfig.BVH_MAX_OBJECTS_PER_LEAF || depth > 20) {
+            node.primitives = new ArrayList<>(primitives);
+            return node;
+        }
+
+        // Choose split axis (Surface Area Heuristic)
+        int bestAxis = chooseSplitAxis(primitives, node.bounds);
+
+        // Sort objects along the chosen axis
+        primitives.sort(getComparator(bestAxis));
+
+        // Split objects
+        int midPoint = primitives.size() / 2;
+        List<Primitive> leftObjects = primitives.subList(0, midPoint);
+        List<Primitive> rightObjects = primitives.subList(midPoint, primitives.size());
+
+        // Recursively build children
+        node.left = buildBVH(new ArrayList<>(leftObjects), depth + 1);
+        node.right = buildBVH(new ArrayList<>(rightObjects), depth + 1);
+
+        return node;
+    }
+
+    private BoundingBox calculateBounds(List<Primitive> primitives) {
+        if (primitives.isEmpty()) return new BoundingBox();
+
+        BoundingBox bounds = new BoundingBox(primitives.get(0).getBounds());
+        for (int i = 1; i < primitives.size(); i++) {
+            bounds.expand(primitives.get(i).getBounds());
+        }
+        return bounds;
+    }
+
+    private int chooseSplitAxis(List<Primitive> primitives, BoundingBox bounds) {
+        Vector3D extent = bounds.getExtent();
+
+        // Choose the axis with the largest extent
+        if (extent.x >= extent.y && extent.x >= extent.z) return 0; // X axis
+        if (extent.y >= extent.z) return 1; // Y axis
+        return 2; // Z axis
+    }
+
+    private Comparator<Primitive> getComparator(int axis) {
+        return switch (axis) {
+            case 0 -> Comparator.comparingDouble(obj -> obj.getBounds().getCenter().x);
+            case 1 -> Comparator.comparingDouble(obj -> obj.getBounds().getCenter().y);
+            case 2 -> Comparator.comparingDouble(obj -> obj.getBounds().getCenter().z);
+            default -> throw new IllegalArgumentException("Invalid axis: " + axis);
+        };
+    }
+
+    private Hit intersectNode(BVHNode node, Ray ray, double tMin, double tMax) {
+        // Check if ray intersects node bounds
+        if (!node.bounds.intersects(ray, tMin, tMax)) {
+            return null;
+        }
+
+        // Leaf node - test objects with proper object space transformation
+        if (node.primitives != null) {
+            Hit closest = null;
+            double closestT = tMax;
+
+            for (Primitive primitive : node.primitives) {
+                // Transform ray to object space (critical for correct intersection)
+                Vector4D rOriginOS = new Vector4D(ray.origin().x, ray.origin().y, ray.origin().z, 1);
+                Vector4D rDirOS = new Vector4D(ray.direction().x, ray.direction().y, ray.direction().z, 0);
+                rOriginOS = rOriginOS.mult(primitive.getInverseTransformMatrix());
+                rDirOS = rDirOS.mult(primitive.getInverseTransformMatrix());
+                Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
+                
+                Hit result = primitive.intersect(rayOS);
+                if (result != null && result.t() > tMin && result.t() < closestT) {
+                    // Create hit in world space (using original ray for hit point calculation)
+                    if(result.primitive() instanceof Model) {
+                        closest = new Hit(result.primitive(), result.triangle(), ray.at(result.t()), result.normal(), result.texCoord(), result.t());
+                    } else {
+                        closest = new Hit(result.primitive(), null, ray.at(result.t()), result.normal(), result.texCoord(), result.t());
+                    }
+                    closestT = result.t();
+                }
+            }
+            return closest;
+        }
+
+        // Internal node - test children
+        Hit leftResult = null;
+        Hit rightResult = null;
+
+        if (node.left != null) {
+            leftResult = intersectNode(node.left, ray, tMin, tMax);
+        }
+
+        double rightTMax = leftResult != null ? leftResult.t() : tMax;
+        if (node.right != null) {
+            rightResult = intersectNode(node.right, ray, tMin, rightTMax);
+        }
+
+        // Return closest intersection
+        if (rightResult != null) return rightResult;
+        return leftResult;
+    }
+
+    private boolean intersectShadowNode(BVHNode node, Ray ray, double tMin, double tMax) {
+        // Check if ray intersects node bounds
+        if (!node.bounds.intersects(ray, tMin, tMax)) {
+            return false;
+        }
+
+        // Leaf node - test objects for shadow ray intersection with object space transform
+        if (node.primitives != null) {
+            for (Primitive primitive : node.primitives) {
+                // Transform ray to object space (critical for correct intersection)
+                Vector4D rOriginOS = new Vector4D(ray.origin().x, ray.origin().y, ray.origin().z, 1);
+                Vector4D rDirOS = new Vector4D(ray.direction().x, ray.direction().y, ray.direction().z, 0);
+                rOriginOS = rOriginOS.mult(primitive.getInverseTransformMatrix());
+                rDirOS = rDirOS.mult(primitive.getInverseTransformMatrix());
+                Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
+                
+                // For shadow rays, we only care if there's an intersection, not the details
+                if(primitive instanceof Model) {
+                    if(((Model) primitive).intersectShadowRay(rayOS, tMax)) {
+                        return true;
+                    }
+                } else {
+                    Hit result = primitive.intersect(rayOS);
+                    if (result != null && result.t() > tMin && result.t() < tMax) {
+                        return true; // Early exit on first intersection
                     }
                 }
-                if(stack.isEmpty())
-                    break;
-                else currentNode = stack.removeLast();
-                continue;
             }
-            Node left = currentNode.left;
-            Node right = currentNode.right;
-            double distL = intersectAABB(ray, left.min, left.max, out.t());
-            double distR = intersectAABB(ray, right.min, right.max, out.t());
-            if(distL > distR) {
-                double temp = distL;
-                distL = distR;
-                distR = temp;
-                Node tempNode = new Node();
-                tempNode.set(left);
-                left = right;
-                right = tempNode;
-            }
-            if(distL == Double.MAX_VALUE) {
-                if (stack.isEmpty())
-                    break;
-                currentNode = stack.removeLast();
-            } else {
-                currentNode = left;
-                if(distR != Double.MAX_VALUE) stack.add(right);
-            }
-        }
-        return out;
-    }
-
-    private double intersectAABB(Ray ray, Vector3D min, Vector3D max, double t) {
-        double tMin, tMax, tYMin, tYMax, tZMin, tZMax;
-        if(ray.direction().x >= 0) {
-            tMin = (min.x - ray.origin().x) / ray.direction().x;
-            tMax = (max.x - ray.origin().x) / ray.direction().x;
-        } else {
-            tMin = (max.x - ray.origin().x) / ray.direction().x;
-            tMax = (min.x - ray.origin().x) / ray.direction().x;
-        }
-        if(ray.direction().y >= 0) {
-            tYMin = (min.y - ray.origin().y) / ray.direction().y;
-            tYMax = (max.y - ray.origin().y) / ray.direction().y;
-        } else {
-            tYMin = (max.y - ray.origin().y) / ray.direction().y;
-            tYMax = (min.y - ray.origin().y) / ray.direction().y;
-        }
-        if((tMin > tYMax) || (tYMin > tMax))
-            return Double.MAX_VALUE;
-
-        if (tYMin > tMin)
-            tMin = tYMin;
-        if (tYMax < tMax)
-            tMax = tYMax;
-
-        if(ray.direction().z >= 0) {
-            tZMin = (min.z - ray.origin().z) / ray.direction().z;
-            tZMax = (max.z - ray.origin().z) / ray.direction().z;
-        } else {
-            tZMin = (max.z - ray.origin().z) / ray.direction().z;
-            tZMax = (min.z - ray.origin().z) / ray.direction().z;
+            return false;
         }
 
-        if((tMin > tZMax) || (tZMin > tMax))
-            return Double.MAX_VALUE;
-
-        if(tZMin > tMin)
-            tMin = tZMin;
-        if(tZMax < tMax)
-            tMax = tZMax;
-
-        if(tMin < 0 && tMax >= 0)
-            return tMax;
-
-        if(tMin >= 0 && tMin < t)
-            return tMin;
-
-        return Double.MAX_VALUE;
-    }
-
-    public boolean intersectShadowRay(Ray ray, Object[] objects, double lightDistance) {
-        List<Node> stack = new ArrayList<>();
-        Node currentNode = root;
-        double t = lightDistance;
-        while(true) {
-            if(currentNode.isLeaf()) {
-                for(int i = currentNode.firstObject; i < currentNode.firstObject + currentNode.objectCount; i++) {
-                    Vector4D rOriginOS = new Vector4D(ray.origin().x, ray.origin().y, ray.origin().z, 1);
-                    Vector4D rDirOS = new Vector4D(ray.direction().x, ray.direction().y, ray.direction().z, 0);
-                    rOriginOS = rOriginOS.mult(objects[i].getInverseTransformMatrix());
-                    rDirOS = rDirOS.mult(objects[i].getInverseTransformMatrix());
-                    Ray rayOS = new Ray(new Vector3D(rOriginOS.x, rOriginOS.y, rOriginOS.z), new Vector3D(rDirOS.x, rDirOS.y, rDirOS.z));
-                    if(objects[i] instanceof Model) {
-                        if(((Model) objects[i]).intersectShadowRay(rayOS, t)) {
-                            return true;
-                        }
-                        continue;
-                    }
-                    Hit hit = objects[i].intersect(rayOS);
-                    if (hit.object() != null && hit.t() > 0 && hit.t() < t) {
-                        return true; // Early out
-                    }
-                }
-                if(stack.isEmpty())
-                    break;
-                else currentNode = stack.removeLast();
-                continue;
-            }
-            Node left = currentNode.left;
-            Node right = currentNode.right;
-            double distL = intersectAABB(ray, left.min, left.max, t);
-            double distR = intersectAABB(ray, right.min, right.max, t);
-            if(distL > distR) {
-                double temp = distL;
-                distL = distR;
-                distR = temp;
-                Node tempNode = new Node();
-                tempNode.set(left);
-                left = right;
-                right = tempNode;
-            }
-            if(distL == Double.MAX_VALUE) {
-                if (stack.isEmpty())
-                    break;
-                currentNode = stack.removeLast();
-            } else {
-                currentNode = left;
-                if(distR != Double.MAX_VALUE) stack.add(right);
-            }
+        // Internal node - test children
+        if (node.left != null && intersectShadowNode(node.left, ray, tMin, tMax)) {
+            return true;
         }
+        if (node.right != null && intersectShadowNode(node.right, ray, tMin, tMax)) {
+            return true;
+        }
+        
         return false;
     }
 
-    private void updateNodeBounds(Node node, Object[] objects) {
-        node.min = new Vector3D(Double.MAX_VALUE, Double.MAX_VALUE, Double.MAX_VALUE);
-        node.max = new Vector3D(-Double.MAX_VALUE, -Double.MAX_VALUE, -Double.MAX_VALUE);
-        for(int first = node.firstObject, i = 0; i < node.objectCount; i++) {
-            node.min.x = Math.min(objects[first + i].getMin().x, node.min.x);
-            node.min.y = Math.min(objects[first + i].getMin().y, node.min.y);
-            node.min.z = Math.min(objects[first + i].getMin().z, node.min.z);
-            node.max.x = Math.max(objects[first + i].getMax().x, node.max.x);
-            node.max.y = Math.max(objects[first + i].getMax().y, node.max.y);
-            node.max.z = Math.max(objects[first + i].getMax().z, node.max.z);
-        }
+    private static class BVHNode {
+        BoundingBox bounds;
+        BVHNode left, right;
+        List<Primitive> primitives; // Only used for leaf nodes
     }
 
-    private void subdivide(Node node, Object[] objects) {
-        Vector3D extent = Vector3D.sub(node.max, node.min);
-        double splitPos = node.min.z + extent.z * 0.5D;
-        int axis = 2;
-        if(extent.x > extent.y && extent.x > extent.z) {
-            splitPos = node.min.x + extent.x * 0.5D;
-            axis = 0;
-        }
-        if(extent.y > extent.x && extent.y > extent.z) {
-            splitPos = node.min.y + extent.y * 0.5D;
-            axis = 1;
-        }
-        int i = node.firstObject;
-        int j = i + node.objectCount - 1;
-        while(i <= j) {
-            double centroidAxis = switch (axis) {
-                case 0 -> objects[i].getCentroid().x;
-                case 1 -> objects[i].getCentroid().y;
-                case 2 -> objects[i].getCentroid().z;
-                default -> 0;
-            };
-            if(centroidAxis < splitPos)
-                i++;
-            else {
-                Object temp = objects[i];
-                objects[i] = objects[j];
-                objects[j] = temp;
-                j--;
-            }
+    public static class BoundingBox {
+        private Vector3D min, max;
+
+        public BoundingBox() {
+            this.min = new Vector3D(Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY, Double.POSITIVE_INFINITY);
+            this.max = new Vector3D(Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY, Double.NEGATIVE_INFINITY);
         }
 
-        int leftCount = i - node.firstObject;
-        if(leftCount == 0 || leftCount == node.objectCount)
-            return;
-        node.left = new Node();
-        node.left.firstObject = node.firstObject;
-        node.left.objectCount = leftCount;
-        node.right = new Node();
-        node.right.firstObject = i;
-        node.right.objectCount = node.objectCount - leftCount;
-        node.objectCount = 0;
-        updateNodeBounds(node.left, objects);
-        updateNodeBounds(node.right, objects);
-        subdivide(node.left, objects);
-        subdivide(node.right, objects);
-    }
-
-    private class Node {
-        private Node left;
-        private Node right;
-        private int firstObject;
-        private int objectCount;
-        private Vector3D min;
-        private Vector3D max;
-
-        public void set(Node node) {
-            this.left = node.left;
-            this.right = node.right;
-            this.firstObject = node.firstObject;
-            this.objectCount = node.objectCount;
-            this.min = node.min;
-            this.max = node.max;
+        public BoundingBox(BoundingBox other) {
+            this.min = new Vector3D(other.min);
+            this.max = new Vector3D(other.max);
         }
 
-        private boolean isLeaf() {
-            return left == null && right == null;
+        public BoundingBox(Vector3D min, Vector3D max) {
+            this.min = new Vector3D(min);
+            this.max = new Vector3D(max);
+        }
+
+        public void expand(BoundingBox other) {
+            min.x = Math.min(min.x, other.min.x);
+            min.y = Math.min(min.y, other.min.y);
+            min.z = Math.min(min.z, other.min.z);
+            max.x = Math.max(max.x, other.max.x);
+            max.y = Math.max(max.y, other.max.y);
+            max.z = Math.max(max.z, other.max.z);
+        }
+
+        public Vector3D getCenter() {
+            return new Vector3D(
+                (min.x + max.x) * 0.5,
+                (min.y + max.y) * 0.5,
+                (min.z + max.z) * 0.5
+            );
+        }
+
+        public Vector3D getExtent() {
+            return new Vector3D(
+                max.x - min.x,
+                max.y - min.y,
+                max.z - min.z
+            );
+        }
+
+        public boolean intersects(Ray ray, double tMin, double tMax) {
+            // Fast ray-box intersection using slab method
+            Vector3D invDir = new Vector3D(1.0 / ray.direction().x, 1.0 / ray.direction().y, 1.0 / ray.direction().z);
+            Vector3D origin = ray.origin();
+
+            double t1 = (min.x - origin.x) * invDir.x;
+            double t2 = (max.x - origin.x) * invDir.x;
+            double t3 = (min.y - origin.y) * invDir.y;
+            double t4 = (max.y - origin.y) * invDir.y;
+            double t5 = (min.z - origin.z) * invDir.z;
+            double t6 = (max.z - origin.z) * invDir.z;
+
+            double tNear = Math.max(Math.max(Math.min(t1, t2), Math.min(t3, t4)), Math.min(t5, t6));
+            double tFar = Math.min(Math.min(Math.max(t1, t2), Math.max(t3, t4)), Math.max(t5, t6));
+
+            return tFar >= 0 && tNear <= tFar && tNear <= tMax && tFar >= tMin;
         }
     }
-
 }
