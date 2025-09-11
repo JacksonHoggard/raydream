@@ -1,10 +1,9 @@
 package me.jacksonhoggard.raydream.render;
 
 import me.jacksonhoggard.raydream.util.MathUtils;
-import me.jacksonhoggard.raydream.material.Material;
-import me.jacksonhoggard.raydream.math.Matrix3D;
-import me.jacksonhoggard.raydream.math.Ray;
-import me.jacksonhoggard.raydream.math.Vector2D;
+
+import java.util.Random;
+
 import me.jacksonhoggard.raydream.math.Vector3D;
 
 public class BSDF {
@@ -18,858 +17,620 @@ public class BSDF {
     }
 
     public record BSDFSample(
-            Vector3D l, // sampled direction (unit)
-            Vector3D f, // BSDF value for the sampled lobe at (wo, wi)
-            double pdf, // mixture PDF over all active lobes for this hemisphere
-            Event event, // event type (reflection or transmission)
-            Lobe lobe, // which lobe produced wi
-            boolean delta, // true for perfect mirror/refraction
-            double eta // relative IOR (only meaningful for transmission)
+            Vector3D l, // Sampled direction (wi)
+            Vector3D f, // BSDF value for the sampled direction
+            double pdf, // Mixture pdf over reflection/transmission in solid angle
+            Event event, // Type of event (reflection or transmission)
+            double etaI, // Incident IOR
+            double etaT, // Transmitted IOR
+            boolean isDelta // If the sampled lobe was (nearly) delta
     ) {
     }
 
-    private record LobePick(
-            double pDiffuse,
-            double pSpecular,
-            double pClearcoat,
-            double pTransmission,
-            double pReflection) {
-    }
-
-    public static BSDFSample sample(
-            Ray ray,
-            Material material,
-            Vector3D normalHit,
-            Vector2D texCoord,
-            Vector3D tangent,
-            Vector3D bitangent) {
-        Vector3D albedo = material.getAlbedo(texCoord);
-
-        Vector3D v = ray.direction().negated();
-
-        Vector3D cdlin = mon2lin(albedo);
-        double cdlum = cdlin.x * 0.2126D + cdlin.y * 0.7152D + cdlin.z * 0.0722D;
-        Vector3D ctint = cdlum > 0.0D ? Vector3D.div(cdlin, cdlum) : new Vector3D(1); // Normalize luminance to isolate
-                                                                                      // hue + saturation
-        Vector3D cspec0 = mix(Vector3D.mult(material.getSpecular(), 0.8D)
-                .mult(mix(new Vector3D(1), ctint, material.getSpecularTint())), cdlin, material.getMetallic());
-
-        double fr = MathUtils.dielectric(normalHit.dot(v), 1.0D, Math.max(1.0001D, material.getIndexOfRefraction()));
-
-        // Compute per-lobe selection probabilities
-        LobePick lobePick = computeLobeProbs(albedo, cspec0, material, Math.max(0.0D, normalHit.dot(v)));
-        boolean reflect = MathUtils.random() < fr || material.getSpecularTransmission() <= 0.0D;
-        Lobe lobe = reflect ? pickLobe(lobePick) : Lobe.TRANSMIT_SPECULAR;
-
-        // Sample the chosen lobe
-        Vector3D wi = new Vector3D();
-        Vector3D fLobe = new Vector3D();
-        boolean delta = false;
-        double eta = 1.0D;
-        double pdfTrans = 0.0D;
-
-        switch (lobe) {
-            case DIFFUSE:
-                wi = MathUtils.sampleCosineHemisphere(normalHit, tangent, bitangent);
-                fLobe = evalDiffuse(material, cdlin, normalHit, v, wi, tangent, bitangent);
-                break;
-            case SPECULAR:
-                wi = sampleGGXReflectionVNDF(material, cdlin, normalHit, v, tangent, bitangent);
-                fLobe = evalSpecular(material, cdlin, normalHit, v, wi, tangent, bitangent);
-                delta = (material.getRoughness() == 0.0D);
-                break;
-            case CLEARCOAT:
-                wi = sampleGTR1Reflection(material, cdlin, normalHit, v, tangent, bitangent);
-                fLobe = evalClearcoat(material, cdlin, normalHit, v, wi, tangent, bitangent);
-                break;
-            case TRANSMIT_SPECULAR:
-                SampleDir sampleTrans = sampleGGXTransmissionVNDF(material, cdlin, normalHit, v, tangent, bitangent);
-                if (sampleTrans == null || sampleTrans.wi == null) {
-                    // Fallback to reflection or return invalid sample
-                    wi = sampleGGXReflectionVNDF(material, cdlin, normalHit, v, tangent, bitangent);
-                    fLobe = evalSpecular(material, cdlin, normalHit, v, wi, tangent, bitangent);
-                    delta = (material.getRoughness() == 0.0D);
-                    lobe = Lobe.SPECULAR;
-                    break;
-                }
-                wi = sampleTrans.wi;
-                eta = sampleTrans.eta;
-                fLobe = evalTransmission(material, cdlin, normalHit, v, wi, eta, tangent, bitangent);
-                delta = (material.getRoughness() == 0.0D);
-                pdfTrans = sampleTrans.pdf;
-                break;
-        }
-
-        // PDF calculation
-
-        double NdotL = Math.max(0.0D, normalHit.dot(wi));
-        double NdotV = Math.max(0.0D, normalHit.dot(v));
-
-        Vector3D h = Vector3D.add(wi, v).normalize();
-        double NdotH = Math.max(0.0D, normalHit.dot(h));
-        double VdotH = Math.max(0.0D, v.dot(h));
-
-        // Diffuse
-        double pdfDiffuse = Math.max(0.0D, NdotL) / Math.PI;
-
-        double aspect = Math.sqrt(1.0D - material.getAnisotropic() * 0.9D);
-        double ax = Math.max(0.001D, Math.pow(material.getRoughness(), 2) / aspect);
-        double ay = Math.max(0.001D, Math.pow(material.getRoughness(), 2) * aspect);
-
-        // Specular reflection
-        double ds = gtr2Aniso(NdotH, tangent.dot(h), bitangent.dot(h), ax, ay);
-        double g1v = smithGGGXAniso(NdotV, v.dot(tangent), v.dot(bitangent), ax, ay);
-        double pdfSpec = (Math.abs(VdotH) > 1e-9) ? ds * Math.abs(NdotH) * g1v / (4.0D * Math.abs(VdotH)) : 0.0D;
-
-        // Clearcoat
-        double dr = gtr1(NdotH, mix(0.1D, 0.001D, material.getClearcoatGloss()));
-        double pdfClear = (Math.abs(VdotH) > 1e-9) ? dr * Math.abs(NdotH) / (4.0D * Math.abs(VdotH)) : 0.0D;
-
-        // Build the mixture PDF
-        double pdfMix = 0.0D;
-        if (reflect) {
-            pdfMix += lobePick.pDiffuse * pdfDiffuse +
-                    lobePick.pSpecular * pdfSpec +
-                    lobePick.pClearcoat * pdfClear;
-        } else {
-            pdfMix += lobePick.pTransmission * pdfTrans;
-        }
-
-        // Package result
-        BSDFSample s = new BSDFSample(
-                wi,
-                fLobe,
-                pdfMix,
-                reflect ? Event.REFLECT : Event.TRANSMIT,
-                lobe,
-                delta,
-                eta);
-        return s;
-    }
-
-    public static double pdf(
-            Material material,
-            Vector3D albedo,
-            Vector3D v,
-            Vector3D l,
-            boolean thin,
-            Vector3D normal,
-            Vector3D tangent,
-            Vector3D bitangent) {
-        Vector3D cdlin = mon2lin(albedo);
-        double cdlum = cdlin.x * 0.2126D + cdlin.y * 0.7152D + cdlin.z * 0.0722D;
-        Vector3D ctint = cdlum > 0.0D ? Vector3D.div(cdlin, cdlum) : new Vector3D(1); // Normalize luminance to isolate
-                                                                                      // hue + saturation
-        Vector3D cspec0 = mix(Vector3D.mult(material.getSpecular(), 0.8D)
-                .mult(mix(new Vector3D(1), ctint, material.getSpecularTint())), cdlin, material.getMetallic());
-        boolean refl = isInSameHemisphere(v, l, normal);
-        LobePick lobePick = computeLobeProbs(albedo, cspec0, material, normal.dot(v));
-
-        if (refl) {
-            // per-lobe directional PDFs
-            double pdfDiff = Math.max(0.0D, normal.dot(l)) / Math.PI;
-
-            Vector3D h = Vector3D.add(l, v).normalize();
-            double NdotH = Math.max(0.0D, normal.dot(h));
-            double VdotH = Math.max(0.0D, v.dot(h));
-            double NdotV = Math.max(0.0D, normal.dot(v));
-
-            // GGX reflection (VNDF)
-            double aspect = Math.sqrt(Math.max(0.0, 1.0D - 0.9D * material.getAnisotropic()));
-            double ax = Math.max(0.001D, Math.pow(material.getRoughness(), 2) / aspect);
-            double ay = Math.max(0.001D, Math.pow(material.getRoughness(), 2) * aspect);
-            double d = gtr2Aniso(NdotH, h.dot(tangent), h.dot(bitangent), ax, ay);
-            double g1v = smithGGGXAniso(NdotV, v.dot(tangent), v.dot(bitangent), ax, ay);
-            double pdfSpec = (Math.abs(VdotH) > 1e-9) ? d * Math.abs(NdotH) * g1v / (4.0D * Math.abs(VdotH)) : 0.0D;
-
-            // Clearcoat
-            double ac = mix(0.1D, 0.001D, material.getClearcoatGloss());
-            double dc = gtr1(NdotH, ac);
-            double pdfClear = dc * Math.abs(NdotH) / Math.max(1e-9, 4.0D * Math.abs(VdotH));
-
-            // Mixture on reflection side
-            return lobePick.pDiffuse * pdfDiff + lobePick.pSpecular * pdfSpec + lobePick.pClearcoat * pdfClear;
-        } else {
-            if ((1.0D - material.getMetallic()) * material.getSpecularTransmission() <= 0.0D)
-                return 0.0D;
-
-            // Transmission
-            double aspect = Math.sqrt(Math.max(0.0, 1.0D - 0.9D * material.getAnisotropic()));
-            double ax = Math.max(0.001D, Math.pow(material.getRoughness(), 2) / aspect);
-            double ay = Math.max(0.001D, Math.pow(material.getRoughness(), 2) * aspect);
-
-            // Determine relative IOR based on which side of the surface we're on
-            double etaOutside = 1.0D;
-            double etaInside = Math.max(1.0001D, material.getIndexOfRefraction());
-            // If view direction is in same hemisphere as normal, we're entering material
-            boolean entering = normal.dot(v) > 0.0D;
-            double eta = entering ? (etaOutside / etaInside) : (etaInside / etaOutside);
-
-            // For generalized half-vector calculation, we need the absolute IORs
-            double etaI = entering ? etaOutside : etaInside; // IOR on incident side (where v is)
-            double etaT = entering ? etaInside : etaOutside; // IOR on transmitted side (where l is)
-
-            // Generalized half-vector for transmission (Walter et al. 2007, Equation 16)
-            // wm = -(etaI * wi + etaT * wo) / |etaI * wi + etaT * wo|
-            // Note: we use l for transmitted direction (wi) and v for view direction (wo)
-            Vector3D wm = Vector3D.add(Vector3D.mult(l, etaT), Vector3D.mult(v, etaI)).negated().normalize();
-
-            // Ensure microfacet normal faces the incident hemisphere
-            if (v.dot(wm) < 0.0D) {
-                wm.negate();
-            }
-
-            double dotLH = Math.abs(l.dot(wm));
-            double dotVH = Math.abs(v.dot(wm));
-            double jacobian = dotLH / Math.pow(dotLH + eta * dotVH, 2.0D);
-            double fresnel = MathUtils.dielectric(dotVH, etaI, etaT);
-            double pdfTransmit = (1.0D - fresnel) / jacobian;
-
-            return lobePick.pTransmission * pdfTransmit;
-        }
-    }
-
-    public static Vector3D eval(
-            Material material,
-            Vector3D albedo,
-            Vector3D v,
-            Vector3D l,
-            boolean thin,
-            Vector3D normal,
-            Vector3D tangent,
-            Vector3D bitangent) {
-        double NdotV = Math.abs(normal.dot(v));
-        double NdotL = Math.abs(normal.dot(l));
-
-        Vector3D h = Vector3D.add(l, v).normalize();
-        double NdotH = Math.abs(normal.dot(h));
-        double LdotH = Math.abs(l.dot(h));
-
-        double TdotH = tangent.dot(h);
-        double BdotH = bitangent.dot(h);
-
-        double aspect = Math.sqrt(Math.max(0.0D, 1.0D - material.getAnisotropic() * 0.9D));
-        double ax = Math.max(0.001D, Math.pow(material.getRoughness(), 2) / aspect);
-        double ay = Math.max(0.001D, Math.pow(material.getRoughness(), 2) * aspect);
-
-        Vector3D cdlin = mon2lin(albedo);
-        double cdlum = cdlin.x * 0.2126D + cdlin.y * 0.7152D + cdlin.z * 0.0722D;
-        Vector3D ctint = cdlum > 0.0D ? Vector3D.div(cdlin, cdlum) : new Vector3D(1); // Normalize luminance to isolate
-                                                                                      // hue + saturation
-        Vector3D cspec0 = mix(Vector3D.mult(material.getSpecular(), 0.8D)
-                .mult(mix(new Vector3D(1), ctint, material.getSpecularTint())), cdlin, material.getMetallic());
-
-        Vector3D f0Diel = mix(new Vector3D(0.0D), new Vector3D(Vector3D.mult(material.getSpecular(), 0.08D)), 1.0D);
-        f0Diel = mix(f0Diel, Vector3D.mult(f0Diel, ctint), material.getSpecularTint());
-
-        Vector3D f = new Vector3D();
-
-        // Determine if this is reflection or transmission based on hemisphere
-        boolean isReflection = isInSameHemisphere(v, l, normal);
-
-        if (isReflection) {
-            // Reflection Lobes - evaluate all reflection components
-            // Diffuse
-            double fL = schlickFresnel(NdotL);
-            double fV = schlickFresnel(NdotV);
-            double fd90 = 0.5D + 2.0D * LdotH * LdotH * material.getRoughness();
-            double fd = mix(1.0D, fd90, fL) * mix(1.0D, fd90, fV);
-
-            double fss90 = LdotH * LdotH * material.getRoughness();
-            double fss = mix(1.0D, fss90, fL) * mix(1.0D, fss90, fV);
-            double ss = 1.25D * (fss * (1.0D / (NdotL + NdotV) - 0.5D) + 0.5D);
-
-            Vector3D fDiffuse = Vector3D.mult(
-                    albedo,
-                    (1.0D - material.getSpecularTransmission()) * (1.0D - material.getMetallic()) * (mix(fd, ss, 0.0D))
-                            * (1.0D / Math.PI));
-
-            // Main specular
-            double dx = gtr2Aniso(NdotH, TdotH, BdotH, ax, ay);
-            double fh = schlickFresnel(LdotH);
-            Vector3D fs = mix(cspec0, new Vector3D(1), fh);
-            double g = smithGGGXAniso(NdotL, l.dot(tangent), l.dot(bitangent), ax, ay)
-                    * smithGGGXAniso(NdotV, v.dot(tangent), v.dot(bitangent), ax, ay);
-            Vector3D fSpecular = Vector3D.mult(
-                    dx * g,
-                    Vector3D.div(fs, Math.max(1e-6, 4.0D * NdotL * NdotV)));
-            fSpecular.mult(1.0D - material.getSpecularTransmission() * (1.0D - material.getMetallic()));
-
-            // Clearcoat
-            double ac = mix(0.1D, 0.001D, material.getClearcoatGloss());
-            double dc = gtr1(NdotH, ac);
-            double gc = smithGGGX(NdotV, 0.25D) * smithGGGX(NdotL, 0.25D);
-            double fc = mix(0.04D, 1.0D, schlickFresnel(LdotH));
-            Vector3D fClearcoat = new Vector3D(
-                    0.25 * material.getClearcoat() * (dc * gc * fc / Math.max(1e-9, 4.0 * NdotL * NdotV)));
-
-            // Sheen
-            Vector3D cSheen = mix(Vector3D.ONE, ctint, material.getSheenTint());
-            Vector3D fSheen = Vector3D.mult(cSheen, schlickFresnel(LdotH)).mult(1.0D - material.getMetallic());
-
-            f = Vector3D.add(fDiffuse, fSpecular).add(fClearcoat).add(fSheen);
-        } else {
-            // Transmission - only evaluate if transmission is enabled and not fully
-            // metallic
-            if (material.getSpecularTransmission() > 0.0D && material.getMetallic() < 1.0D) {
-                // generalized half vector for transmission
-                // Determine relative IOR based on which side of the surface we're on
-                double etaOutside = 1.0D;
-                double etaInside = Math.max(1.0001D, material.getIndexOfRefraction());
-                // If view direction is in same hemisphere as normal, we're entering material
-                double eta = (normal.dot(v) > 0.0D) ? (etaOutside / etaInside) : (etaInside / etaOutside);
-                Vector3D wm = Vector3D.mult(l, eta).add(v).normalize();
-                double NdotM = Math.abs(normal.dot(wm));
-                double dm = gtr2Aniso(NdotM, wm.dot(tangent), wm.dot(bitangent), ax, ay);
-                double g = smithGGGXAniso(Math.abs(NdotL), l.dot(tangent), l.dot(bitangent), ax, ay)
-                        * smithGGGXAniso(Math.abs(NdotV), v.dot(tangent), v.dot(bitangent), ax, ay);
-                double wiDotM = Math.abs(l.dot(wm));
-                double woDotM = Math.abs(v.dot(wm));
-
-                // Fresnel term for transmission
-                double ftr = 1.0D
-                        - MathUtils.dielectric(woDotM, 1.0D, Math.max(1.0001D, material.getIndexOfRefraction()));
-                double dotLH = Math.abs(l.dot(wm));
-                double dotVH = Math.abs(v.dot(wm));
-
-                // Thin-tint
-                Vector3D Ttint = thin ? new Vector3D(
-                        Math.sqrt(cdlin.x),
-                        Math.sqrt(cdlin.y),
-                        Math.sqrt(cdlin.z)) : new Vector3D(cdlin);
-
-                double scale = Math.abs(dotLH * dotVH);
-                double denom = Math.pow(dotLH + eta * dotVH, 2) * Math.abs(NdotL);
-
-                f = Vector3D.mult(
-                        Ttint,
-                        (1.0D - material.getMetallic()) * material.getSpecularTransmission() * ftr
-                                * dm * g * ftr * scale).div(
-                                Math.max(denom, 1e-9));
-            }
-        }
-
-        return f;
-
-    }
-
-    private static Vector3D evalDiffuse(
-            Material material,
-            Vector3D albedo,
-            Vector3D normal,
-            Vector3D viewDir,
-            Vector3D lightDir,
-            Vector3D tangent,
-            Vector3D bitangent) {
-        double NdotL = Math.max(0.0D, normal.dot(lightDir));
-        double NdotV = Math.max(0.0D, normal.dot(viewDir));
-
-        Vector3D h = Vector3D.add(lightDir, viewDir).normalize();
-        double LdotH = Math.max(0.0D, lightDir.dot(h));
-
-        Vector3D fLambert = Vector3D.div(albedo, Math.PI);
-
-        // Diffuse fresnel
-        double fL = schlickFresnel(NdotL);
-        double fV = schlickFresnel(NdotV);
-        double fd90 = 0.5D + 2.0D * LdotH * LdotH * material.getRoughness();
-        double fd = mix(1.0D, fd90, fL) * mix(1.0D, fd90, fV);
-        Vector3D fBaseDiffuse = Vector3D.mult(fLambert, fd);
-
-        // Hanran-Krueger BRDF approximation of isotropic BSSRDF
-        double fss90 = LdotH * LdotH * material.getRoughness();
-        double fss = mix(1.0D, fss90, fL) * mix(1.0D, fss90, fV);
-        double ss = 1.25D * (fss * (1.0D / (NdotL + NdotV) - 0.5D) + 0.5D);
-        Vector3D fSubsurface = Vector3D.mult(fLambert, ss);
-
-        Vector3D fDiffuse = Vector3D.add(
-                Vector3D.mult((1.0D - material.getSubsurface()), fBaseDiffuse),
-                Vector3D.mult(material.getSubsurface(), fSubsurface));
-
-        return fDiffuse;
-    }
-
-    private static Vector3D evalSpecular(
-            Material material,
-            Vector3D albedo,
-            Vector3D normal,
-            Vector3D viewDir,
-            Vector3D lightDir,
-            Vector3D tangent,
-            Vector3D bitangent) {
-        double NdotL = Math.max(0.0D, normal.dot(lightDir));
-        double NdotV = Math.max(0.0D, normal.dot(viewDir));
-
-        Vector3D h = Vector3D.add(lightDir, viewDir).normalize();
-        double NdotH = Math.max(0.0D, normal.dot(h));
-        double LdotH = Math.max(0.0D, lightDir.dot(h));
-
-        double TdotH = tangent.dot(h);
-        double BdotH = bitangent.dot(h);
-
-        Vector3D cdlin = mon2lin(albedo);
-        double cdlum = cdlin.x * 0.2126D + cdlin.y * 0.7152D + cdlin.z * 0.0722D;
-        Vector3D ctint = cdlum > 0.0D ? Vector3D.div(cdlin, cdlum) : new Vector3D(1); // Normalize luminance to isolate
-                                                                                      // hue + saturation
-        Vector3D cspec0 = mix(Vector3D.mult(material.getSpecular(), 0.8D)
-                .mult(mix(new Vector3D(1), ctint, material.getSpecularTint())), cdlin, material.getMetallic());
-
-        double aspect = Math.sqrt(1.0D - material.getAnisotropic() * 0.9D);
-        double ax = Math.max(0.001D, Math.pow(material.getRoughness(), 2) / aspect);
-        double ay = Math.max(0.001D, Math.pow(material.getRoughness(), 2) * aspect);
-        double d = gtr2Aniso(NdotH, TdotH, BdotH, ax, ay);
-        double fh = schlickFresnel(LdotH);
-        Vector3D f = mix(cspec0, new Vector3D(1), fh);
-        double g = smithGGGXAniso(NdotL, lightDir.dot(tangent), lightDir.dot(bitangent), ax, ay)
-                * smithGGGXAniso(NdotV, viewDir.dot(tangent), viewDir.dot(bitangent), ax, ay);
-        return Vector3D.div(
-                Vector3D.mult(d * g, f),
-                Math.max(1e-6, 4.0D * NdotL * NdotV));
-    }
-
-    private static Vector3D evalClearcoat(
-            Material material,
-            Vector3D albedo,
-            Vector3D normal,
-            Vector3D viewDir,
-            Vector3D lightDir,
-            Vector3D tangent,
-            Vector3D bitangent) {
-        double NdotL = Math.max(0.0D, normal.dot(lightDir));
-        double NdotV = Math.max(0.0D, normal.dot(viewDir));
-
-        Vector3D h = Vector3D.add(lightDir, viewDir).normalize();
-        double NdotH = Math.max(0.0D, normal.dot(h));
-        double LdotH = Math.max(0.0D, lightDir.dot(h));
-
-        double fh = schlickFresnel(LdotH);
-        double d = gtr1(NdotH, mix(0.1D, 0.001D, material.getClearcoatGloss()));
-        double f = mix(0.04D, 1.0D, fh);
-        double g = smithGGGX(NdotL, 0.25D) * smithGGGX(NdotV, 0.25D);
-
-        Vector3D fClearcoat = new Vector3D(
-                d * g * f /
-                        Math.max(1e-6, 4.0D * NdotL * NdotV));
-
-        return fClearcoat;
-    }
-
-    private static Vector3D evalTransmission(
-            Material material,
-            Vector3D albedo,
-            Vector3D normal,
-            Vector3D viewDir,
-            Vector3D lightDir,
-            double eta,
-            Vector3D tangent,
-            Vector3D bitangent) {
-        double NdotL = normal.dot(lightDir);
-        double NdotV = normal.dot(viewDir);
-
-        Vector3D tint = new Vector3D(
-                Math.sqrt(albedo.x),
-                Math.sqrt(albedo.y),
-                Math.sqrt(albedo.z));
-
-        Vector3D wm = Vector3D.add(Vector3D.mult(lightDir, eta), viewDir).normalize();
-        double NdotM = Math.abs(normal.dot(wm));
-        double LdotM = Math.abs(lightDir.dot(wm));
-        double VdotM = Math.abs(viewDir.dot(wm));
-
-        double aspect = Math.sqrt(1.0D - material.getAnisotropic() * 0.9D);
-        double ax = Math.max(0.001D, Math.pow(material.getRoughness(), 2) / aspect);
-        double ay = Math.max(0.001D, Math.pow(material.getRoughness(), 2) * aspect);
-        double d = gtr2Aniso(NdotM, tangent.dot(wm), bitangent.dot(wm), ax, ay);
-        double g = smithGGGXAniso(Math.abs(NdotL), lightDir.dot(tangent), lightDir.dot(bitangent), ax, ay)
-                * smithGGGXAniso(Math.abs(NdotV), viewDir.dot(tangent), viewDir.dot(bitangent), ax, ay);
-
-        double ft = 1.0D - MathUtils.dielectric(VdotM, 1.0D, Math.max(1.0001D, material.getIndexOfRefraction()));
-
-        double scale = Math.abs(LdotM * VdotM);
-        double denom = Math.pow(LdotM + eta * VdotM, 2) * Math.abs(NdotL);
-
-        return Vector3D.mult(
-                tint,
-                d * g * ft * scale).div(
-                        Math.max(denom, 1e-9));
-    }
-
-    private static Lobe pickLobe(LobePick lobePick) {
-        Lobe pick = null;
-        do {
-            double r = MathUtils.random();
-            if (r < lobePick.pDiffuse) {
-                pick = Lobe.DIFFUSE;
-            } else if (r < lobePick.pDiffuse + lobePick.pSpecular) {
-                pick = Lobe.SPECULAR;
-            } else if (r < lobePick.pDiffuse + lobePick.pSpecular + lobePick.pClearcoat) {
-                pick = Lobe.CLEARCOAT;
-            } else if (r < lobePick.pDiffuse + lobePick.pSpecular + lobePick.pClearcoat + lobePick.pTransmission) {
-                pick = Lobe.TRANSMIT_SPECULAR;
-            }
-        } while (pick == null);
-
-        return pick;
+    // --- Material parameters (Disney 2012/2015 set, simplified) ---
+    private final Vector3D baseColor; // 0..1
+    private final double metallic; // 0..1
+    private final double subsurface; // 0..1 (used lightly in diffuse)
+    private final double specular; // 0..1 (~index via 0..1 knob)
+    private final double roughness; // 0..1
+    private final double specularTint; // 0..1
+    private final double sheen; // 0..1
+    private final double sheenTint; // 0..1
+    private final double clearcoat; // 0..1
+    private final double clearcoatGloss; // 0..1
+    private final double transmission; // 0..1 (dielectric glass)
+    private final double ior; // index of refraction for transmission
+    private final boolean thin; // if true: thin sheet approximation for transmission (optional)
+    private final Vector3D n; // shading normal (unit)
+
+    // Precomputed values for the BSDF
+    private final Vector3D specularColorF0; // Colored F0
+    private final double alpha; // GGX alpha
+    private final double alphaCoat; // GTR1 alpha for clearcoat
+    private final Vector3D sheenColor;
+
+    public BSDF(
+            Vector3D n,
+            Vector3D baseColor,
+            double metallic, double subsurface, double specular, double roughness,
+            double specularTint, double sheen, double sheenTint,
+            double clearcoat, double clearcoatGloss,
+            double transmission, double ior,
+            boolean thin) {
+        this.n = n.normalized();
+        this.baseColor = new Vector3D(
+                Math.clamp(baseColor.x, 0.0D, 1.0D),
+                Math.clamp(baseColor.y, 0.0D, 1.0D),
+                Math.clamp(baseColor.z, 0.0D, 1.0D));
+        this.metallic = Math.clamp(metallic, 0.0D, 1.0D);
+        this.subsurface = Math.clamp(subsurface, 0.0D, 1.0D);
+        this.specular = Math.clamp(specular, 0.0D, 1.0D);
+        this.roughness = Math.clamp(roughness, 0.0D, 1.0D);
+        this.specularTint = Math.clamp(specularTint, 0.0D, 1.0D);
+        this.sheen = Math.clamp(sheen, 0.0D, 1.0D);
+        this.sheenTint = Math.clamp(sheenTint, 0.0D, 1.0D);
+        this.clearcoat = Math.clamp(clearcoat, 0.0D, 1.0D);
+        this.clearcoatGloss = Math.clamp(clearcoatGloss, 0.0D, 1.0D);
+        this.transmission = Math.clamp(transmission, 0.0D, 1.0D);
+        this.ior = Math.max(1.0001, ior);
+        this.thin = thin;
+
+        this.alpha = Math.max(0.001, roughness * roughness); // GGX
+        // Disney clearcoat uses GTR1 with alpha ~ mix(0.1, 0.001, clearcoatGloss)
+        this.alphaCoat = mix(0.1, 0.001, this.clearcoatGloss);
+
+        // Specular F0 (colored): 0.08*specular*(1-specularTint)+tinted term; then blend
+        // to baseColor for metallic
+        Vector3D tint = computeTint(this.baseColor);
+        Vector3D dielectricF0 = Vector3D.add(
+                Vector3D.mult(Vector3D.ONE, 0.08 * this.specular * (1.0 - this.specularTint)),
+                Vector3D.mult(tint, 0.08 * this.specular * this.specularTint));
+        this.specularColorF0 = lerp3(dielectricF0, this.baseColor, this.metallic);
+
+        // Sheen color (tinting toward baseColor hue)
+        this.sheenColor = lerp3(Vector3D.ONE, tint, this.sheenTint);
     }
 
     /**
-     * Computes the probabilities for each lobe (diffuse, specular, clearcoat,
-     * transmission, reflection).
-     * 
-     * @param baseColor The base color of the material.
-     * @param cspec0    The specular color of the material.
-     * @param material  The material properties.
-     * @param NdotV     The dot product of the normal and view direction.
-     * @return two LobePick objects for reflection and transmission
+     * BSDF value f(wo, wi), wo/wi are world-space unit vectors pointing away from
+     * the surface.
      */
-    private static LobePick computeLobeProbs(
-            Vector3D baseColor, Vector3D cspec0,
-            Material material, double NdotV) {
-        // 1) Scalars for weights
-        double cSpecLum = 0.3 * cspec0.x + 0.6 * cspec0.y + 0.1 * cspec0.z;
-        double f0Spec = Math.min(0.999D, Math.max(0.0, cSpecLum));
-        double fVSpec = MathUtils.schlickFresnel(f0Spec, Math.abs(NdotV));
-        // Transmission tint strength (thin approximation if the material is thin)
-        Vector3D transTint = new Vector3D(baseColor);
-        if (material.isThin()) {
-            transTint.set(
-                    Math.sqrt(transTint.x),
-                    Math.sqrt(transTint.y),
-                    Math.sqrt(transTint.z));
-        }
+    public Vector3D eval(Vector3D wo, Vector3D wi) {
+        final double EPS = 1e-9D;
+        Vector3D N = faceforward(n, wo);
+        double cosWo = N.dot(wo);
+        double cosWi = N.dot(wi);
+        if (Math.abs(cosWo) < EPS || Math.abs(cosWi) < EPS)
+            return new Vector3D(0, 0, 0);
 
-        // 2) Energy heuristics (unnormalized)
-        double wDiffuse = (1.0D - material.getMetallic()) * (1.0D - material.getSpecularTransmission());
-        double wSpecular = Math.max(1e-4, fVSpec);
-        double wClearcoat = (0.25D * material.getClearcoat());
+        boolean reflect = (cosWo * cosWi) > 0.0;
 
-        // 3) Mixture reflection and transmission
-        // Reflection
-        double totalWeight = wDiffuse + wSpecular + wClearcoat;
+        Vector3D f = new Vector3D();
 
-        double fr = MathUtils.dielectric(NdotV, 1.0D, Math.max(1.0001D, material.getIndexOfRefraction()));
-        double ft = 1.0D - fr;
-        LobePick reflection;
-        if (totalWeight > 0.0D) {
-            reflection = new LobePick(
-                    wDiffuse / totalWeight,
-                    wSpecular / totalWeight,
-                    wClearcoat / totalWeight,
-                    ft,
-                    fr);
+        if (reflect) {
+            // --- Diffuse (Burley) ---
+            if (!isMetal() && transmission < 1.0) {
+                f = add3(f, diffuseBurley(wo, wi, N));
+                // Sheen (retro-reflection tint)
+                if (sheen > 0.0) {
+                    double ldotH = MathUtils.saturate(Vector3D.add(wi, wo).normalized().dot(wi));
+                    double fsheen = sheen * pow5(1.0 - ldotH);
+                    f = add3(f, scale3(sheenColor, fsheen / Math.PI));
+                }
+            }
+
+            // --- Microfacet specular (GGX) ---
+            Vector3D h = safeNormalize(Vector3D.add(wo, wi));
+            if (h != null) {
+                double cosWoH = Math.abs(wo.dot(h));
+                double cosNh = Math.abs(N.dot(h));
+                if (cosWoH > 0.0 && cosNh > 0.0) {
+                    double D = D_GTR2(cosNh, alpha);
+                    double G = G_SmithGGX(wo, wi, N, alpha);
+                    Vector3D F = schlickF(specularColorF0, cosWoH);
+                    Vector3D fr = scale3(mul3(F, D * G), 1.0 / (4.0 * Math.abs(cosWo) * Math.abs(cosWi)));
+                    f = add3(f, fr);
+                }
+            }
+
+            // --- Clearcoat (GTR1) ---
+            if (clearcoat > 0.0) {
+                Vector3D hC = safeNormalize(Vector3D.add(wo, wi));
+                if (hC != null) {
+                    double cosWoH = Math.abs(wo.dot(hC));
+                    double cosNh = Math.abs(N.dot(hC));
+                    if (cosWoH > 0.0 && cosNh > 0.0) {
+                        double Dc = D_GTR1(cosNh, alphaCoat);
+                        double Gc = G_SmithGGX(wo, wi, N, 0.25); // Disney uses ~0.25 for clearcoat
+                        double Fc = schlickScalar(0.04, cosWoH); // fixed F0 ~ 0.04
+                        double kc = 0.25 * clearcoat; // energy scale per Disney
+                        double fr = kc * Fc * Dc * Gc / (4.0 * Math.abs(cosWo) * Math.abs(cosWi));
+                        f = add3(f, new Vector3D(fr, fr, fr));
+                    }
+                }
+            }
         } else {
-            reflection = new LobePick(
-                    0.0D,
-                    1.0D,
-                    0.0D,
-                    ft,
-                    fr);
-        }
+            // --- Microfacet transmission (GGX) ---
+            if (!isMetal() && transmission > 0.0) {
+                double etaI = (cosWo > 0.0) ? 1.0 : ior;
+                double etaT = (cosWo > 0.0) ? ior : 1.0;
+                double eta = etaI / etaT;
 
-        return reflection;
+                Vector3D h = microfacetHalfForRefraction(wo, wi, eta);
+                if (h != null) {
+                    double cosNh = Math.abs(N.dot(h));
+                    double D = D_GTR2(cosNh, alpha);
+                    double G = G_SmithGGX(wo, wi, N, alpha);
+
+                    double woDotH = wo.dot(h);
+                    double wiDotH = wi.dot(h);
+                    if (woDotH == 0.0 || wiDotH == 0.0)
+                        return new Vector3D();
+
+                    double F = fresnelDielectricExact(Math.abs(woDotH), etaI, etaT); // scalar F for dielectrics
+                    // Heitz/Walter microfacet BTDF:
+                    double denom = (eta * wiDotH + woDotH);
+                    double ftScale = (1.0 - F) * D * G * eta * eta * Math.abs(wiDotH * woDotH)
+                            / (Math.abs(cosWi) * Math.abs(cosWo) * denom * denom);
+
+                    // Transmission color: baseColor acts as medium tint; thin sheet keeps color on
+                    // refraction
+                    Vector3D Tcol = (thin ? baseColor : new Vector3D(1));
+                    f = add3(f, scale3(Tcol, transmission * ftScale));
+                }
+            }
+        }
+        return f;
     }
 
-    private static boolean isInSameHemisphere(Vector3D v1, Vector3D v2, Vector3D normal) {
-        return Math.signum(v1.dot(normal)) == Math.signum(v2.dot(normal));
-    }
+    /** Mixture PDF in solid angle (sr^-1) matching how sample() chooses lobes. */
+    public double pdf(Vector3D wo, Vector3D wi) {
+        final double EPS = 1e-9D;
+        Vector3D N = faceforward(n, wo);
+        double cosWo = N.dot(wo);
+        double cosWi = N.dot(wi);
+        if (Math.abs(cosWo) < EPS || Math.abs(cosWi) < EPS)
+            return 0.0;
 
-    private static Vector3D sampleGGXReflectionVNDF(
-            Material material,
-            Vector3D albedo,
-            Vector3D normal,
-            Vector3D viewDir,
-            Vector3D tangent,
-            Vector3D bitangent) {
-        // Only sample reflection if wo is in the top hemisphere
-        double NdotV = normal.dot(viewDir);
-        if (NdotV <= 0.0D) {
-            return new Vector3D();
-        }
+        boolean reflect = (cosWo * cosWi) > 0.0;
 
-        // Roughness -> anisotropic alphas
-        double aspect = Math.sqrt(Math.max(0.0, 1.0 - 0.9 * material.getAnisotropic()));
-        double alpha = Math.max(1e-4, material.getRoughness() * material.getRoughness());
-        double ax = Math.max(1e-4, alpha / aspect);
-        double ay = Math.max(1e-4, alpha * aspect);
+        // lobe weights used by sampler
+        Weights w = lobeWeights();
 
-        // Localize wo
-        Matrix3D TBN = new Matrix3D(new double[] {
-                tangent.x, bitangent.x, normal.x,
-                tangent.y, bitangent.y, normal.y,
-                tangent.z, bitangent.z, normal.z
-        });
-        Vector3D v = viewDir.mult(TBN.transpose()).normalize();
-
-        // Heitz visible-normal sampling (anisotropic)
-        // Stretch view
-        Vector3D vh = new Vector3D(ax * v.x, ay * v.y, v.z).normalize();
-
-        // Orthonormal basis around Vh
-        Vector3D T1, T2;
-        if (vh.z < 0.9999D) {
-            T1 = vh.cross(new Vector3D(0, 0, 1)).normalize();
-            T2 = vh.cross(T1);
+        double pdf = 0.0;
+        if (reflect) {
+            // diffuse
+            if (!isMetal() && transmission < 1.0) {
+                double p = w.pDiffuse;
+                if (p > 0.0)
+                    pdf += p * cosineHemispherePdf(Math.abs(cosWi));
+            }
+            // specular (GGX)
+            if (w.pSpecular > 0.0) {
+                Vector3D h = safeNormalize(Vector3D.add(wo, wi));
+                if (h != null) {
+                    double cosNh = Math.abs(N.dot(h));
+                    double woDotH = Math.abs(wo.dot(h));
+                    if (woDotH > 0.0 && cosNh > 0.0) {
+                        double p = w.pSpecular;
+                        double pdfH = D_GTR2(cosNh, alpha) * cosNh; // pdf over h
+                        double pdfW = pdfH / (4.0 * woDotH); // change of variables
+                        pdf += p * pdfW;
+                    }
+                }
+            }
+            // clearcoat (GTR1)
+            if (w.pClearcoat > 0.0) {
+                Vector3D hC = safeNormalize(Vector3D.add(wo, wi));
+                if (hC != null) {
+                    double cosNh = Math.abs(N.dot(hC));
+                    double woDotH = Math.abs(wo.dot(hC));
+                    if (woDotH > 0.0 && cosNh > 0.0) {
+                        double p = w.pClearcoat;
+                        double pdfH = D_GTR1(cosNh, alphaCoat) * cosNh;
+                        double pdfW = pdfH / (4.0 * woDotH);
+                        pdf += p * pdfW;
+                    }
+                }
+            }
         } else {
-            T1 = new Vector3D(1, 0, 0);
-            T2 = new Vector3D(0, 1, 0);
+            // transmission (GGX)
+            if (!isMetal() && transmission > 0.0 && w.pTransmission > 0.0) {
+                double etaI = (cosWo > 0.0) ? 1.0 : ior;
+                double etaT = (cosWo > 0.0) ? ior : 1.0;
+                double eta = etaI / etaT;
+
+                Vector3D h = microfacetHalfForRefraction(wo, wi, eta);
+                if (h != null) {
+                    double cosNh = Math.abs(N.dot(h));
+                    double wiDotH = Math.abs(wi.dot(h));
+                    double woDotH = Math.abs(wo.dot(h));
+                    double denom = (eta * wiDotH + woDotH);
+                    if (cosNh > 0.0 && denom != 0.0) {
+                        // pdf(h) * Jacobian from h->wi for refraction:
+                        double pdfH = D_GTR2(cosNh, alpha) * cosNh;
+                        double pdfW = pdfH * (wiDotH / (denom * denom));
+                        pdf += w.pTransmission * pdfW;
+                    }
+                }
+            }
         }
-
-        // Sample a point on the projected area (unit disk), then evaluate
-        double u1 = Math.random();
-        double u2 = Math.random();
-        double r = Math.sqrt(u1);
-        double phi = 2.0D * Math.PI * u2;
-        double t1 = r * Math.cos(phi);
-        double t2 = r * Math.sin(phi);
-
-        // Heitz' bias for correct VNDF
-        double s = 0.5D * (1.0D + vh.z);
-        t2 = (1.0D - s) * Math.sqrt(Math.max(0.0D, 1.0D - t1 * t1)) + s * t2;
-
-        // Compute microfacet normal in stretched space
-        double t1sq = t1 * t1;
-        double t2sq = t2 * t2;
-        double z = Math.sqrt(Math.max(0.0D, 1.0D - t1sq - t2sq));
-        Vector3D nh = Vector3D.add(
-                Vector3D.add(T1.mult(t1), T2.mult(t2)),
-                Vector3D.mult(vh, z)).normalize();
-
-        // Unstretch back to anisotropic space -> microfacet normal m
-        Vector3D m = new Vector3D(ax * nh.x, ay * nh.y, Math.max(0.0D, nh.z)).normalize();
-        if (m.z <= 0.0D) {
-            return new Vector3D();
-        }
-
-        // Reflect wo about m
-        Vector3D wiLocal = MathUtils.reflect(v.negated(), m); // incident = -wo
-        if (wiLocal.z <= 0.0D) {
-            return new Vector3D();
-        }
-
-        // Transform wi back to world space
-        return wiLocal.mult(TBN).normalize();
+        return pdf;
     }
 
-    private static Vector3D sampleGTR1Reflection(
-            Material material,
-            Vector3D albedo,
-            Vector3D normal,
-            Vector3D viewDir,
-            Vector3D tangent,
-            Vector3D bitangent) {
-        // Only sample reflection if wo is in the top hemisphere
-        double NdotV = normal.dot(viewDir);
-        if (NdotV <= 0.0D) {
-            return new Vector3D();
+    /** Sample the lobe mixture; returns null if something degenerate occurs. */
+    public BSDFSample sample(Vector3D wo) {
+        final double EPS = 1e-9D;
+        Vector3D N = faceforward(n, wo);
+        double cosWo = N.dot(wo);
+        if (Math.abs(cosWo) < EPS)
+            return null;
+
+        Weights w = lobeWeights();
+        double xi = MathUtils.random();
+
+        // Partition [0,1) by weights. Only include lobes that can contribute.
+        double cum = 0.0;
+
+        // Prefer reflection when we pick a reflection lobe; transmission handled below
+        // with Fresnel split.
+        // 1) Diffuse
+        if (!isMetal() && transmission < 1.0 && w.pDiffuse > 0.0) {
+            double next = cum + w.pDiffuse;
+            if (xi < next) {
+                Vector3D wi = sampleCosineHemisphere(N);
+                if (wi == null)
+                    return null;
+                if ((N.dot(wi) > 0.0) != (cosWo > 0.0)) wi = wi.negated(); // align hemisphere
+                Vector3D f = eval(wo, wi);
+                double p = pdf(wo, wi);
+                if (p <= 0.0)
+                    return null;
+                return new BSDFSample(wi, f, p, Event.REFLECT, 1.0, 1.0, false);
+            }
+            cum = next;
         }
 
-        // Roughness
-        double alpha = (1.0D - material.getClearcoatGloss()) * 0.1D + material.getClearcoatGloss() * 0.001D;
-        alpha = Math.clamp(alpha, 1e-6, 0.999D);
+        // 2) Clearcoat
+        if (w.pClearcoat > 0.0) {
+            double next = cum + w.pClearcoat;
+            if (xi < next) {
+                Vector3D h = sampleGTR1(N, alphaCoat);
+                if (h == null)
+                    return null;
+                // Make h share hemisphere with wo
+                if (N.dot(h) < 0.0)
+                    h = h.negated();
 
-        // Localize wo
-        Matrix3D TBN = new Matrix3D(new double[] {
-                tangent.x, bitangent.x, normal.x,
-                tangent.y, bitangent.y, normal.y,
-                tangent.z, bitangent.z, normal.z
-        });
-        Vector3D v = viewDir.mult(TBN.transpose()).normalize();
+                Vector3D wi = reflect(wo, h);
+                if (wi == null)
+                    return null;
 
-        // Sample GTR1 (isotropic)
-        double u1 = Math.random();
-        double u2 = Math.random();
-        double a2 = alpha * alpha;
-        double phi = 2.0D * Math.PI * u1;
-        double cosTheta = Math.sqrt((1.0D - Math.pow(a2, 1.0D - u2)) / (1.0D - a2));
-        cosTheta = Math.min(1.0D, Math.max(0.0D, cosTheta));
-        double sinTheta = Math.sqrt(Math.max(0.0D, 1.0D - cosTheta * cosTheta));
-
-        // Microfacet normal m in local space
-        Vector3D m = new Vector3D(
-                sinTheta * Math.cos(phi),
-                sinTheta * Math.sin(phi),
-                cosTheta);
-
-        // Reflect wo about m
-        Vector3D wiLocal = MathUtils.reflect(v.negated(), m); // incident = -wo
-        if (wiLocal.z <= 0.0D) {
-            return new Vector3D();
+                Vector3D f = eval(wo, wi);
+                double p = pdf(wo, wi);
+                if (p <= 0.0)
+                    return null;
+                boolean delta = alphaCoat < 1e-4;
+                return new BSDFSample(wi, f, p, Event.REFLECT, 1.0, 1.0, delta);
+            }
+            cum = next;
         }
 
-        // Transform wi back to world space
-        return wiLocal.mult(TBN).normalize();
-    }
+        // 3) Specular or Transmission via GGX
+        // We decide reflection vs refraction using exact dielectric Fresnel at the
+        // sampled microfacet.
+        // If metallic or transmission == 0, this collapses to reflection only.
+        {
+            Vector3D h = sampleGGX(N, alpha);
+            if (h == null)
+                return null;
+            // Make h share hemisphere with wo
+            if (N.dot(h) < 0.0) h = h.negated();
 
-    private record SampleDir(
-            Vector3D wi, // world-space transmitted/reflected direction
-            double pdf, // probability density function value
-            double eta // relative IOR used for refraction
-    ) {
-    }
+            double etaI = (cosWo > 0.0) ? 1.0 : ior;
+            double etaT = (cosWo > 0.0) ? ior : 1.0;
+            double eta = etaI / etaT;
 
-    private static SampleDir sampleGGXTransmissionVNDF(
-            Material material,
-            Vector3D albedo,
-            Vector3D normal,
-            Vector3D viewDir,
-            Vector3D tangent,
-            Vector3D bitangent) {
-        // Anisotropic alphas
-        double aspect = Math.sqrt(Math.max(0.0D, 1.0D - 0.9 * material.getAnisotropic()));
-        double alpha = Math.max(1e-4, material.getRoughness() * material.getRoughness());
-        double ax = Math.max(1e-4, alpha / aspect);
-        double ay = Math.max(1e-4, alpha * aspect);
+            double pr = w.pSpecular; // base prob mass for specular bucket
+            double pt = (!isMetal() ? w.pTransmission : 0.0);
 
-        // Localize
-        Matrix3D TBN = new Matrix3D(new double[] {
-                tangent.x, bitangent.x, normal.x,
-                tangent.y, bitangent.y, normal.y,
-                tangent.z, bitangent.z, normal.z
-        });
-        Vector3D v = viewDir.mult(TBN.transpose()).normalize();
+            double sumRT = pr + pt;
+            if (sumRT <= 0.0)
+                return null;
 
-        // Sample visible-normal GGX (Heitz), anisotropic
-        // Stretch the view
-        Vector3D vh = new Vector3D(ax * v.x, ay * v.y, v.z).normalize();
+            double xiRT = (MathUtils.random()) * sumRT;
+            boolean chooseRefl = (xiRT < pr) || (transmission <= 0.0) || isMetal();
 
-        // Orthonormal basis around vh
-        Vector3D T1, T2;
-        if (vh.z < 0.9999D) {
-            T1 = vh.cross(new Vector3D(0, 0, 1)).normalize();
-            T2 = vh.cross(T1);
-        } else {
-            T1 = new Vector3D(1, 0, 0);
-            T2 = new Vector3D(0, 1, 0);
+            Vector3D wi;
+            Event ev;
+
+            if (chooseRefl) {
+                wi = reflect(wo, h);
+                if (wi == null)
+                    return null;
+                ev = Event.REFLECT;
+            } else {
+                wi = refract(wo.negated(), h, eta);
+                if (wi == null) {
+                    // TIR: fallback to reflection
+                    wi = reflect(wo, h);
+                    ev = Event.REFLECT;
+                } else {
+                    ev = Event.TRANSMIT;
+                }
+            }
+
+            Vector3D f = eval(wo, wi);
+            double p = pdf(wo, wi);
+            if (p <= 0.0)
+                return null;
+            boolean delta = alpha < 1e-4;
+            return new BSDFSample(wi, f, p, ev, etaI, etaT, delta);
         }
+    }
 
-        // Disk sample
-        double u1 = Math.random();
-        double u2 = Math.random();
-        double r = Math.sqrt(u1);
-        double phi = 2.0D * Math.PI * u2;
-        double t1 = r * Math.cos(phi);
-        double t2 = r * Math.sin(phi);
+    // --------------------------------------------------------------------
+    // Internal: lobe weights for sampling / pdf mixture (simple, robust).
+    // --------------------------------------------------------------------
+    private static final class Weights {
+        double pDiffuse, pSpecular, pClearcoat, pTransmission;
+    }
 
-        // Heitz' bias for VNDF
-        double s = 0.5D * (1.0D + vh.z);
-        t2 = (1.0D - s) * Math.sqrt(Math.max(0.0D, 1.0D - t1 * t1)) + s * t2;
+    private Weights lobeWeights() {
+        Weights w = new Weights();
+        double nonMetal = 1.0 - metallic;
 
-        // Half vector in stretched space
-        double z = Math.sqrt(Math.max(0.0, 1.0D - t1 * t1 - t2 * t2));
-        Vector3D nh = Vector3D.add(
-                Vector3D.add(T1.mult(t1), T2.mult(t2)),
-                Vector3D.mult(vh, z)).normalize();
+        // Diffuse bucket only for non-metals and when we aren't fully transmissive
+        w.pDiffuse = nonMetal * (1.0 - transmission);
 
-        // Unstretch back -> microfacet normal
-        Vector3D m = new Vector3D(ax * nh.x, ay * nh.y, Math.abs(nh.z)).normalize();
+        // Specular is always present (even for metals)
+        // Heuristic: weight by average F0 to prefer mirrors at grazing angles
+        double f0 = luminance(specularColorF0);
+        w.pSpecular = 0.5 + 1.5 * f0; // simple bias toward specular
 
-        // Ensure m faces the incident side defined by v
-        if (v.dot(m) < 0.0D) {
-            m.negate();
+        // Clearcoat small extra lobe
+        w.pClearcoat = 0.25 * clearcoat;
+
+        // Transmission only for non-metals
+        w.pTransmission = nonMetal * transmission;
+
+        double sum = w.pDiffuse + w.pSpecular + w.pClearcoat + w.pTransmission;
+        if (sum > 0.0) {
+            w.pDiffuse /= sum;
+            w.pSpecular /= sum;
+            w.pClearcoat /= sum;
+            w.pTransmission /= sum;
         }
-
-        // Determine relative IOR (outside is 1.0, inside is
-        // material.getIndexOfRefraction())
-        // If v.z > 0, we're in the outside medium (air), entering the material
-        double etaOutside = 1.0D;
-        double etaInside = Math.max(1.0001D, material.getIndexOfRefraction());
-        boolean entering = v.z > 0.0D;
-        double eta = entering ? (etaOutside / etaInside) : (etaInside / etaOutside);
-
-        // For Jacobian calculation, we need the absolute IORs
-        double etaI = entering ? etaOutside : etaInside; // IOR on incident side (where v is)
-        double etaT = entering ? etaInside : etaOutside; // IOR on transmitted side (where wi is)
-
-        // Refract -v across m with Snell
-        Vector3D wiLocal = new Vector3D();
-        if (!MathUtils.refractThroughMicrofacet(v.negated(), m, eta, wiLocal)) {
-            // Total internal reflection occurred
-            return new SampleDir(null, 0.0D, 1.0D);
-        }
-
-        // Directional PDF for transmission
-        double dotLH = Math.abs(wiLocal.dot(m));
-        double dotVH = Math.abs(v.dot(m));
-        double jacobian = dotLH / Math.pow(dotLH + eta * dotVH, 2.0D);
-        double fresnel = MathUtils.dielectric(dotVH, etaI, etaT);
-        double pdfTransmit = (1.0D - fresnel) / jacobian;
-
-        // Back to world space & return
-        return new SampleDir(wiLocal.mult(TBN).normalize(), pdfTransmit, eta);
+        return w;
     }
 
-    private static double ggxVndfPdfM(Vector3D v, Vector3D wm, Vector3D normal, Vector3D tangent, Vector3D bitangent,
-            double ax, double ay) {
-        // Transform to local coordinate system
-        Matrix3D TBN = new Matrix3D(new double[] {
-                tangent.x, bitangent.x, normal.x,
-                tangent.y, bitangent.y, normal.y,
-                tangent.z, bitangent.z, normal.z
-        });
-        Matrix3D TBNTranspose = TBN.transpose();
+    // --------------------------------------------------------------------
+    // Diffuse (Burley), Sheen helpers
+    // --------------------------------------------------------------------
+    private Vector3D diffuseBurley(Vector3D wo, Vector3D wi, Vector3D N) {
+        double cosWo = Math.abs(N.dot(wo));
+        double cosWi = Math.abs(N.dot(wi));
+        Vector3D h = safeNormalize(Vector3D.add(wo, wi));
+        double ldh2 = (h != null) ? sqr(MathUtils.saturate(wi.dot(h))) : 0.0;
 
-        Vector3D vLocal = v.mult(TBNTranspose).normalize();
-        Vector3D wmLocal = wm.mult(TBNTranspose).normalize();
+        double FD90 = 0.5 + 2.0 * ldh2 * roughness;
+        double FL = 1.0 + (FD90 - 1.0) * pow5(1.0 - cosWi);
+        double FV = 1.0 + (FD90 - 1.0) * pow5(1.0 - cosWo);
 
-        return ggxVndfPdfMLocal(vLocal, wmLocal, ax, ay);
+        // simple subsurface-ish boost (Disney blends in a modified diffuse; keep
+        // minimal)
+        double ss = mix(1.0, 1.25, subsurface);
+
+        return scale3(baseColor, ss * FL * FV / Math.PI);
     }
 
-    private static double ggxVndfPdfMLocal(Vector3D vLocal, Vector3D wmLocal, double ax, double ay) {
-        // Ensure we're in the correct hemisphere
-        if (vLocal.z <= 0.0D)
-            return 0.0D;
-        if (wmLocal.z <= 0.0D)
-            return 0.0D;
-
-        double D = gtr2Aniso(wmLocal.z, wmLocal.x, wmLocal.y, ax, ay);
-        double g1v = smithGGGXAniso(vLocal.z, vLocal.x, vLocal.y, ax, ay);
-
-        double vDotM = Math.abs(vLocal.dot(wmLocal));
-
-        return D * g1v * (vDotM / vLocal.z);
-    }
-
-    private static double schlickFresnel(double u) {
-        double m = Math.clamp(1 - u, 0, 1);
-        double m2 = m * m;
-        return m2 * m2 * m;
-    }
-
-    private static double gtr1(double NdotH, double a) {
-        if (a >= 1.0D)
-            return 1.0D / Math.PI;
+    // --------------------------------------------------------------------
+    // Microfacet distributions and geometry terms
+    // --------------------------------------------------------------------
+    private static double D_GTR2(double cosNh, double a) {
         double a2 = a * a;
-        double t = 1 + (a2 - 1) * NdotH * NdotH;
-        return (a2 - 1) / (Math.PI * Math.log(a2) * t);
+        double d = (cosNh * cosNh) * (a2 - 1.0) + 1.0;
+        return a2 / (Math.PI * d * d + 1e-20);
     }
 
-    private static double gtr2Aniso(double NdotH, double HdotX, double HdotY, double ax, double ay) {
-        return 1.0D
-                / (Math.PI * ax * ay * Math.pow(Math.pow(HdotX / ax, 2) + Math.pow(HdotY / ay, 2) + NdotH * NdotH, 2));
+    // GTR1 for clearcoat
+    private static double D_GTR1(double cosNh, double a) {
+        double a2 = a * a;
+        double denom = 1.0 + (a2 - 1.0) * (cosNh * cosNh);
+        double c = (a2 - 1.0) / (Math.PI * Math.log(a2 + 1e-20));
+        return c / (denom + 1e-20);
     }
 
-    private static double smithGGGX(double NdotV, double alphaG) {
-        double a = alphaG * alphaG;
-        double b = NdotV * NdotV;
-        return 1.0D / (NdotV + Math.sqrt(a + b - a * b));
+    private double G_SmithGGX(Vector3D wo, Vector3D wi, Vector3D N, double a) {
+        return G1_GGX(Math.abs(N.dot(wo)), a) * G1_GGX(Math.abs(N.dot(wi)), a);
     }
 
-    private static double smithGGGXAniso(double NdotV, double VdotX, double VdotY, double ax, double ay) {
-        return 1.0D / (NdotV + Math.sqrt(Math.pow(VdotX * ax, 2) + Math.pow(VdotY * ay, 2) + NdotV * NdotV));
+    private static double G1_GGX(double cosTheta, double a) {
+        if (cosTheta <= 0.0)
+            return 0.0;
+        double a2 = a * a;
+        double tan2 = (1.0 - cosTheta * cosTheta) / (cosTheta * cosTheta + 1e-20);
+        double root = Math.sqrt(1.0 + a2 * tan2);
+        return 2.0 * cosTheta / (cosTheta + root);
     }
 
-    private static Vector3D mix(Vector3D a, Vector3D b, double t) {
-        return Vector3D.add(Vector3D.mult(a, 1 - t), Vector3D.mult(b, t));
+    // --------------------------------------------------------------------
+    // Sampling helpers
+    // --------------------------------------------------------------------
+    private static Vector3D sampleGGX(Vector3D N, double a) {
+        double u1 = MathUtils.random();
+        double u2 = MathUtils.random();
+        double a2 = a * a;
+        double tan2 = a2 * u1 / (1.0 - u1 + 1e-20);
+        double cos = 1.0 / Math.sqrt(1.0 + tan2);
+        double sin = Math.sqrt(Math.max(0.0, 1.0 - cos * cos));
+        double phi = 2.0 * Math.PI * u2;
+        Vector3D hLocal = new Vector3D(Math.cos(phi) * sin, Math.sin(phi) * sin, cos);
+        return toWorld(N, hLocal);
+    }
+
+    private static Vector3D sampleGTR1(Vector3D N, double a) {
+        // Invert CDF for GTR1 over theta (Disney 2012) — approximate
+        double u1 = MathUtils.random();
+        double u2 = MathUtils.random();
+        double a2 = a * a;
+        double cos = Math.sqrt((1.0 - Math.pow(a2, 1.0 - u1)) / (1.0 - a2));
+        double sin = Math.sqrt(Math.max(0.0, 1.0 - cos * cos));
+        double phi = 2.0 * Math.PI * u2;
+        Vector3D hLocal = new Vector3D(Math.cos(phi) * sin, Math.sin(phi) * sin, cos);
+        return toWorld(N, hLocal);
+    }
+
+    private static Vector3D sampleCosineHemisphere(Vector3D N) {
+        double u1 = MathUtils.random();
+        double u2 = MathUtils.random();
+        double r = Math.sqrt(u1);
+        double theta = 2.0 * Math.PI * u2;
+        double x = r * Math.cos(theta);
+        double y = r * Math.sin(theta);
+        double z = Math.sqrt(Math.max(0.0, 1.0 - u1));
+        return toWorld(N, new Vector3D(x, y, z));
+    }
+
+    private static double cosineHemispherePdf(double cos) {
+        return cos / Math.PI;
+    }
+
+    private static Vector3D toWorld(Vector3D N, Vector3D vLocal) {
+        // Build an ONB from N
+        Vector3D T = (Math.abs(N.z) < 0.999) ? new Vector3D(0, 0, 1).cross(N).normalized()
+                : new Vector3D(0, 1, 0).cross(N).normalized();
+        Vector3D B = N.cross(T);
+        // vWorld = x*T + y*B + z*N
+        return Vector3D
+                .add(Vector3D.add(Vector3D.mult(T, vLocal.x), Vector3D.mult(B, vLocal.y)), Vector3D.mult(N, vLocal.z))
+                .normalized();
+    }
+
+    private static Vector3D reflect(Vector3D v, Vector3D m) {
+        // Reflect "v" across microfacet normal m (v points AWAY from the surface).
+        // Correct: r = -v + 2 * dot(v, m) * m
+        return Vector3D.add(Vector3D.mult(m, 2.0 * v.dot(m)), v.negated()).normalized();
+    }
+
+    private static Vector3D refract(Vector3D v, Vector3D m, double eta) {
+        // Refract v across normal m with ratio eta = etaI/etaT
+        double cosI = clampN1P1(v.dot(m));
+        double sin2I = Math.max(0.0, 1.0 - cosI * cosI);
+        double sin2T = eta * eta * sin2I;
+        if (sin2T >= 1.0)
+            return null; // TIR
+        double cosT = Math.sqrt(Math.max(0.0, 1.0 - sin2T));
+        // Note: v points "from" surface; Snell: t = -eta*v + (eta*cosI - cosT)*m
+        Vector3D t = Vector3D.mult(m, eta * cosI - cosT).sub(Vector3D.mult(v, eta));
+        return t.normalized();
+    }
+
+    private static Vector3D microfacetHalfForRefraction(Vector3D wo, Vector3D wi, double eta) {
+        // Heitz convention: h ∝ eta*wi + wo
+        Vector3D h = Vector3D.mult(wi, eta).add(wo).normalize();
+        if (h == null)
+            return null;
+        // Ensure h points to same hemisphere as macro normal (for stability)
+        return h;
+    }
+
+    // --------------------------------------------------------------------
+    // Fresnel
+    // --------------------------------------------------------------------
+    private static Vector3D schlickF(Vector3D F0, double cosIt) {
+        double x = pow5(1.0 - cosIt);
+        return add3(F0, scale3(new Vector3D(1).sub(F0), x));
+    }
+
+    private static double schlickScalar(double F0, double cosIt) {
+        return F0 + (1.0 - F0) * pow5(1.0 - cosIt);
+    }
+
+    private static double fresnelDielectricExact(double cosI, double etaI, double etaT) {
+        cosI = clamp01(cosI);
+        double sin2I = Math.max(0.0, 1.0 - cosI * cosI);
+        double eta = etaI / etaT;
+        double sin2T = eta * eta * sin2I;
+        if (sin2T >= 1.0)
+            return 1.0; // TIR
+        double cosT = Math.sqrt(Math.max(0.0, 1.0 - sin2T));
+        double Rs = ((etaT * cosI) - (etaI * cosT)) / ((etaT * cosI) + (etaI * cosT));
+        double Rp = ((etaI * cosI) - (etaT * cosT)) / ((etaI * cosI) + (etaT * cosT));
+        return 0.5 * (Rs * Rs + Rp * Rp);
+    }
+
+    // --------------------------------------------------------------------
+    // Small utilities
+    // --------------------------------------------------------------------
+    private boolean isMetal() {
+        return metallic >= 0.999;
+    }
+
+    private static Vector3D computeTint(Vector3D c) {
+        double lum = luminance(c);
+        return (lum > 0.0) ? Vector3D.div(c, lum) : new Vector3D(1);
+        // (normalize hue for tinting)
+    }
+
+    private static double luminance(Vector3D c) {
+        return 0.2126 * c.x + 0.7152 * c.y + 0.0722 * c.z;
+    }
+
+    private static Vector3D clamp3(Vector3D c) {
+        return new Vector3D(clamp01(c.x), clamp01(c.y), clamp01(c.z));
+    }
+
+    private static double clamp01(double x) {
+        return Math.max(0.0, Math.min(1.0, x));
+    }
+
+    private static double clampN1P1(double x) {
+        return Math.max(-1.0, Math.min(1.0, x));
+    }
+
+    private static double sqr(double x) {
+        return x * x;
+    }
+
+    private static double pow5(double x) {
+        double x2 = x * x;
+        return x2 * x2 * x;
     }
 
     private static double mix(double a, double b, double t) {
-        return a * (1 - t) + b * t;
+        return a * (1.0 - t) + b * t;
     }
 
-    private static Vector3D mon2lin(Vector3D in) {
-        return new Vector3D(
-                Math.pow(in.x, 2.2),
-                Math.pow(in.y, 2.2),
-                Math.pow(in.z, 2.2));
+    private static Vector3D lerp3(Vector3D a, Vector3D b, double t) {
+        return add3(scale3(a, 1 - t), scale3(b, t));
     }
+
+    private static Vector3D add3(Vector3D a, Vector3D b) {
+        return new Vector3D(a.x + b.x, a.y + b.y, a.z + b.z);
+    }
+
+    private static Vector3D mul3(Vector3D a, double s) {
+        return new Vector3D(a.x * s, a.y * s, a.z * s);
+    }
+
+    private static Vector3D scale3(Vector3D a, double s) {
+        return mul3(a, s);
+    }
+
+    private static Vector3D mul3(Vector3D a, Vector3D b) {
+        return new Vector3D(a.x * b.x, a.y * b.y, a.z * b.z);
+    }
+
+    private static Vector3D safeNormalize(Vector3D v) {
+        double len = v.length();
+        if (len <= 0.0)
+            return null;
+        return Vector3D.div(v, len);
+    }
+
+    private static Vector3D faceforward(Vector3D n, Vector3D v) {
+        return (n.dot(v) >= 0.0) ? n : n.negated();
+    }
+
 }

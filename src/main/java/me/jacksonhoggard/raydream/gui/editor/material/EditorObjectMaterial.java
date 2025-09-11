@@ -15,7 +15,7 @@ public class EditorObjectMaterial {
     private float[] emittance;
     private float subsurface;
     private float metallic;
-    private float[] specular;
+    private float specular;
     private float specularTint;
     private float specularTransmission;
     private float roughness;
@@ -37,7 +37,7 @@ public class EditorObjectMaterial {
         float[] emittance,
         float subsurface,
         float metallic,
-        float[] specular,
+        float specular,
         float specularTint,
         float specularTransmission,
         float roughness,
@@ -94,7 +94,7 @@ public class EditorObjectMaterial {
         this.albedo = new float[]{0.8f, 0.8f, 0.8f}; // Default gray
         this.subsurface = 0.0f;
         this.metallic = 0.0f;
-        this.specular = new float[]{0.5f, 0.5f, 0.5f}; // Default specular
+        this.specular = 0.5f;
         this.specularTint = 0.0f;
         this.specularTransmission = 0.0f;
         this.roughness = 0.5f; // Default medium roughness
@@ -114,7 +114,7 @@ public class EditorObjectMaterial {
                 new Vector3D(emittance[0], emittance[1], emittance[2]),
                 subsurface,
                 metallic,
-                new Vector3D(specular[0], specular[1], specular[2]),
+                specular,
                 specularTint,
                 specularTransmission,
                 roughness,
@@ -154,11 +154,11 @@ public class EditorObjectMaterial {
         return metallic;
     }
 
-    public void setSpecular(float[] specular) {
+    public void setSpecular(float specular) {
         this.specular = specular;
     }
 
-    public float[] getSpecular() {
+    public float getSpecular() {
         return specular;
     }
 
@@ -331,7 +331,7 @@ public class EditorObjectMaterial {
                 "| emittance: " + emittance[0] + " " + emittance[1] + " " + emittance[2] + "\n" +
                 "| subsurface: " + subsurface + "\n" +
                 "| metallic: " + metallic + "\n" +
-                "| specular: " + specular[0] + " " + specular[1] + " " + specular[2] + "\n" +
+                "| specular: " + specular + "\n" +
                 "| specularTint: " + specularTint + "\n" +
                 "| specularTransmission: " + specularTransmission + "\n" +
                 "| roughness: " + roughness + "\n" +

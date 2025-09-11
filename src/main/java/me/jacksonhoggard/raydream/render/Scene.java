@@ -350,9 +350,9 @@ public class Scene {
                         n.set(mat.getBumpMap().apply(n, tan, bitan, uv));
                     }
                     // Transform all vectors to world space
-                    n.set(MathUtils.transformNormalToWS(n, ((Object) hit.primitive()).getNormalMatrix()));
-                    tan = MathUtils.transformDirectionToWS(tan, ((Object) hit.primitive()).getTransformMatrix());
-                    bitan = MathUtils.transformDirectionToWS(bitan, ((Object) hit.primitive()).getTransformMatrix());
+                    n.set(MathUtils.transformNormalToWS(n, ((Object) hit.primitive()).getNormalMatrix())).normalize();
+                    tan = MathUtils.transformDirectionToWS(tan, ((Object) hit.primitive()).getTransformMatrix()).normalize();
+                    bitan = MathUtils.transformDirectionToWS(bitan, ((Object) hit.primitive()).getTransformMatrix()).normalize();
                 }
 
                 // Add emission when hitting a light source
@@ -365,19 +365,29 @@ public class Scene {
                         break; // Light hit -> terminate
                 }
 
+                BSDF bsdf = (mat != null) ? new BSDF(
+                    n,
+                    mat.getAlbedo(uv),
+                    mat.getMetallic(), mat.getSubsurface(), mat.getSpecular(), mat.getRoughness(),
+                    mat.getSpecularTint(), mat.getSheen(), mat.getSheenTint(),
+                    mat.getClearcoat(), mat.getClearcoatGloss(),
+                    mat.getSpecularTransmission(), mat.getIndexOfRefraction(),
+                    mat.isThin()
+                ) : null;
+
                 // Next event estimation (sample lights) with MIS
                 // Pick a light, sample a direction wi toward it, shadow test, and accumulate.
                 LightSample ls = sampleLight(p);
                 if (ls != null && ls.pdf() > 0.0D && !ls.Li().equals(Vector3D.ZERO)) {
                     Ray shadow = new Ray(
-                            Vector3D.add(p, Vector3D.mult(ls.wi(), EPS)),
+                            Vector3D.add(p, Vector3D.mult(n, EPS)),
                             ls.wi());
                     boolean visible = !bvh.intersectShadowRay(shadow, ls.dist() - EPS);
 
                     if (visible) {
-                        Vector3D f = BSDF.eval(mat, mat.getAlbedo(uv), wo, ls.wi(), mat.isThin(), n, tan, bitan);
+                        Vector3D f = bsdf.eval(wo, ls.wi());
                         double cos = Math.abs(n.dot(ls.wi()));
-                        double bsdfPdf = BSDF.pdf(mat, mat.getAlbedo(uv), wo, ls.wi(), mat.isThin(), n, tan, bitan);
+                        double bsdfPdf = bsdf.pdf(wo, ls.wi());
                         double w = powerHeuristic(ls.pdf(), bsdfPdf);
                         if (bsdfPdf > 0.0D) {
                             Vector3D contrib = f.mult(cos * w / ls.pdf());
@@ -389,14 +399,7 @@ public class Scene {
                 }
 
                 // Sample BSDF to continue the path
-                BSDFSample s = BSDF.sample(
-                        ray,
-                        mat,
-                        n,
-                        uv,
-                        tan,
-                        bitan);
-
+                BSDFSample s = bsdf.sample(wo);
                 if (s == null || s.pdf() <= 0.0D || s.f().equals(Vector3D.ZERO)) {
                     break;
                 }
@@ -418,7 +421,7 @@ public class Scene {
                 Vector3D offsetNormal = (n.dot(s.l()) > 0.0D) ? n : n.negated();
                 Vector3D origin = Vector3D.add(p, Vector3D.mult(offsetNormal, EPS));
                 ray = new Ray(origin, s.l());
-                prevDelta = s.delta();
+                prevDelta = s.isDelta();
             }
 
             return L;

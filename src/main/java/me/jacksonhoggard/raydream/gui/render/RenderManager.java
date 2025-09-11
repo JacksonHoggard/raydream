@@ -264,7 +264,7 @@ public class RenderManager implements AutoCloseable {
         objectShader.setVec3("material.albedo", material.getAlbedo());
         objectShader.setFloat("material.subsurface", material.getSubsurface());
         objectShader.setFloat("material.metallic", material.getMetallic());
-        objectShader.setVec3("material.specular", material.getSpecular());
+        objectShader.setVec3("material.specular", new float[]{material.getSpecular(), material.getSpecular(), material.getSpecular()});
         objectShader.setFloat("material.specularTint", material.getSpecularTint());
         objectShader.setFloat("material.roughness", material.getRoughness());
         objectShader.setFloat("material.anisotropic", material.getAnisotropic());

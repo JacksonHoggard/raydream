@@ -31,7 +31,7 @@ public class PlaneEditorObject extends EditorObject {
                         new float[] {0.0f, 0.0f, 0.0f},
                         0.0f,
                         0.0f,
-                        new float[] { 0.5f, 0.5f, 0.5f },
+                        0.5f,
                         0.0f,
                         0.5f,
                         0.5f,

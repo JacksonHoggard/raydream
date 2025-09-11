@@ -412,11 +412,7 @@ public class SceneReader {
                     material.setMetallic(Float.parseFloat(params[2]));
                     break;
                 case "specular:":
-                    material.setSpecular(new float[] {
-                            Float.parseFloat(params[2]),
-                            Float.parseFloat(params[3]),
-                            Float.parseFloat(params[4])
-                    });
+                    material.setSpecular(Float.parseFloat(params[2]));
                     break;
                 case "specularTint:":
                     material.setSpecularTint(Float.parseFloat(params[2]));

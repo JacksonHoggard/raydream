@@ -46,7 +46,7 @@ public class OBJModel extends MeshModel {
                         new float[3],
                         0.0f,
                         0.0f,
-                        new float[] { 0.5f, 0.5f, 0.5f },
+                        0.5f,
                         0.0f,
                         0.5f,
                         0.5f,
@@ -64,11 +64,8 @@ public class OBJModel extends MeshModel {
                 case "Kd":
                     currentMaterial.setAlbedo(parseColor(tokens));
                     break;
-                case "Ks":
-                    currentMaterial.setSpecular(parseColor(tokens));
-                    break;
                 case "Ns":
-                    currentMaterial.setSpecularTint(Float.parseFloat(tokens[1]) / 1000.0F);
+                    currentMaterial.setSpecular(Float.parseFloat(tokens[1]) / 1000.0F);
                     break;
                 case "Ni":
                     currentMaterial.setIndexOfRefraction(Float.parseFloat(tokens[1]));
@@ -254,7 +251,7 @@ public class OBJModel extends MeshModel {
                     new float[3],
                     0.0f,
                     0.0f,
-                    new float[] { 0.5f, 0.5f, 0.5f },
+                    0.5f,
                     0.0f,
                     0.5f,
                     0.5f,

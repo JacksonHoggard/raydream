@@ -424,4 +424,8 @@ public final class MathUtils {
     public static double luminance(Vector3D color) {
         return 0.2126 * color.x + 0.7152 * color.y + 0.0722 * color.z;
     }
+
+    public static double saturate(double value) {
+        return clamp(value, 0.0, 1.0);
+    }
 }

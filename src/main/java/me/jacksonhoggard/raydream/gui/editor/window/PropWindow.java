@@ -162,7 +162,9 @@ public class PropWindow {
             inputFloat.set(material.getMetallic());
             ImGui.inputFloat("Metallic", inputFloat);
             material.setMetallic(inputFloat.get());
-            ImGui.colorEdit3("Specular", material.getSpecular());
+            inputFloat.set(material.getSpecular());
+            ImGui.inputFloat("Specular", inputFloat);
+            material.setSpecular(inputFloat.get());
             inputFloat.set(material.getSpecularTint());
             ImGui.inputFloat("Specular Tint", inputFloat);
             material.setSpecularTint(inputFloat.get());

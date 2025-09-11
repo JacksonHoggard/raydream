@@ -12,7 +12,7 @@ public class Material {
     private final Vector3D emittance;
     private final double subsurface;
     private final double metallic;
-    private final Vector3D specular;
+    private final double specular;
     private final double specularTint;
     private final double specularTransmission;
     private final double roughness;
@@ -33,7 +33,7 @@ public class Material {
         Vector3D emittance,
         double subsurface,
         double metallic,
-        Vector3D specular,
+        double specular,
         double specularTint,
         double specularTransmission,
         double roughness,
@@ -177,7 +177,7 @@ public class Material {
         return metallic;
     }
 
-    public Vector3D getSpecular() {
+    public double getSpecular() {
         return specular;
     }
 
