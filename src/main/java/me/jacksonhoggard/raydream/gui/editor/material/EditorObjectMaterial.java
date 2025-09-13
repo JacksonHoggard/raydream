@@ -285,6 +285,15 @@ public class EditorObjectMaterial<T extends BxDF> {
         ImFloat inputFloat,
         ImBoolean inputBoolean
     ) {
+        Object clearcoatGloss = this.parameters.get("clearcoatGloss");
+        if(clearcoatGloss == null) {
+            this.parameters.put("clearcoatGloss", (Object) Double.valueOf(0.0D));
+        } else if(!(clearcoatGloss instanceof Double)) {
+            this.parameters.put("clearcoatGloss", (Object) Double.valueOf(((Number) clearcoatGloss).doubleValue()));
+        }
+        inputFloat.set(((Double) this.parameters.get("clearcoatGloss")).floatValue());
+        ImGui.inputFloat("Clearcoat Gloss", inputFloat);
+        this.parameters.put("clearcoatGloss", (Object) Double.valueOf(inputFloat.get()));
     }
 
     private void showDisneySheenParameters(

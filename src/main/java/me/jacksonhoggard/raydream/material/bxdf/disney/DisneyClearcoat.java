@@ -6,29 +6,52 @@ import me.jacksonhoggard.raydream.material.bxdf.BRDF;
 import me.jacksonhoggard.raydream.math.Vector3D;
 
 public class DisneyClearcoat extends BRDF {
+
+    private final double clearcoatGloss; // [0..1]
+
     public DisneyClearcoat(
         Vector3D ng, Vector3D ns,
         Vector3D baseColor,
         HashMap<String, Object> parameters
     ) {
         super(ng, ns, baseColor, parameters);
+        this.clearcoatGloss = ((Double) parameters.get("clearcoatGloss"));
     }
 
     @Override
     public Vector3D eval(Vector3D wo, Vector3D wi) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'eval'");
+        double ag = (1.0D - clearcoatGloss) * 0.1D + clearcoatGloss * 0.001D;
+        Vector3D h = Vector3D.add(wo, wi).normalized();
+        Vector3D hLocal = toLocal(h, ns).normalize();
+        Vector3D woLocal = toLocal(wo, ns).normalize();
+        Vector3D wiLocal = toLocal(wi, ns).normalize();
+        double Fc = 0.04D + (1.0D - 0.04D) * pow5(1 - Math.abs(h.dot(wi)));
+        double D = (sqr(ag) - 1.0D) / (Math.PI * Math.log(sqr(ag)) * (1.0D + (sqr(ag) - 1.0D) * (sqr(hLocal.z))));
+        double lambdaL = (Math.sqrt(1.0 + (sqr(wiLocal.x*0.25D) + sqr(wiLocal.y*0.25D))/sqr(wiLocal.z)) - 1.0D) / 2.0D;
+        double lambdaV = (Math.sqrt(1.0 + (sqr(woLocal.x*0.25D) + sqr(woLocal.y*0.25D))/sqr(woLocal.z)) - 1.0D) / 2.0D;
+        double GL = 1.0D / (1.0D + lambdaL);
+        double GV = 1.0D / (1.0D + lambdaV);
+        double G = GL * GV;
+        Vector3D fClearcoat = new Vector3D(1).mult(Fc * D * G).div(4.0D * Math.abs(ns.dot(wo)));
+        return fClearcoat;
     }
 
     @Override
     public double pdf(Vector3D wo, Vector3D wi) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'pdf'");
+        double ag = (1.0D - clearcoatGloss) * 0.1D + clearcoatGloss * 0.001D;
+        Vector3D h = Vector3D.add(wo, wi).normalized();
+        Vector3D hLocal = toLocal(h, ns).normalize();
+        double D = (sqr(ag) - 1.0D) / (Math.PI * Math.log(sqr(ag)) * (1.0D + (sqr(ag) - 1.0D) * (sqr(hLocal.z))));
+        return D;
     }
 
     @Override
     public BxDFSample sample(Vector3D wo) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'sample'");
+        Vector3D randomNormal = sampleGTR1(ns, (1.0D - clearcoatGloss) * 0.1D + clearcoatGloss * 0.001D);
+        if(randomNormal.dot(wo) < 0.0D) randomNormal.negate();
+        Vector3D wi = reflect(wo, randomNormal);
+        Vector3D f = eval(wo, wi);
+        double pdf = pdf(wo, wi);
+        return new BxDFSample(wi, f, pdf, Event.REFLECT, clearcoatGloss == 1.0D);
     }
 }
