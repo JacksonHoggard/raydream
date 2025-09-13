@@ -1,133 +1,112 @@
 package me.jacksonhoggard.raydream.gui.editor.material;
 
 import me.jacksonhoggard.raydream.material.Material;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyDiffuse;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.util.Util;
 
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Objects;
 
-public class EditorObjectMaterial {
+import imgui.ImGui;
+import imgui.type.ImBoolean;
+import imgui.type.ImFloat;
 
-    // Disney BRDF
+public class EditorObjectMaterial<T extends BxDF> {
+
     private float[] albedo;
     private float[] emittance;
-    private float subsurface;
-    private float metallic;
-    private float specular;
-    private float specularTint;
-    private float specularTransmission;
-    private float roughness;
-    private float anisotropic;
-    private float sheen;
-    private float sheenTint;
-    private float clearcoat;
-    private float clearcoatGloss;
-
-    // Other parameters
-    private boolean thin;
     private float indexOfRefraction;
     private Texture texture;
     private Texture bumpMap;
     private float bumpScale;
+    private final HashMap<String, Object> parameters;
+    private final Class<T> bxdfClass;
 
-    public EditorObjectMaterial(
+    public static <T extends BxDF> EditorObjectMaterial<T> of(
+            Class<T> bxdfClass,
+            float[] color,
+            float[] emittance,
+            float indexOfRefraction,
+            float bumpScale,
+            HashMap<String, Object> parameters
+    ) {
+        return new EditorObjectMaterial<T>(
+                bxdfClass,
+                color,
+                emittance,
+                indexOfRefraction,
+                bumpScale,
+                parameters
+        );
+    }
+
+    private EditorObjectMaterial(Class<T> bxdfClass,
         float[] color,
         float[] emittance,
-        float subsurface,
-        float metallic,
-        float specular,
-        float specularTint,
-        float specularTransmission,
-        float roughness,
-        float anisotropic,
-        float sheen,
-        float sheenTint,
-        float clearcoat,
-        float clearcoatGloss,
-        boolean thin,
         float indexOfRefraction,
-        float bumpScale
+        float bumpScale,
+        HashMap<String, Object> parameters
     ) {
         this.albedo = color;
         this.emittance = emittance;
-        this.subsurface = subsurface;
-        this.metallic = metallic;
-        this.specular = specular;
-        this.specularTint = specularTint;
-        this.specularTransmission = specularTransmission;
-        this.roughness = roughness;
-        this.anisotropic = anisotropic;
-        this.sheen = sheen;
-        this.sheenTint = sheenTint;
-        this.clearcoat = clearcoat;
-        this.clearcoatGloss = clearcoatGloss;
         this.indexOfRefraction = indexOfRefraction;
-        this.thin = thin;
         this.bumpScale = bumpScale;
+        this.parameters = new HashMap<>();
+        this.bxdfClass = bxdfClass;
     }
 
-    public EditorObjectMaterial(EditorObjectMaterial material) {
+    public EditorObjectMaterial(EditorObjectMaterial<T> material) {
+        this.bxdfClass = material.bxdfClass;
         this.albedo = new float[] {
                 material.albedo[0],
                 material.albedo[1],
                 material.albedo[2]
         };
-        this.subsurface = material.subsurface;
-        this.metallic = material.metallic;
-        this.specular = material.specular;
-        this.specularTint = material.specularTint;
-        this.specularTransmission = material.specularTransmission;
-        this.roughness = material.roughness;
-        this.anisotropic = material.anisotropic;
-        this.sheen = material.sheen;
-        this.sheenTint = material.sheenTint;
-        this.clearcoat = material.clearcoat;
-        this.clearcoatGloss = material.clearcoatGloss;
+        this.emittance = new float[] {
+                material.emittance[0],
+                material.emittance[1],
+                material.emittance[2]
+        };
         this.indexOfRefraction = material.indexOfRefraction;
-        this.thin = material.thin;
         this.bumpScale = material.bumpScale;
+        this.texture = material.texture;
+        this.bumpMap = material.bumpMap;
+        this.bumpScale = material.bumpScale;
+        this.parameters = new HashMap<>(material.parameters);
     }
 
     public EditorObjectMaterial() {
-        this.albedo = new float[]{0.8f, 0.8f, 0.8f}; // Default gray
-        this.subsurface = 0.0f;
-        this.metallic = 0.0f;
-        this.specular = 0.5f;
-        this.specularTint = 0.0f;
-        this.specularTransmission = 0.0f;
-        this.roughness = 0.5f; // Default medium roughness
-        this.anisotropic = 0.0f;
-        this.sheen = 0.0f;
-        this.sheenTint = 0.5f;
-        this.clearcoat = 0.0f;
-        this.clearcoatGloss = 1.0f;
-        this.indexOfRefraction = 1.5f; // Default glass IOR
-        this.thin = false;
-        this.bumpScale = 1.0f;
+        this(
+            (Class<T>) DisneyDiffuse.class,
+            new float[]{0.8f, 0.8f, 0.8f}, // Default gray
+            new float[]{0.0f, 0.0f, 0.0f}, // Default black
+            1.5f, // Default glass IOR
+            1.0f,
+            new HashMap<>() {{
+                put("roughness", (Object) Double.valueOf(0.5D));
+                put("subsurface", (Object) Double.valueOf(0.0D));
+            }}
+        );
     }
 
-    public Material toRayDreamMaterial() {
-        return new Material(
+    public Material<? extends BxDF> toRayDreamMaterial() {
+        return Material.of(
+                bxdfClass,
                 new Vector3D(albedo[0], albedo[1], albedo[2]),
                 new Vector3D(emittance[0], emittance[1], emittance[2]),
-                subsurface,
-                metallic,
-                specular,
-                specularTint,
-                specularTransmission,
-                roughness,
-                anisotropic,
-                sheen,
-                sheenTint,
-                clearcoat,
-                clearcoatGloss,
-                thin,
                 indexOfRefraction,
                 texture != null ? Util.loadTexture(texture.getPath()) : null,
-                bumpMap != null ? Util.loadBumpMap(bumpMap.getPath(), bumpScale) : null
+                bumpMap != null ? Util.loadBumpMap(bumpMap.getPath(), bumpScale) : null,
+                parameters
         );
+    }
+
+    public Class<T> getBxDFClass() {
+        return bxdfClass;
     }
 
     public float[] getAlbedo() {
@@ -136,94 +115,6 @@ public class EditorObjectMaterial {
 
     public void setAlbedo(float[] color) {
         this.albedo = color;
-    }
-
-    public void setSubsurface(float subsurface) {
-        this.subsurface = subsurface;
-    }
-
-    public void setMetallic(float metallic) {
-        this.metallic = metallic;
-    }
-
-    public float getSubsurface() {
-        return subsurface;
-    }
-
-    public float getMetallic() {
-        return metallic;
-    }
-
-    public void setSpecular(float specular) {
-        this.specular = specular;
-    }
-
-    public float getSpecular() {
-        return specular;
-    }
-
-    public float getSpecularTint() {
-        return specularTint;
-    }
-
-    public void setSpecularTint(float specularTint) {
-        this.specularTint = specularTint;
-    }
-
-    public float getSpecularTransmission() {
-        return specularTransmission;
-    }
-
-    public void setSpecularTransmission(float specularTransmission) {
-        this.specularTransmission = specularTransmission;
-    }
-
-    public float getRoughness() {
-        return roughness;
-    }
-
-    public void setRoughness(float roughness) {
-        this.roughness = roughness;
-    }
-
-    public float getAnisotropic() {
-        return anisotropic;
-    }
-
-    public void setAnisotropic(float anisotropic) {
-        this.anisotropic = anisotropic;
-    }
-
-    public float getSheen() {
-        return sheen;
-    }
-
-    public void setSheen(float sheen) {
-        this.sheen = sheen;
-    }
-
-    public float getSheenTint() {
-        return sheenTint;
-    }
-
-    public void setSheenTint(float sheenTint) {
-        this.sheenTint = sheenTint;
-    }
-
-    public float getClearcoat() {
-        return clearcoat;
-    }
-
-    public void setClearcoat(float clearcoat) {
-        this.clearcoat = clearcoat;
-    }
-
-    public float getClearcoatGloss() {
-        return clearcoatGloss;
-    }
-
-    public void setClearcoatGloss(float clearcoatGloss) {
-        this.clearcoatGloss = clearcoatGloss;
     }
 
     public float getIndexOfRefraction() {
@@ -240,14 +131,6 @@ public class EditorObjectMaterial {
 
     public void setEmittance(float[] emittance) {
         this.emittance = emittance;
-    }
-
-    public void setThin(boolean thin) {
-        this.thin = thin;
-    }
-
-    public boolean isThin() {
-        return thin;
     }
 
     public Texture getTexture() {
@@ -278,41 +161,20 @@ public class EditorObjectMaterial {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof EditorObjectMaterial that)) return false;
-        return Float.compare(subsurface, that.subsurface) == 0
-        && Float.compare(metallic, that.metallic) == 0
-        && Objects.deepEquals(specular, that.specular)
-        && Float.compare(indexOfRefraction, that.indexOfRefraction) == 0
-        && Float.compare(specularTint, that.specularTint) == 0
-        && Float.compare(specularTransmission, that.specularTransmission) == 0
-        && Float.compare(bumpScale, that.bumpScale) == 0
-        && Float.compare(anisotropic, that.anisotropic) == 0
-        && Float.compare(sheen, that.sheen) == 0
-        && Float.compare(sheenTint, that.sheenTint) == 0
-        && Float.compare(clearcoat, that.clearcoat) == 0
-        && Float.compare(clearcoatGloss, that.clearcoatGloss) == 0
-        && Float.compare(roughness, that.roughness) == 0
-        && Objects.deepEquals(albedo, that.albedo)
-        && thin == that.thin
-        && Objects.equals(texture, that.texture)
-        && Objects.equals(bumpMap, that.bumpMap);
+        return Objects.deepEquals(albedo, that.albedo)
+            && Objects.deepEquals(emittance, that.emittance)
+            && Float.compare(indexOfRefraction, that.indexOfRefraction) == 0
+            && Objects.equals(texture, that.texture)
+            && Objects.equals(bumpMap, that.bumpMap)
+            && Float.compare(bumpScale, that.bumpScale) == 0;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(
             Arrays.hashCode(albedo),
-            subsurface,
-            metallic,
-            specular,
-            specularTint,
-            roughness,
-            anisotropic,
-            sheen,
-            sheenTint,
-            clearcoat,
-            clearcoatGloss,
+            Arrays.hashCode(emittance),
             indexOfRefraction,
-            thin,
             texture,
             bumpMap,
             bumpScale
@@ -329,22 +191,83 @@ public class EditorObjectMaterial {
         return "material:\n" +
                 "| albedo: " + albedo[0] + " " + albedo[1] + " " + albedo[2] + "\n" +
                 "| emittance: " + emittance[0] + " " + emittance[1] + " " + emittance[2] + "\n" +
-                "| subsurface: " + subsurface + "\n" +
-                "| metallic: " + metallic + "\n" +
-                "| specular: " + specular + "\n" +
-                "| specularTint: " + specularTint + "\n" +
-                "| specularTransmission: " + specularTransmission + "\n" +
-                "| roughness: " + roughness + "\n" +
-                "| anisotropic: " + anisotropic + "\n" +
-                "| sheen: " + sheen + "\n" +
-                "| sheenTint: " + sheenTint + "\n" +
-                "| clearcoat: " + clearcoat + "\n" +
-                "| clearcoatGloss: " + clearcoatGloss + "\n" +
                 "| indexOfRefraction: " + indexOfRefraction + "\n" +
-                "| thin: " + thin + "\n" +
                 "| texture: " + texPath + "\n" +
                 "| bump: " + bumpPath + "\n" +
                 "| bScale: " + bumpScale + "\n" +
+                "| parameters:\n" +
+                "| " + parameters.entrySet().stream()
+                    .map(e -> e.getKey() + ": " + e.getValue())
+                    .reduce((a, b) -> a + "\n| " + b).orElse("") + "\n/\n" +
                 "/\n";
+    }
+
+    public HashMap<String, Object> getParameters() {
+        return parameters;
+    }
+
+    public void setParameter(String key, Object value) {
+        this.parameters.put(key, value);
+    }
+
+    public void showParameters(
+        ImFloat inputFloat,
+        ImBoolean inputBoolean
+    ) {
+        switch(bxdfClass.getSimpleName()) {
+            case "DisneyDiffuse" -> showDisneyDiffuseParameters(inputFloat, inputBoolean);
+            case "DisneyMetal" -> showDisneyMetalParameters(inputFloat, inputBoolean);
+            case "DisneyClearcoat" -> showDisneyClearcoatParameters(inputFloat, inputBoolean);
+            case "DisneySheen" -> showDisneySheenParameters(inputFloat, inputBoolean);
+            case "DisneyGlass" -> showDisneyGlassParameters(inputFloat, inputBoolean);
+        }
+    }
+
+    private void showDisneyDiffuseParameters(
+        ImFloat inputFloat,
+        ImBoolean inputBoolean
+    ) {
+        Object roughness = this.parameters.get("roughness");
+        if(roughness == null) {
+            this.parameters.put("roughness", (Object) Double.valueOf(0.5D));
+        } else if(!(roughness instanceof Double)) {
+            this.parameters.put("roughness", (Object) Double.valueOf(((Number) roughness).doubleValue()));
+        }
+        Object subsurface = this.parameters.get("subsurface");
+        if(subsurface == null) {
+            this.parameters.put("subsurface", (Object) Double.valueOf(0.0D));
+        } else if(!(subsurface instanceof Double)) {
+            this.parameters.put("subsurface", (Object) Double.valueOf(((Number) subsurface).doubleValue()));
+        }
+        inputFloat.set(((Double) this.parameters.get("roughness")).floatValue());
+        ImGui.inputFloat("Roughness", inputFloat);
+        this.parameters.put("roughness", (Object) Double.valueOf(inputFloat.get()));
+        inputFloat.set(((Double) this.parameters.get("subsurface")).floatValue());
+        ImGui.inputFloat("Subsurface", inputFloat);
+        this.parameters.put("subsurface", (Object) Double.valueOf(inputFloat.get()));
+    }
+
+    private void showDisneyMetalParameters(
+        ImFloat inputFloat,
+        ImBoolean inputBoolean
+    ) {
+    }
+
+    private void showDisneyClearcoatParameters(
+        ImFloat inputFloat,
+        ImBoolean inputBoolean
+    ) {
+    }
+
+    private void showDisneySheenParameters(
+        ImFloat inputFloat,
+        ImBoolean inputBoolean
+    ) {
+    }
+
+    private void showDisneyGlassParameters(
+        ImFloat inputFloat,
+        ImBoolean inputBoolean
+    ) {
     }
 }

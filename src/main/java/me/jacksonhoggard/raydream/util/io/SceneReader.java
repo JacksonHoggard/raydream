@@ -13,6 +13,7 @@ import me.jacksonhoggard.raydream.gui.editor.object.PlaneEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.object.SphereEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.window.ObjectWindow;
 import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -272,7 +273,7 @@ public class SceneReader {
         float[] translation = new float[3];
         float[] rotation = new float[3];
         float[] scale = new float[3];
-        EditorObjectMaterial material = new EditorObjectMaterial();
+        EditorObjectMaterial<? extends BxDF> material = new EditorObjectMaterial<>();
         StringBuilder label = new StringBuilder();
         String line;
         while(!(line = reader.readLine()).startsWith(";")) {
@@ -298,7 +299,7 @@ public class SceneReader {
         float[] translation = new float[3];
         float[] rotation = new float[3];
         float[] scale = new float[3];
-        EditorObjectMaterial material = new EditorObjectMaterial();
+        EditorObjectMaterial<? extends BxDF> material = new EditorObjectMaterial<>();
         StringBuilder label = new StringBuilder();
         String line;
         while(!(line = reader.readLine()).startsWith(";")) {
@@ -324,7 +325,7 @@ public class SceneReader {
         float[] translation = new float[3];
         float[] rotation = new float[3];
         float[] scale = new float[3];
-        EditorObjectMaterial material = new EditorObjectMaterial();
+        EditorObjectMaterial<? extends BxDF> material = new EditorObjectMaterial<>();
         StringBuilder label = new StringBuilder();
         String line;
         while(!(line = reader.readLine()).startsWith(";")) {
@@ -347,7 +348,7 @@ public class SceneReader {
     }
 
     private static void addModel(BufferedReader reader, String projectDir)  throws IOException, UnrecognizedTokenException {
-        List<EditorObjectMaterial> materials = new ArrayList<>();
+        List<EditorObjectMaterial<? extends BxDF>> materials = new ArrayList<>();
         float[] translation = new float[3];
         float[] rotation = new float[3];
         float[] scale = new float[3];
@@ -364,7 +365,7 @@ public class SceneReader {
                     parseTransform(reader, translation, rotation, scale);
                     break;
                 case "material:":
-                    EditorObjectMaterial material = new EditorObjectMaterial();
+                    EditorObjectMaterial<? extends BxDF> material = new EditorObjectMaterial<>();
                     parseObjectMaterial(reader, material, projectDir);
                     materials.add(material);
                     break;
@@ -386,7 +387,7 @@ public class SceneReader {
         ObjectWindow.objects.add(modelEditorObject);
     }
 
-    public static void parseObjectMaterial(BufferedReader reader, EditorObjectMaterial material, String dirPath) throws IOException, UnrecognizedTokenException {
+    public static void parseObjectMaterial(BufferedReader reader, EditorObjectMaterial<? extends BxDF> material, String dirPath) throws IOException, UnrecognizedTokenException {
         String line;
         while(!(line = reader.readLine()).trim().startsWith("/") && line.trim().startsWith("|")) {
             String[] params = line.trim().split("\\s+");
@@ -405,45 +406,6 @@ public class SceneReader {
                             Float.parseFloat(params[4])
                     });
                     break;
-                case "subsurface:":
-                     material.setSubsurface(Float.parseFloat(params[2]));
-                    break;
-                case "metallic:":
-                    material.setMetallic(Float.parseFloat(params[2]));
-                    break;
-                case "specular:":
-                    material.setSpecular(Float.parseFloat(params[2]));
-                    break;
-                case "specularTint:":
-                    material.setSpecularTint(Float.parseFloat(params[2]));
-                    break;
-                case "specularTransmission:":
-                    material.setSpecularTransmission(Float.parseFloat(params[2]));
-                    break;
-                case "roughness:":
-                    material.setRoughness(Float.parseFloat(params[2]));
-                    break;
-                case "anisotropic:":
-                    material.setAnisotropic(Float.parseFloat(params[2]));
-                    break;
-                case "sheen:":
-                    material.setSheen(Float.parseFloat(params[2]));
-                    break;
-                case "sheenTint:":
-                    material.setSheenTint(Float.parseFloat(params[2]));
-                    break;
-                case "clearcoat:":
-                    material.setClearcoat(Float.parseFloat(params[2]));
-                    break;
-                case "clearcoatGloss:":
-                    material.setClearcoatGloss(Float.parseFloat(params[2]));
-                    break;
-                case "indexOfRefraction:":
-                    material.setIndexOfRefraction(Float.parseFloat(params[2]));
-                    break;
-                case "thin:":
-                    material.setThin(Boolean.parseBoolean(params[2]));
-                    break;
                 case "texture:":
                     if(params[2].equals("null"))
                         break;
@@ -457,9 +419,25 @@ public class SceneReader {
                 case "bScale:":
                     material.setBumpScale(Float.parseFloat(params[2]));
                     break;
+                case "indexOfRefraction:":
+                    material.setIndexOfRefraction(Float.parseFloat(params[2]));
+                    break;
+                case "parameters:":
+                    parseParameters(reader, material);
+                    break;
                 default:
                     throw new UnrecognizedTokenException(params[1]);
             }
+        }
+    }
+
+    private static void parseParameters(BufferedReader reader, EditorObjectMaterial<? extends BxDF> material) throws IOException, UnrecognizedTokenException {
+        String line;
+        while(!(line = reader.readLine()).trim().startsWith("/") && line.trim().startsWith("|")) {
+            String[] params = line.trim().split("\\s+");
+            // Clean the parameter value by removing trailing slash if present
+            String paramValue = params[2].endsWith("/") ? params[2].substring(0, params[2].length() - 1) : params[2];
+            material.setParameter(params[1].replace(":", ""), Double.parseDouble(paramValue));
         }
     }
 

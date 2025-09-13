@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.object;
 
 import me.jacksonhoggard.raydream.material.Material;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
@@ -9,7 +10,7 @@ public class Plane extends Object {
 
     private final Vector3D normal;
 
-    public Plane(double offset, Vector3D rotation, Material material) {
+    public Plane(double offset, Vector3D rotation, Material<? extends BxDF> material) {
         super(
                 new Transform(
                         new Vector3D(0, offset, 0),

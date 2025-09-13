@@ -9,6 +9,7 @@ import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
 import me.jacksonhoggard.raydream.gui.editor.object.ModelEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.window.ObjectWindow;
 import me.jacksonhoggard.raydream.gui.editor.window.PreviewWindow;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 import me.jacksonhoggard.raydream.math.Matrix4F;
 import me.jacksonhoggard.raydream.math.Vector3F;
 import me.jacksonhoggard.raydream.math.Vector4F;
@@ -259,19 +260,23 @@ public class RenderManager implements AutoCloseable {
             meshIndex++;
         }
     }
-    
-    private void updateObjectShader(EditorObjectMaterial material) {
+
+    private void updateObjectShader(EditorObjectMaterial<? extends BxDF> material) {
         objectShader.setVec3("material.albedo", material.getAlbedo());
-        objectShader.setFloat("material.subsurface", material.getSubsurface());
-        objectShader.setFloat("material.metallic", material.getMetallic());
-        objectShader.setVec3("material.specular", new float[]{material.getSpecular(), material.getSpecular(), material.getSpecular()});
-        objectShader.setFloat("material.specularTint", material.getSpecularTint());
-        objectShader.setFloat("material.roughness", material.getRoughness());
-        objectShader.setFloat("material.anisotropic", material.getAnisotropic());
-        objectShader.setFloat("material.sheen", material.getSheen());
-        objectShader.setFloat("material.sheenTint", material.getSheenTint());
-        objectShader.setFloat("material.clearcoat", material.getClearcoat());
-        objectShader.setFloat("material.clearcoatGloss", material.getClearcoatGloss());
+        objectShader.setFloat("material.subsurface", ((Double) material.getParameters().getOrDefault("subsurface", 0.0D)).floatValue());
+        objectShader.setFloat("material.metallic", ((Double) material.getParameters().getOrDefault("metallic", 0.0D)).floatValue());
+        objectShader.setVec3("material.specular", new float[]{
+            ((Double) material.getParameters().getOrDefault("specular", 0.0D)).floatValue(),
+            ((Double) material.getParameters().getOrDefault("specular", 0.0D)).floatValue(),
+            ((Double) material.getParameters().getOrDefault("specular", 0.0D)).floatValue()
+        });
+        objectShader.setFloat("material.specularTint", ((Double) material.getParameters().getOrDefault("specularTint", 0.0D)).floatValue());
+        objectShader.setFloat("material.roughness", ((Double) material.getParameters().getOrDefault("roughness", 0.0D)).floatValue());
+        objectShader.setFloat("material.anisotropic", ((Double) material.getParameters().getOrDefault("anisotropic", 0.0D)).floatValue());
+        objectShader.setFloat("material.sheen", ((Double) material.getParameters().getOrDefault("sheen", 0.0D)).floatValue());
+        objectShader.setFloat("material.sheenTint", ((Double) material.getParameters().getOrDefault("sheenTint", 0.0D)).floatValue());
+        objectShader.setFloat("material.clearcoat", ((Double) material.getParameters().getOrDefault("clearcoat", 0.0D)).floatValue());
+        objectShader.setFloat("material.clearcoatGloss", ((Double) material.getParameters().getOrDefault("clearcoatGloss", 0.0D)).floatValue());
         objectShader.setFloat("material.indexOfRefraction", material.getIndexOfRefraction());
         objectShader.setInt("tex", 0);
         objectShader.setBool("hasTexture", material.getTexture() != null);

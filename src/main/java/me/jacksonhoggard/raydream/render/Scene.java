@@ -5,12 +5,13 @@ import me.jacksonhoggard.raydream.core.ApplicationContext;
 import me.jacksonhoggard.raydream.light.Light;
 import me.jacksonhoggard.raydream.light.LightSample;
 import me.jacksonhoggard.raydream.material.*;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF.BxDFSample;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.*;
 import me.jacksonhoggard.raydream.object.Object;
-import me.jacksonhoggard.raydream.render.BSDF.BSDFSample;
 import me.jacksonhoggard.raydream.util.Logger;
 import me.jacksonhoggard.raydream.util.MathUtils;
 import me.jacksonhoggard.raydream.util.ProgressListener;
@@ -331,32 +332,34 @@ public class Scene {
 
                 // Shading context
                 Vector3D p = hit.point();
-                Vector3D n = hit.normal();
+                Vector3D ng = new Vector3D(hit.normal());
+                Vector3D ns = new Vector3D(hit.normal());
                 Vector3D wo = ray.direction().negated();
-                Material mat = !hit.primitive().isLight() ? ((Object) hit.primitive()).getMaterial() : null;
+                Material<? extends BxDF> mat = !hit.primitive().isLight() ? ((Object) hit.primitive()).getMaterial() : null;
                 Vector2D uv = hit.texCoord();
                 Vector3D tan = new Vector3D();
                 Vector3D bitan = new Vector3D();
                 if (hit.triangle() != null) {
                     tan = hit.triangle().getTangent();
-                    bitan = hit.triangle().getBitangent(n);
+                    bitan = hit.triangle().getBitangent(ns);
                 } else if (!hit.primitive().isLight()) {
-                    tan = ((Object) hit.primitive()).calcTangent(n);
-                    bitan = ((Object) hit.primitive()).calcBitangent(n, tan);
+                    tan = ((Object) hit.primitive()).calcTangent(ns);
+                    bitan = ((Object) hit.primitive()).calcBitangent(ns, tan);
                 }
                 // Apply bump map if exists
                 if (!hit.primitive().isLight()) {
                     if (mat.getBumpMap() != null) {
-                        n.set(mat.getBumpMap().apply(n, tan, bitan, uv));
+                        ns.set(mat.getBumpMap().apply(ns, tan, bitan, uv));
                     }
                     // Transform all vectors to world space
-                    n.set(MathUtils.transformNormalToWS(n, ((Object) hit.primitive()).getNormalMatrix())).normalize();
+                    ns.set(MathUtils.transformNormalToWS(ns, ((Object) hit.primitive()).getNormalMatrix())).normalize();
+                    ng.set(MathUtils.transformNormalToWS(ng, ((Object) hit.primitive()).getNormalMatrix())).normalize();
                     tan = MathUtils.transformDirectionToWS(tan, ((Object) hit.primitive()).getTransformMatrix()).normalize();
                     bitan = MathUtils.transformDirectionToWS(bitan, ((Object) hit.primitive()).getTransformMatrix()).normalize();
                 }
 
                 // Add emission when hitting a light source
-                if (hit.primitive().isLight() || mat.getEmittance().dot(mat.getEmittance()) > 0.0D) {
+                if (hit.primitive().isLight() || mat.isEmissive()) {
                     Vector3D Le = hit.primitive().isLight() ? Vector3D.mult(((Light) hit.primitive()).getColor(), ((Light) hit.primitive()).getBrightness()) : mat.getEmittance();
                     if (bounce == 0 || prevDelta) {
                         L.add(Vector3D.mult(beta, Le));
@@ -365,29 +368,33 @@ public class Scene {
                         break; // Light hit -> terminate
                 }
 
-                BSDF bsdf = (mat != null) ? new BSDF(
-                    n,
-                    mat.getAlbedo(uv),
-                    mat.getMetallic(), mat.getSubsurface(), mat.getSpecular(), mat.getRoughness(),
-                    mat.getSpecularTint(), mat.getSheen(), mat.getSheenTint(),
-                    mat.getClearcoat(), mat.getClearcoatGloss(),
-                    mat.getSpecularTransmission(), mat.getIndexOfRefraction(),
-                    mat.isThin()
-                ) : null;
+                boolean entering = ng.dot(wo) > 0;
+
+                // Absorption for transmission
+                if(!entering) {
+                    beta.mult(
+                        new Vector3D(
+                            Math.exp(-hit.t() * mat.getAlbedo(uv).x),
+                            Math.exp(-hit.t() * mat.getAlbedo(uv).y),
+                            Math.exp(-hit.t() * mat.getAlbedo(uv).z))
+                    );
+                }
+
+                BxDF bxdf = mat.createBxDF(ng, ns, uv);
 
                 // Next event estimation (sample lights) with MIS
                 // Pick a light, sample a direction wi toward it, shadow test, and accumulate.
                 LightSample ls = sampleLight(p);
                 if (ls != null && ls.pdf() > 0.0D && !ls.Li().equals(Vector3D.ZERO)) {
                     Ray shadow = new Ray(
-                            Vector3D.add(p, Vector3D.mult(n, EPS)),
+                            Vector3D.add(p, Vector3D.mult(ng, EPS)),
                             ls.wi());
                     boolean visible = !bvh.intersectShadowRay(shadow, ls.dist() - EPS);
 
                     if (visible) {
-                        Vector3D f = bsdf.eval(wo, ls.wi());
-                        double cos = Math.abs(n.dot(ls.wi()));
-                        double bsdfPdf = bsdf.pdf(wo, ls.wi());
+                        Vector3D f = bxdf.eval(wo, ls.wi());
+                        double cos = Math.abs(ns.dot(ls.wi()));
+                        double bsdfPdf = bxdf.pdf(wo, ls.wi());
                         double w = powerHeuristic(ls.pdf(), bsdfPdf);
                         if (bsdfPdf > 0.0D) {
                             Vector3D contrib = f.mult(cos * w / ls.pdf());
@@ -399,13 +406,13 @@ public class Scene {
                 }
 
                 // Sample BSDF to continue the path
-                BSDFSample s = bsdf.sample(wo);
+                BxDFSample s = bxdf.sample(wo);
                 if (s == null || s.pdf() <= 0.0D || s.f().equals(Vector3D.ZERO)) {
                     break;
                 }
 
                 // Throughput update: beta *= f * |n . wi| / pdf
-                double cos = Math.abs(n.dot(s.l()));
+                double cos = Math.abs(ng.dot(s.wi()));
                 beta.mult(Vector3D.mult(s.f(), cos).div(s.pdf()));
 
                 if (bounce >= rrStart) {
@@ -418,9 +425,15 @@ public class Scene {
                 }
 
                 // Spawn next ray
-                Vector3D offsetNormal = (n.dot(s.l()) > 0.0D) ? n : n.negated();
-                Vector3D origin = Vector3D.add(p, Vector3D.mult(offsetNormal, EPS));
-                ray = new Ray(origin, s.l());
+                Vector3D origin;
+                if(s.event() == BxDF.Event.TRANSMIT) {
+                    origin = s.wi().dot(ng) < 0 ?
+                        Vector3D.sub(p, Vector3D.mult(ng, EPS)) :
+                        Vector3D.add(p, Vector3D.mult(ng, EPS));
+                } else {
+                    origin = Vector3D.add(p, Vector3D.mult(ng, EPS));
+                }
+                ray = new Ray(origin, s.wi());
                 prevDelta = s.isDelta();
             }
 

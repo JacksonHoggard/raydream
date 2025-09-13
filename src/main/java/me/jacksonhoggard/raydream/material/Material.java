@@ -1,162 +1,44 @@
 package me.jacksonhoggard.raydream.material;
 
-import me.jacksonhoggard.raydream.config.ApplicationConfig;
-import me.jacksonhoggard.raydream.math.Ray;
+import java.util.HashMap;
+
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
-import me.jacksonhoggard.raydream.util.MathUtils;
 
-public class Material {
-    // Disney BRDF
+public class Material<T extends BxDF> {
+
     private final Vector3D albedo;
     private final Vector3D emittance;
-    private final double subsurface;
-    private final double metallic;
-    private final double specular;
-    private final double specularTint;
-    private final double specularTransmission;
-    private final double roughness;
-    private final double anisotropic;
-    private final double sheen;
-    private final double sheenTint;
-    private final double clearcoat;
-    private final double clearcoatGloss;
-
-    // Other parameters
-    private final boolean thin;
     private final double indexOfRefraction;
     private final Texture texture;
     private final BumpMap bumpMap;
+    private final HashMap<String, Object> parameters;
+    private final Class<T> bxdfClass;
 
-    public Material(
+    private Material(Class<T> bxdfClass,
         Vector3D albedo,
         Vector3D emittance,
-        double subsurface,
-        double metallic,
-        double specular,
-        double specularTint,
-        double specularTransmission,
-        double roughness,
-        double anisotropic,
-        double sheen,
-        double sheenTint,
-        double clearcoat,
-        double clearcoatGloss,
-        boolean thin,
         double indexOfRefraction,
         Texture texture,
-        BumpMap bumpMap
+        BumpMap bumpMap,
+        HashMap<String, Object> parameters
     ) {
-        this.albedo = albedo;
-        this.emittance = emittance;
-        this.subsurface = subsurface;
-        this.metallic = metallic;
-        this.specular = specular;
-        this.specularTint = specularTint;
-        this.specularTransmission = specularTransmission;
-        this.roughness = roughness;
-        this.anisotropic = anisotropic;
-        this.sheen = sheen;
-        this.sheenTint = sheenTint;
-        this.clearcoat = clearcoat;
-        this.clearcoatGloss = clearcoatGloss;
-        this.thin = thin;
+        this.albedo = new Vector3D(
+            Math.clamp(albedo.x, 0, 1),
+            Math.clamp(albedo.y, 0, 1),
+            Math.clamp(albedo.z, 0, 1)
+        );
+        this.emittance = new Vector3D(
+            Math.clamp(emittance.x, 0, 1),
+            Math.clamp(emittance.y, 0, 1),
+            Math.clamp(emittance.z, 0, 1)
+        );
         this.indexOfRefraction = indexOfRefraction;
         this.texture = texture;
         this.bumpMap = bumpMap;
-    }
-
-    public static Vector3D reflect(Ray rayIn, Vector3D normal) {
-        Vector3D v = rayIn.direction().normalized();
-        return v.sub((Vector3D.mult(normal, 2*v.dot(normal))));
-    }
-
-    public static Vector3D refract(Ray rayIn, Vector3D normal, double ratio) {
-        Vector3D v = rayIn.direction().normalized();
-        double cosi = Math.clamp(v.dot(normal), -1, 1);
-        double etai = 1;
-        double etat = ratio;
-        Vector3D n = new Vector3D(normal);
-        if(cosi < 0) {
-            cosi = -cosi;
-        } else {
-            double temp = etai;
-            etai = etat;
-            etat = temp;
-            n.negate();
-        }
-        double eta = etai / etat;
-        double k = 1 - eta * eta * (1 - cosi * cosi);
-        return k < 0 ? new Vector3D() : v.mult(eta).add(n.mult(eta * cosi - Math.sqrt(k)));
-    }
-
-    // Fresnel for dielectrics
-    public double fresnelDielectric(Ray rayIn, Vector3D normal) {
-        Vector3D v = rayIn.direction().normalized();
-        double cosi = Math.clamp(v.dot(normal), -1, 1);
-        double etai = 1;
-        double etat = indexOfRefraction;
-        if(cosi > 0) {
-            double temp = etai;
-            etai = etat;
-            etat = temp;
-        }
-        double sint = etai / etat * Math.sqrt(Math.max(0.0D, 1 - cosi * cosi));
-        if(sint >= 1)
-            return 1.0D;
-        double cost = Math.sqrt(Math.max(0.0D, 1 - sint * sint));
-        cosi = Math.abs(cosi);
-        double Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
-        double Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
-        return (Rs * Rs + Rp * Rp) / 2;
-    }
-
-    // Fresnel for metals using Schlick's approximation with extinction coefficient
-    public double fresnelMetal(Ray rayIn, Vector3D normal) {
-        Vector3D v = rayIn.direction().normalized();
-        double cosTheta = Math.abs(Math.clamp(v.dot(normal), -1, 1));
-        
-        // Calculate F0 (reflectance at normal incidence)
-        double F0 = Math.pow((indexOfRefraction - 1) / (indexOfRefraction + 1), 2);
-        
-        // Schlick's approximation
-        return F0 + (1 - F0) * Math.pow(1 - cosTheta, 5);
-    }
-
-    public Ray reflectRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
-        Vector3D direction = reflect(rayIn, normal).normalized();
-        // Apply roughness to create matte reflections
-        if (roughness > 0.0) {
-            direction = perturbReflectionDirection(direction, normal, roughness);
-        }
-        Vector3D origin = direction.dot(normal) < 0.0D ?
-                Vector3D.sub(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON)) :
-                Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
-        return new Ray(origin, direction);
-    }
-    
-    /**
-     * Perturbs a reflection direction based on material roughness to create matte reflections.
-     * Uses a more physically-based approach with cosine-weighted hemisphere sampling.
-     * @param perfectReflection the perfect mirror reflection direction
-     * @param roughness the surface roughness (0.0 = perfect mirror, 1.0 = very rough)
-     * @return perturbed reflection direction
-     */
-    private Vector3D perturbReflectionDirection(Vector3D perfectReflection, Vector3D normal, double roughness) {
-        // Use a more conservative roughness mapping to avoid excessive noise
-        double effectiveRoughness = roughness * roughness; // Square the roughness for more gradual falloff
-        // Generate a random vector in the hemisphere around the surface normal
-        Vector3D randomInHemisphere = MathUtils.randomHemisphere(normal);
-        // Interpolate between perfect reflection and random direction
-        return MathUtils.lerp(perfectReflection, randomInHemisphere, effectiveRoughness).normalize();
-    }
-    
-    public Ray refractRay(Ray rayIn, Vector3D pointHit, Vector3D normal) {
-        Vector3D direction = refract(rayIn, normal, indexOfRefraction).normalize();
-        Vector3D origin = direction.dot(normal) < 0 ?
-                Vector3D.sub(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON)) :
-                Vector3D.add(pointHit, Vector3D.mult(normal, ApplicationConfig.RAY_OFFSET_EPSILON));
-        return new Ray(origin, direction);
+        this.parameters = parameters;
+        this.bxdfClass = bxdfClass;
     }
 
     public Vector3D getAlbedo(Vector2D texCoord) {
@@ -169,54 +51,6 @@ public class Material {
         return emittance;
     }
 
-    public double getSubsurface() {
-        return subsurface;
-    }
-
-    public double getMetallic() {
-        return metallic;
-    }
-
-    public double getSpecular() {
-        return specular;
-    }
-
-    public double getSpecularTint() {
-        return specularTint;
-    }
-
-    public double getSpecularTransmission() {
-        return specularTransmission;
-    }
-
-    public double getRoughness() {
-        return roughness;
-    }
-
-    public double getAnisotropic() {
-        return anisotropic;
-    }
-
-    public double getSheen() {
-        return sheen;
-    }
-
-    public double getSheenTint() {
-        return sheenTint;
-    }
-
-    public double getClearcoat() {
-        return clearcoat;
-    }
-
-    public double getClearcoatGloss() {
-        return clearcoatGloss;
-    }
-
-    public boolean isThin() {
-        return thin;
-    }
-
     public double getIndexOfRefraction() {
         return indexOfRefraction;
     }
@@ -227,5 +61,40 @@ public class Material {
 
     public BumpMap getBumpMap() {
         return bumpMap;
+    }
+
+    public boolean isEmissive() {
+        return !emittance.equals(Vector3D.ZERO);
+    }
+
+    public T createBxDF(Vector3D ng, Vector3D ns, Vector2D uv) {
+        T bxdf = null;
+        try {
+            bxdf = (T) bxdfClass.getConstructor(Vector3D.class, Vector3D.class, Vector3D.class, HashMap.class)
+            .newInstance(ng, ns, getAlbedo(uv), parameters);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return bxdf;
+    }
+
+    public static <T extends BxDF> Material<T> of(
+        Class<T> type,
+        Vector3D albedo,
+        Vector3D emittance,
+        double indexOfRefraction,
+        Texture texture,
+        BumpMap bumpMap,
+        HashMap<String, Object> parameters
+    ) {
+        return new Material<T>(
+            type,
+            albedo,
+            emittance,
+            indexOfRefraction,
+            texture,
+            bumpMap,
+            parameters
+        );
     }
 }

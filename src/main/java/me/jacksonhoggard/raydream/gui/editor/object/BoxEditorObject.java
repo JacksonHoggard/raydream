@@ -4,11 +4,14 @@ import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.BoxModel;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyDiffuse;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Box;
 import me.jacksonhoggard.raydream.object.Object;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
@@ -19,35 +22,28 @@ public class BoxEditorObject extends EditorObject {
 
     private static final EditorModel boxModel = new BoxModel();
 
-    public BoxEditorObject(EditorObjectMaterial material) throws IOException {
+    public BoxEditorObject(EditorObjectMaterial<? extends BxDF> material) throws IOException {
         super(boxModel, material);
         label.set("Box");
     }
 
     public BoxEditorObject() throws IOException {
         this(
-                new EditorObjectMaterial(
+                EditorObjectMaterial.of(
+                        DisneyDiffuse.class,
                         new float[] { 1.0f, 0.0f, 0.0f },
                         new float[] { 0.0f, 0.0f, 0.0f },
-                        0.0f,
-                        0.0f,
-                        0.5f,
-                        0.0f,
-                        0.5f,
-                        0.5f,
-                        0.0f,
-                        0.0f,
-                        0.5f,
-                        0.0f,
-                        1.0f,
-                        false,
                         1.5f,
-                        1.0f
+                        1.0f,
+                        new HashMap<>() {{
+                            put("roughness", (java.lang.Object) Double.valueOf(0.5D));
+                            put("subsurface", (java.lang.Object) Double.valueOf(0.0D));
+                        }}
                 )
         );
     }
 
-    public BoxEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial material, String label) throws IOException {
+    public BoxEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial<? extends BxDF> material, String label) throws IOException {
         super(boxModel, material);
         ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
         this.label.set(label);

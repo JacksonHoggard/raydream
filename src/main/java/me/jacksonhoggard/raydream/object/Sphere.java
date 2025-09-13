@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.object;
 
 import me.jacksonhoggard.raydream.material.Material;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
@@ -8,7 +9,7 @@ import me.jacksonhoggard.raydream.math.Vector3D;
 public class Sphere extends Object {
     private final double radius;
 
-    public Sphere(Transform transform, double radius, Material material) {
+    public Sphere(Transform transform, double radius, Material<? extends BxDF> material) {
         super(transform, material, new Vector3D(-radius, -radius, -radius), new Vector3D(radius, radius, radius));
         this.radius = radius;
     }

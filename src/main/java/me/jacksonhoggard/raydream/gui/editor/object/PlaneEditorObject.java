@@ -4,11 +4,14 @@ import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.gui.editor.model.PlaneModel;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyDiffuse;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Plane;
 import me.jacksonhoggard.raydream.object.Transform;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
@@ -19,35 +22,28 @@ public class PlaneEditorObject extends EditorObject {
 
     private static final EditorModel planeModel = new PlaneModel(200, 200);
 
-    public PlaneEditorObject(EditorObjectMaterial material) throws IOException {
+    public PlaneEditorObject(EditorObjectMaterial<? extends BxDF> material) throws IOException {
         super(planeModel, material);
         label.set("Plane");
     }
 
     public PlaneEditorObject() throws IOException {
         this(
-                new EditorObjectMaterial(
+                EditorObjectMaterial.of(
+                        DisneyDiffuse.class,
                         new float[] {0.6f, 0.4f, 0.2f},
                         new float[] {0.0f, 0.0f, 0.0f},
-                        0.0f,
-                        0.0f,
-                        0.5f,
-                        0.0f,
-                        0.5f,
-                        0.5f,
-                        0.0f,
-                        0.0f,
-                        0.5f,
-                        0.0f,
-                        1.0f,
-                        false,
                         1.5f,
-                        1.0f
+                        1.0f,
+                        new HashMap<>() {{
+                            put("roughness", (java.lang.Object) Double.valueOf(0.5D));
+                            put("subsurface", (java.lang.Object) Double.valueOf(0.0D));
+                        }}
                 )
         );
     }
 
-    public PlaneEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial material, String label) throws IOException {
+    public PlaneEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial<? extends BxDF> material, String label) throws IOException {
         super(planeModel, material);
         ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
         this.label.set(label);

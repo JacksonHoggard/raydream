@@ -3,6 +3,7 @@ package me.jacksonhoggard.raydream.gui.editor.object;
 import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.MeshModel;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Mesh;
@@ -16,11 +17,11 @@ import java.nio.file.Paths;
 public class ModelEditorObject extends EditorObject {
 
     public ModelEditorObject(MeshModel model) throws IOException {
-        super(model, new EditorObjectMaterial());
+        super(model, new EditorObjectMaterial<>());
     }
 
     public ModelEditorObject(MeshModel model, float[] translation, float[] rotation, float[] scale, String label) throws IOException {
-        super(model, new EditorObjectMaterial());
+        super(model, new EditorObjectMaterial<>());
         ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
         this.label.set(label);
     }
@@ -30,7 +31,7 @@ public class ModelEditorObject extends EditorObject {
     }
 
     @Override
-    public EditorObjectMaterial getMaterial() {
+    public EditorObjectMaterial<? extends BxDF> getMaterial() {
         if(!getSubIds().isEmpty()) {
             for(Integer i : getSubIds()) {
                 if(i.intValue() == selected) {

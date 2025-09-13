@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.object;
 
 import me.jacksonhoggard.raydream.material.Material;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
@@ -12,7 +13,7 @@ public class Box extends Object {
     private final Vector3D max;
     private final Vector3D size;
 
-    public Box(Transform transform, Vector3D size, Material material) {
+    public Box(Transform transform, Vector3D size, Material<? extends BxDF> material) {
         super(transform, material, new Vector3D(-size.x/2, -size.y/2, -size.z/2), new Vector3D(size.x/2, size.y/2, size.z/2));
         this.min = new Vector3D(-size.x/2, -size.y/2, -size.z/2);
         this.max = new Vector3D(size.x/2, size.y/2, size.z/2);

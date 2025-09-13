@@ -3,10 +3,13 @@ package me.jacksonhoggard.raydream.gui.editor.object;
 import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.SphereModel;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyDiffuse;
 import me.jacksonhoggard.raydream.object.Object;
 import me.jacksonhoggard.raydream.object.Sphere;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
@@ -21,35 +24,28 @@ public class SphereEditorObject extends EditorObject {
 
     private static final SphereModel sphereModel = new SphereModel();
 
-    public SphereEditorObject(EditorObjectMaterial material) throws IOException {
+    public SphereEditorObject(EditorObjectMaterial<? extends BxDF> material) throws IOException {
         super(sphereModel, material);
         label.set("Sphere");
     }
 
     public SphereEditorObject() throws IOException {
         this(
-                new EditorObjectMaterial(
+                EditorObjectMaterial.of(
+                        DisneyDiffuse.class,
                         new float[]{0.f, 1.f, 1.f},
                         new float[]{0.0f, 0.0f, 0.0f},
-                        0.0f,
-                        0.0f,
-                        0.5f,
-                        0.0f,
-                        0.5f,
-                        0.5f,
-                        0.0f,
-                        0.0f,
-                        0.5f,
-                        0.0f,
-                        1.0f,
-                        false,
                         1.5f,
-                        1.0f
+                        1.0f,
+                        new HashMap<>() {{
+                            put("roughness", (java.lang.Object) Double.valueOf(0.5D));
+                            put("subsurface", (java.lang.Object) Double.valueOf(0.0D));
+                        }}
                 )
         );
     }
 
-    public SphereEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial material, String label) throws IOException {
+    public SphereEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial<? extends BxDF> material, String label) throws IOException {
         super(sphereModel, material);
         ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
         this.label.set(label);

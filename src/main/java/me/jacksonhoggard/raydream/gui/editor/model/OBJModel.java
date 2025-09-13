@@ -2,6 +2,8 @@ package me.jacksonhoggard.raydream.gui.editor.model;
 
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.material.Texture;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyDiffuse;
 import me.jacksonhoggard.raydream.math.Vector2F;
 import me.jacksonhoggard.raydream.math.Vector3F;
 import me.jacksonhoggard.raydream.util.Util;
@@ -20,7 +22,7 @@ public class OBJModel extends MeshModel {
         this.inputStream = inputStream;
     }
 
-    private void loadMTL(String path, Map<String, EditorObjectMaterial> materials) throws IOException {
+    private void loadMTL(String path, Map<String, EditorObjectMaterial<? extends BxDF>> materials) throws IOException {
         path = path.trim();
         if(path.startsWith("./")) path = path.substring(2);
         String parentDir = Paths.get(this.getPath()).getParent().toAbsolutePath().toString() + File.separator;
@@ -31,7 +33,7 @@ public class OBJModel extends MeshModel {
             throw new IOException(e);
         }
 
-        EditorObjectMaterial currentMaterial = null;
+        EditorObjectMaterial<? extends BxDF> currentMaterial = null;
         String mtlName = null;
 
         for(String line : lines) {
@@ -41,31 +43,21 @@ public class OBJModel extends MeshModel {
                 case "newmtl":
                     if(currentMaterial != null)
                         materials.put(mtlName, currentMaterial);
-                    currentMaterial = new EditorObjectMaterial(
+                    currentMaterial = EditorObjectMaterial.of(
+                        DisneyDiffuse.class,
                         new float[3],
                         new float[3],
-                        0.0f,
-                        0.0f,
-                        0.5f,
-                        0.0f,
-                        0.5f,
-                        0.5f,
-                        0.0f,
-                        0.0f,
-                        0.5f,
-                        0.0f,
-                        1.0f,
-                        false,
                         1.5f,
-                        1.0f
+                        1.0f,
+                        new HashMap<>() {{
+                            put("roughness", (Object) Double.valueOf(0.5D));
+                            put("subsurface", (Object) Double.valueOf(0.0D));
+                        }}
                     );
                     mtlName = tokens[1];
                     break;
                 case "Kd":
                     currentMaterial.setAlbedo(parseColor(tokens));
-                    break;
-                case "Ns":
-                    currentMaterial.setSpecular(Float.parseFloat(tokens[1]) / 1000.0F);
                     break;
                 case "Ni":
                     currentMaterial.setIndexOfRefraction(Float.parseFloat(tokens[1]));
@@ -95,7 +87,7 @@ public class OBJModel extends MeshModel {
         };
     }
 
-    private void makeMesh(String label, List<Vector3F> vertices, List<Vector3F> normals, List<Vector2F> textures, EditorObjectMaterial material, Map<Integer[], Vector3F[]> triangles, List<Vector3F[]> triangleNormals, List<Vector2F[]> triangleTexCoords) {
+    private void makeMesh(String label, List<Vector3F> vertices, List<Vector3F> normals, List<Vector2F> textures, EditorObjectMaterial<? extends BxDF> material, Map<Integer[], Vector3F[]> triangles, List<Vector3F[]> triangleNormals, List<Vector2F[]> triangleTexCoords) {
         List<Vector3F> tempNormals = new ArrayList<>(normals);
         List<Vector2F> tempTextures = new ArrayList<>(textures);
         List<Vector3F> tempVertices = new ArrayList<>(vertices);
@@ -120,8 +112,8 @@ public class OBJModel extends MeshModel {
         Map<Integer[], Vector3F[]> triangles = new LinkedHashMap<>();
         List<Vector2F[]> triangleTexCoords = new ArrayList<>();
         List<Vector3F[]> triangleNormals = new ArrayList<>();
-        Map<String, EditorObjectMaterial> materials = new LinkedHashMap<>();
-        EditorObjectMaterial currentMaterial = null;
+        Map<String, EditorObjectMaterial<? extends BxDF>> materials = new LinkedHashMap<>();
+        EditorObjectMaterial<? extends BxDF> currentMaterial = null;
 
         for(String line : lines) {
             String[] tokens = line.split("\\s+");
@@ -131,7 +123,7 @@ public class OBJModel extends MeshModel {
                     break;
                 case "usemtl":
                     if(!triangles.isEmpty()) {
-                        EditorObjectMaterial finalCurrentMaterial = new EditorObjectMaterial(currentMaterial);
+                        EditorObjectMaterial<? extends BxDF> finalCurrentMaterial = new EditorObjectMaterial<>(currentMaterial);
                         makeMesh(materials.entrySet().stream()
                                 .filter(entry -> finalCurrentMaterial.equals(entry.getValue()))
                                 .map(Map.Entry::getKey)
@@ -246,26 +238,19 @@ public class OBJModel extends MeshModel {
         }
 
         if(currentMaterial == null)
-            currentMaterial = new EditorObjectMaterial(
+            currentMaterial = EditorObjectMaterial.of(
+                    DisneyDiffuse.class,
                     new float[3],
                     new float[3],
-                    0.0f,
-                    0.0f,
-                    0.5f,
-                    0.0f,
-                    0.5f,
-                    0.5f,
-                    0.5f,
-                    0.0f,
-                    0.5f,
-                    0.0f,
-                    1.0f,
-                    false,
                     1.5f,
-                    1.0f
+                    1.0f,
+                    new HashMap<>() {{
+                        put("roughness", (Object) Double.valueOf(0.5D));
+                        put("subsurface", (Object) Double.valueOf(0.0D));
+                    }}
             );
         if(!triangles.isEmpty()) {
-            EditorObjectMaterial finalCurrentMaterial = new EditorObjectMaterial(currentMaterial);
+            EditorObjectMaterial<? extends BxDF> finalCurrentMaterial = new EditorObjectMaterial<>(currentMaterial);
             makeMesh(materials.entrySet().stream()
                     .filter(entry -> finalCurrentMaterial.equals(entry.getValue()))
                     .map(Map.Entry::getKey)

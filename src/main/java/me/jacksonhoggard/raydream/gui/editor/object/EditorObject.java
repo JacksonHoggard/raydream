@@ -9,6 +9,7 @@ import me.jacksonhoggard.raydream.gui.editor.light.EditorLight;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.gui.editor.model.MeshModel;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Transform;
 
@@ -25,7 +26,7 @@ public abstract class EditorObject implements IEditorObject {
     private boolean wasDoubleClicked = false;
     private boolean isEditingLabel = false;
     private boolean isExpanded = false;
-    private EditorObjectMaterial material;
+    private EditorObjectMaterial<? extends BxDF> material;
     private final float[] modelMatrix = {
             1.f, 0.f, 0.f, 0.f,
             0.f, 1.f, 0.f, 0.f,
@@ -35,7 +36,7 @@ public abstract class EditorObject implements IEditorObject {
 
     private final EditorModel model;
 
-    public EditorObject(EditorModel model, EditorObjectMaterial material) throws IOException {
+    public EditorObject(EditorModel model, EditorObjectMaterial<? extends BxDF> material) throws IOException {
         this.material = material;
         this.model = model;
         this.model.create();
@@ -125,11 +126,11 @@ public abstract class EditorObject implements IEditorObject {
         );
     }
 
-    public void setMaterial(EditorObjectMaterial material) {
+    public void setMaterial(EditorObjectMaterial<? extends BxDF> material) {
         this.material = material;
     }
 
-    public EditorObjectMaterial getMaterial() {
+    public EditorObjectMaterial<? extends BxDF> getMaterial() {
         return material;
     }
 

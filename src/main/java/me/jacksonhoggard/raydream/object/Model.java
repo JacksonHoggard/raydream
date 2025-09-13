@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.object;
 
 import me.jacksonhoggard.raydream.material.Material;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 import me.jacksonhoggard.raydream.math.Ray;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
@@ -10,7 +11,7 @@ public class Model extends Object {
     private final Mesh mesh;
     private final BVHTriangle bvh;
 
-    public Model(Transform transform, Material material, Mesh mesh) {
+    public Model(Transform transform, Material<? extends BxDF> material, Mesh mesh) {
         super(transform, material, mesh.min(), mesh.max());
         this.mesh = mesh;
         bvh = new BVHTriangle(this.mesh.triangles());

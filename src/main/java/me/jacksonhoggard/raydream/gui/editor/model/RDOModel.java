@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.gui.editor.model;
 
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 import me.jacksonhoggard.raydream.math.Vector2F;
 import me.jacksonhoggard.raydream.math.Vector3F;
 import me.jacksonhoggard.raydream.util.io.SceneReader;
@@ -48,7 +49,7 @@ public class RDOModel extends MeshModel {
         List<Vector3F> vertices = new ArrayList<>();
         List<Vector3F> normals = new ArrayList<>();
         List<Vector2F> texCoords = new ArrayList<>();
-        EditorObjectMaterial material = new EditorObjectMaterial();
+        EditorObjectMaterial<? extends BxDF> material = new EditorObjectMaterial<>();
         StringBuilder label = new StringBuilder();
         String line;
         while(!(line = reader.readLine()).startsWith(";")) {

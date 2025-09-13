@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.gui.editor.model;
 
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
+import me.jacksonhoggard.raydream.material.bxdf.BxDF;
 import me.jacksonhoggard.raydream.math.Vector2F;
 import me.jacksonhoggard.raydream.math.Vector3F;
 import org.lwjgl.BufferUtils;
@@ -48,13 +49,13 @@ public abstract class MeshModel extends EditorModel {
     public class Mesh {
 
         private final String label;
-        private EditorObjectMaterial material;
+        private EditorObjectMaterial<? extends BxDF> material;
         private final float[] vertices;
         private int vertexArrayId;
         private int vertexBufferId;
         private int vertexCount;
 
-        public Mesh(String label, EditorObjectMaterial material, List<Vector3F> vertices, List<Vector3F> normals, List<Vector2F> texCoords) {
+        public Mesh(String label, EditorObjectMaterial<? extends BxDF> material, List<Vector3F> vertices, List<Vector3F> normals, List<Vector2F> texCoords) {
             this.label = label;
             this.material = material;
             // Store vertices
@@ -137,11 +138,11 @@ public abstract class MeshModel extends EditorModel {
             return vertices;
         }
 
-        public EditorObjectMaterial getMaterial() {
+        public EditorObjectMaterial<? extends BxDF> getMaterial() {
             return material;
         }
 
-        public void setMaterial(EditorObjectMaterial material) {
+        public void setMaterial(EditorObjectMaterial<? extends BxDF> material) {
             this.material = material;
         }
 
