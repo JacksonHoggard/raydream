@@ -122,10 +122,11 @@ public class AreaLight extends Light {
     @Override
     public Vector3D normalAt(Vector3D point) {
         Vector3D pointOS = MathUtils.transformPointToOS(point, getInverseTransformMatrix());
-        Vector4D normalOS = new Vector4D(0, 0, pointOS.z, 0).normalize();
-        if(normalOS.length() == 0.0D)
-            normalOS = new Vector4D(0, 0, 1, 0);
-        normalOS = normalOS.mult(getTransformMatrix()).normalized();
+        Vector3D normalOS = new Vector3D(0, 0, pointOS.z);
+        if(normalOS.length() <= 1e-5D)
+            normalOS = new Vector3D(0, 0, 1);
+        normalOS.normalize();
+        MathUtils.transformNormalToWS(normalOS, getInverseTransformMatrix().transpose());
         return new Vector3D(normalOS.x, normalOS.y, normalOS.z);
     }
 }

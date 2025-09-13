@@ -312,11 +312,11 @@ public class Scene {
         }
 
         private Vector3D trace(Ray ray) {
-            final double EPS = 1e-5D;
+            final double EPS = 1e-4D;
 
             Vector3D L = new Vector3D(0, 0, 0); // Accumulated radiance
             Vector3D beta = new Vector3D(1, 1, 1); // Path throughput
-            boolean prevDelta = true; // Whether the previous bounce was a delta bounce (for light hits)
+            boolean prevDelta = false; // Whether the previous bounce was a delta bounce (for light hits)
 
             for (int bounce = 0; bounce < bounces; bounce++) {
                 // Intersect scene
@@ -368,24 +368,12 @@ public class Scene {
                         break; // Light hit -> terminate
                 }
 
-                boolean entering = ng.dot(wo) > 0;
-
-                // Absorption for transmission
-                if(!entering) {
-                    beta.mult(
-                        new Vector3D(
-                            Math.exp(-hit.t() * mat.getAlbedo(uv).x),
-                            Math.exp(-hit.t() * mat.getAlbedo(uv).y),
-                            Math.exp(-hit.t() * mat.getAlbedo(uv).z))
-                    );
-                }
-
                 BxDF bxdf = mat.createBxDF(ng, ns, uv);
 
                 // Next event estimation (sample lights) with MIS
                 // Pick a light, sample a direction wi toward it, shadow test, and accumulate.
                 LightSample ls = sampleLight(p);
-                if (ls != null && ls.pdf() > 0.0D && !ls.Li().equals(Vector3D.ZERO)) {
+                if (ls != null && ls.pdf() > 0.0D && !ls.Li().equals(Vector3D.ZERO) && !prevDelta) {
                     Ray shadow = new Ray(
                             Vector3D.add(p, Vector3D.mult(ng, EPS)),
                             ls.wi());
@@ -413,7 +401,7 @@ public class Scene {
 
                 // Throughput update: beta *= f * |n . wi| / pdf
                 double cos = Math.abs(ng.dot(s.wi()));
-                beta.mult(Vector3D.mult(s.f(), cos).div(s.pdf()));
+                beta.mult(Vector3D.mult(s.f(), cos)).div(s.pdf());
 
                 if (bounce >= rrStart) {
                     double maxBeta = Math.max(beta.x, Math.max(beta.y, beta.z));

@@ -8,6 +8,7 @@ import imgui.flag.ImGuiCond;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImBoolean;
 import imgui.type.ImFloat;
+import imgui.type.ImInt;
 import me.jacksonhoggard.raydream.gui.MenuBar;
 import me.jacksonhoggard.raydream.gui.Window;
 import me.jacksonhoggard.raydream.gui.editor.light.EditorAreaLight;
@@ -19,9 +20,15 @@ import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.material.Texture;
 import me.jacksonhoggard.raydream.gui.editor.object.EditorObject;
 import me.jacksonhoggard.raydream.material.bxdf.BxDF;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyClearcoat;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyDiffuse;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyGlass;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyMetal;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneySheen;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashMap;
 
 public class PropWindow {
 
@@ -35,7 +42,7 @@ public class PropWindow {
     private static final float[] scaleMatrix = new float[3];
 
     private static final ImFloat inputFloat = new ImFloat();
-    private static final float[] inputSnapValue = new float[]{1f, 1f, 1f};
+    private static final float[] inputSnapValue = new float[] { 1f, 1f, 1f };
     private static final ImBoolean inputBoolean = new ImBoolean();
 
     private static EditorObject selectedObject;
@@ -44,6 +51,22 @@ public class PropWindow {
     public static final int MATERIAL_TAB = 1;
     private static int selectedTab = 0;
 
+    private static final ImInt selectedMaterial = new ImInt();
+    private static String[] MATERIALS = new String[] {
+            "DisneyDiffuse",
+            "DisneyMetal",
+            "DisneySheen",
+            "DisneyClearcoat",
+            "DisneyGlass"
+    };
+    private static final HashMap<String, Integer> MATERIALS_MAP = new HashMap<>() {{
+        put("DisneyDiffuse", 0);
+        put("DisneyMetal", 1);
+        put("DisneySheen", 2);
+        put("DisneyClearcoat", 3);
+        put("DisneyGlass", 4);
+    }};
+
     public static void show() {
         width = ImGui.getMainViewport().getSizeX() / 5.f;
         height = ImGui.getMainViewport().getSizeY() - EditorWindow.getPosY();
@@ -51,10 +74,13 @@ public class PropWindow {
         posY = MenuBar.getHeight();
         ImGui.setNextWindowPos(posX, posY, ImGuiCond.Always);
         ImGui.setNextWindowSize(width, height, ImGuiCond.Always);
-        if (ImGui.begin("Properties", ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoDecoration | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoScrollWithMouse)) {
+        if (ImGui.begin("Properties",
+                ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.AlwaysAutoResize
+                        | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoDecoration
+                        | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoScrollWithMouse)) {
             selectedObject = ObjectWindow.getSelectedObject();
             selectedLight = ObjectWindow.getSelectedLight();
-            if(selectedObject != null || selectedLight != null) {
+            if (selectedObject != null || selectedLight != null) {
                 ImGui.pushFont(Window.getTitleFont());
                 float buttonWidth = (ImGui.getContentRegionAvailX()) / 2.0f;
                 ImGui.pushItemWidth(buttonWidth);
@@ -68,7 +94,7 @@ public class PropWindow {
                 float childHeight = ImGui.getContentRegionAvailY();
                 ImGui.beginChild("##scrolling", 0.0f, childHeight, true, ImGuiWindowFlags.HorizontalScrollbar);
                 ImGui.pushFont(Window.getBodyFont());
-                switch(selectedTab) {
+                switch (selectedTab) {
                     case TRANSFORM_TAB:
                         showTransformTab();
                         break;
@@ -87,13 +113,15 @@ public class PropWindow {
     }
 
     private static void showTransformTab() {
-        if(selectedObject != null) {
+        if (selectedObject != null) {
             ImGui.pushItemWidth(ImGui.getContentRegionAvailX());
-            ImGuizmo.decomposeMatrixToComponents(selectedObject.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
+            ImGuizmo.decomposeMatrixToComponents(selectedObject.getModelMatrix(), translationMatrix, rotationMatrix,
+                    scaleMatrix);
             ImGui.inputFloat3("Tr", translationMatrix, "%.4f");
             ImGui.inputFloat3("Rt", rotationMatrix, "%.4f");
             ImGui.inputFloat3("Sc", scaleMatrix, "%.4f");
-            ImGuizmo.recomposeMatrixFromComponents(selectedObject.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
+            ImGuizmo.recomposeMatrixFromComponents(selectedObject.getModelMatrix(), translationMatrix, rotationMatrix,
+                    scaleMatrix);
             ImGui.popItemWidth();
 
             if (EditorWindow.getCurrentGizmoOperation() != Operation.SCALE) {
@@ -124,36 +152,51 @@ public class PropWindow {
                     break;
             }
         }
-        if(selectedLight != null) {
+        if (selectedLight != null) {
             ImGui.pushItemWidth(ImGui.getContentRegionAvailX());
-            ImGuizmo.decomposeMatrixToComponents(selectedLight.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
-            if(selectedLight instanceof EditorSphereLight) {
+            ImGuizmo.decomposeMatrixToComponents(selectedLight.getModelMatrix(), translationMatrix, rotationMatrix,
+                    scaleMatrix);
+            if (selectedLight instanceof EditorSphereLight) {
                 ImGui.inputFloat3("Position", translationMatrix, "%.3f");
                 inputFloat.set(((EditorSphereLight) selectedLight).getRadius());
                 ImGui.inputFloat("Radius", inputFloat);
                 ((EditorSphereLight) selectedLight).setRadius(inputFloat.get());
-                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix, rotationMatrix, new float[]{inputFloat.get(), inputFloat.get(), inputFloat.get()});
+                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix,
+                        rotationMatrix, new float[] { inputFloat.get(), inputFloat.get(), inputFloat.get() });
             }
-            if(selectedLight instanceof EditorPointLight) {
+            if (selectedLight instanceof EditorPointLight) {
                 ImGui.inputFloat3("Position", translationMatrix, "%.3f");
-                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
+                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix,
+                        rotationMatrix, scaleMatrix);
             }
-            if(selectedLight instanceof EditorAreaLight) {
+            if (selectedLight instanceof EditorAreaLight) {
                 ImGui.inputFloat3("Tr", translationMatrix, "%.3f");
                 ImGui.inputFloat3("Rt", rotationMatrix, "%.3f");
                 ImGui.inputFloat3("Sc", scaleMatrix, "%.3f");
-                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix, rotationMatrix, scaleMatrix);
+                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix,
+                        rotationMatrix, scaleMatrix);
             }
             ImGui.popItemWidth();
         }
 
     }
 
+    @SuppressWarnings("rawtypes")
     private static void showMaterialTab() {
-        if(selectedObject != null && selectedObject.getMaterial() != null) {
+        if (selectedObject != null && selectedObject.getMaterial() != null) {
             ImGui.pushItemWidth(ImGui.getContentRegionAvailX());
             EditorObjectMaterial<? extends BxDF> material = selectedObject.getMaterial();
-            if(material.getTexture() == null) {
+            selectedMaterial.set(MATERIALS_MAP.get(material.getBxDFClass().getSimpleName()).intValue());
+            if (ImGui.combo("Material", selectedMaterial, MATERIALS)) {
+                switch (selectedMaterial.get()) {
+                    case 0 -> material.setBxDFClass((Class)DisneyDiffuse.class);
+                    case 1 -> material.setBxDFClass((Class)DisneyMetal.class);
+                    case 2 -> material.setBxDFClass((Class)DisneySheen.class);
+                    case 3 -> material.setBxDFClass((Class)DisneyClearcoat.class);
+                    case 4 -> material.setBxDFClass((Class)DisneyGlass.class);
+                }
+            }
+            if (material.getTexture() == null) {
                 ImGui.colorEdit3("Albedo", material.getAlbedo());
             }
             ImGui.colorEdit3("Emittance", material.getEmittance());
@@ -161,16 +204,15 @@ public class PropWindow {
             ImGui.inputFloat("Index of Refraction", inputFloat);
             material.setIndexOfRefraction(inputFloat.get());
             material.showParameters(
-                inputFloat,
-                inputBoolean
-            );
-            if(material.getBumpMap() != null) {
+                    inputFloat,
+                    inputBoolean);
+            if (material.getBumpMap() != null) {
                 inputFloat.set(material.getBumpScale());
                 ImGui.inputFloat("Bump Scale", inputFloat);
                 material.setBumpScale(inputFloat.get());
             }
             ImGui.popItemWidth();
-            if(material.getTexture() == null) {
+            if (material.getTexture() == null) {
                 if (ImGui.button("Choose texture")) {
                     String path = DialogWindow.openFileChooser("Image files", "png", "jpg", "bmp");
                     if (path != null) {
@@ -182,38 +224,38 @@ public class PropWindow {
                     }
                 }
             } else {
-                if(ImGui.button("Remove texture")) {
+                if (ImGui.button("Remove texture")) {
                     material.getTexture().remove();
                     material.setTexture(null);
                 }
-                if(material.getTexture() != null) {
+                if (material.getTexture() != null) {
                     ImGui.text(material.getTexture().getPath());
                     ImGui.image(material.getTexture().getId(), 200, 200);
                 }
             }
-            if(material.getBumpMap() == null) {
-                if(ImGui.button("Choose bump map")) {
+            if (material.getBumpMap() == null) {
+                if (ImGui.button("Choose bump map")) {
                     String path = DialogWindow.openFileChooser("Image files", "png", "jpg", "bmp");
-                    if(path != null) {
+                    if (path != null) {
                         try {
                             material.setBumpMap(new Texture(path));
-                        } catch(IOException e) {
+                        } catch (IOException e) {
                             DialogWindow.showError("Unable to load bump map: ", e);
                         }
                     }
                 }
             } else {
-                if(ImGui.button("Remove bump map")) {
+                if (ImGui.button("Remove bump map")) {
                     material.getBumpMap().remove();
                     material.setBumpMap(null);
                 }
-                if(material.getBumpMap() != null) {
+                if (material.getBumpMap() != null) {
                     ImGui.text(material.getBumpMap().getPath());
                     ImGui.image(material.getBumpMap().getId(), 200, 200);
                 }
             }
         }
-        if(selectedLight != null) {
+        if (selectedLight != null) {
             ImGui.pushItemWidth(ImGui.getContentRegionAvailX());
             EditorLightMaterial material = selectedLight.getMaterial();
             ImGui.colorEdit3("Color", material.getColor());

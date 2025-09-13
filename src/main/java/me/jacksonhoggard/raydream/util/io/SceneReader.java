@@ -14,6 +14,11 @@ import me.jacksonhoggard.raydream.gui.editor.object.SphereEditorObject;
 import me.jacksonhoggard.raydream.gui.editor.window.ObjectWindow;
 import me.jacksonhoggard.raydream.gui.editor.window.SettingsWindow;
 import me.jacksonhoggard.raydream.material.bxdf.BxDF;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyClearcoat;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyDiffuse;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyGlass;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneyMetal;
+import me.jacksonhoggard.raydream.material.bxdf.disney.DisneySheen;
 
 import java.io.*;
 import java.nio.file.Path;
@@ -392,6 +397,27 @@ public class SceneReader {
         while(!(line = reader.readLine()).trim().startsWith("/") && line.trim().startsWith("|")) {
             String[] params = line.trim().split("\\s+");
             switch(params[1]) {
+                case "type:":
+                    switch(params[2]) {
+                        case "DisneyDiffuse":
+                            material.setBxDFClass((Class) DisneyDiffuse.class);
+                            break;
+                        case "DisneyMetal":
+                            material.setBxDFClass((Class) DisneyMetal.class);
+                            break;
+                        case "DisneySheen":
+                            material.setBxDFClass((Class) DisneySheen.class);
+                            break;
+                        case "DisneyClearcoat":
+                            material.setBxDFClass((Class) DisneyClearcoat.class);
+                            break;
+                        case "DisneyGlass":
+                            material.setBxDFClass((Class) DisneyGlass.class);
+                            break;
+                        default:
+                            throw new UnrecognizedTokenException(params[2]);
+                    }
+                    break;
                 case "albedo:":
                     material.setAlbedo(new float[] {
                             Float.parseFloat(params[2]),
@@ -435,9 +461,7 @@ public class SceneReader {
         String line;
         while(!(line = reader.readLine()).trim().startsWith("/") && line.trim().startsWith("|")) {
             String[] params = line.trim().split("\\s+");
-            // Clean the parameter value by removing trailing slash if present
-            String paramValue = params[2].endsWith("/") ? params[2].substring(0, params[2].length() - 1) : params[2];
-            material.setParameter(params[1].replace(":", ""), Double.parseDouble(paramValue));
+            material.setParameter(params[1].replace(":", ""), Double.parseDouble(params[2]));
         }
     }
 

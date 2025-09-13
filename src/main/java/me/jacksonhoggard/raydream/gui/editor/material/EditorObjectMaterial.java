@@ -24,7 +24,7 @@ public class EditorObjectMaterial<T extends BxDF> {
     private Texture bumpMap;
     private float bumpScale;
     private final HashMap<String, Object> parameters;
-    private final Class<T> bxdfClass;
+    private Class<T> bxdfClass;
 
     public static <T extends BxDF> EditorObjectMaterial<T> of(
             Class<T> bxdfClass,
@@ -103,6 +103,15 @@ public class EditorObjectMaterial<T extends BxDF> {
                 bumpMap != null ? Util.loadBumpMap(bumpMap.getPath(), bumpScale) : null,
                 parameters
         );
+    }
+
+    public void setBxDFClass(Class<T> bxdfClass) {
+        this.parameters.clear();
+        this.bxdfClass = bxdfClass;
+        if(bxdfClass.equals(DisneyDiffuse.class)) {
+            this.parameters.put("roughness", (Object) Double.valueOf(0.5D));
+            this.parameters.put("subsurface", (Object) Double.valueOf(0.0D));
+        }
     }
 
     public Class<T> getBxDFClass() {
@@ -189,6 +198,7 @@ public class EditorObjectMaterial<T extends BxDF> {
         if(bumpMap != null)
             bumpPath = Paths.get(path).relativize(Paths.get(bumpMap.getPath())).toString();
         return "material:\n" +
+                "| type: " + bxdfClass.getSimpleName() + "\n" +
                 "| albedo: " + albedo[0] + " " + albedo[1] + " " + albedo[2] + "\n" +
                 "| emittance: " + emittance[0] + " " + emittance[1] + " " + emittance[2] + "\n" +
                 "| indexOfRefraction: " + indexOfRefraction + "\n" +

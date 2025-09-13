@@ -164,6 +164,7 @@ public class BVH {
         // Leaf node - test objects for shadow ray intersection with object space transform
         if (node.primitives != null) {
             for (Primitive primitive : node.primitives) {
+                if (primitive.isLight()) continue; // Skip lights for shadow rays
                 // Transform ray to object space (critical for correct intersection)
                 Vector4D rOriginOS = new Vector4D(ray.origin().x, ray.origin().y, ray.origin().z, 1);
                 Vector4D rDirOS = new Vector4D(ray.direction().x, ray.direction().y, ray.direction().z, 0);

@@ -101,7 +101,7 @@ public abstract class BxDF implements IBxDF {
         return toWorld(n, hLocal);
     }
 
-    protected static Vector3D sampleCosineHemisphere(Vector3D n) {
+    protected static Vector3D sampleCosineHemisphere() {
         double u1 = MathUtils.random();
         double u2 = MathUtils.random();
         double r = Math.sqrt(u1);
@@ -109,7 +109,7 @@ public abstract class BxDF implements IBxDF {
         double x = r * Math.cos(theta);
         double y = r * Math.sin(theta);
         double z = Math.sqrt(Math.max(0.0, 1.0 - u1));
-        return toWorld(n, new Vector3D(x, y, z));
+        return new Vector3D(x, y, z);
     }
 
     protected static double cosineHemispherePdf(double cos) {
