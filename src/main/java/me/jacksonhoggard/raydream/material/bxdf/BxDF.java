@@ -81,7 +81,7 @@ public abstract class BxDF implements IBxDF {
         double u1 = MathUtils.random();
         double u2 = MathUtils.random();
         double a2 = a * a;
-        double tan2 = a2 * u1 / (1.0 - u1 + 1e-20);
+        double tan2 = a2 * u1 / (1.0 - u1);
         double cos = 1.0 / Math.sqrt(1.0 + tan2);
         double sin = Math.sqrt(Math.max(0.0, 1.0 - cos * cos));
         double phi = 2.0 * Math.PI * u2;
@@ -125,6 +125,15 @@ public abstract class BxDF implements IBxDF {
         return Vector3D
                 .add(Vector3D.add(Vector3D.mult(T, vLocal.x), Vector3D.mult(B, vLocal.y)), Vector3D.mult(N, vLocal.z))
                 .normalized();
+    }
+
+    protected static Vector3D toLocal(Vector3D v, Vector3D N) {
+        // Build an ONB from N
+        Vector3D T = (Math.abs(N.z) < 0.999) ? new Vector3D(0, 0, 1).cross(N).normalized()
+                : new Vector3D(0, 1, 0).cross(N).normalized();
+        Vector3D B = N.cross(T);
+        // vLocal = (v . T, v . B, v . N)
+        return new Vector3D(v.dot(T), v.dot(B), v.dot(N));
     }
 
     protected static Vector3D microfacetHalfForRefraction(Vector3D wo, Vector3D wi, double eta) {

@@ -261,6 +261,24 @@ public class EditorObjectMaterial<T extends BxDF> {
         ImFloat inputFloat,
         ImBoolean inputBoolean
     ) {
+        Object roughness = this.parameters.get("roughness");
+        if(roughness == null) {
+            this.parameters.put("roughness", (Object) Double.valueOf(0.5D));
+        } else if(!(roughness instanceof Double)) {
+            this.parameters.put("roughness", (Object) Double.valueOf(((Number) roughness).doubleValue()));
+        }
+        Object anisotropic = this.parameters.get("anisotropic");
+        if(anisotropic == null) {
+            this.parameters.put("anisotropic", (Object) Double.valueOf(0.0D));
+        } else if(!(anisotropic instanceof Double)) {
+            this.parameters.put("anisotropic", (Object) Double.valueOf(((Number) anisotropic).doubleValue()));
+        }
+        inputFloat.set(((Double) this.parameters.get("roughness")).floatValue());
+        ImGui.inputFloat("Roughness", inputFloat);
+        this.parameters.put("roughness", (Object) Double.valueOf(inputFloat.get()));
+        inputFloat.set(((Double) this.parameters.get("anisotropic")).floatValue());
+        ImGui.inputFloat("Anisotropic", inputFloat);
+        this.parameters.put("anisotropic", (Object) Double.valueOf(inputFloat.get()));
     }
 
     private void showDisneyClearcoatParameters(
