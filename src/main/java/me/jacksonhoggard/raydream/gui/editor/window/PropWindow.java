@@ -41,7 +41,7 @@ public class PropWindow {
     private static final float[] rotationMatrix = new float[3];
     private static final float[] scaleMatrix = new float[3];
 
-    private static final ImFloat inputFloat = new ImFloat();
+    private static ImFloat inputFloat = new ImFloat();
     private static final float[] inputSnapValue = new float[] { 1f, 1f, 1f };
     private static final ImBoolean inputBoolean = new ImBoolean();
 
@@ -134,6 +134,9 @@ public class PropWindow {
             }
 
             ImGui.checkbox("Snap", EditorWindow.getUseSnap());
+            if(inputFloat.getData() == null) {
+                inputFloat = new ImFloat();
+            }
             inputFloat.set(inputSnapValue[0]);
             switch (EditorWindow.getCurrentGizmoOperation()) {
                 case Operation.TRANSLATE:
