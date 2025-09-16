@@ -37,7 +37,7 @@ public class EditorSphereLight extends EditorLight {
 
     public EditorSphereLight(float[] translation, float[] rotation, float[] scale, EditorLightMaterial material, String label) throws IOException {
         super(sphereModel, material);
-        ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
+        ImGuizmo.recomposeMatrixFromComponents(translation, rotation, scale, this.getModelMatrix());
         this.radius = scale[0];
         this.label.set(label);
     }

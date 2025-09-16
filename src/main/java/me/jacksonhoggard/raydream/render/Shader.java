@@ -7,11 +7,12 @@ import me.jacksonhoggard.raydream.util.Util;
 import java.io.IOException;
 import java.io.InputStream;
 
+import static org.lwjgl.opengl.GL11.GL_FALSE;
 import static org.lwjgl.opengl.GL20.*;
 
 public class Shader {
     private static final Logger logger = ApplicationContext.getInstance().getLoggingService().getLogger(Shader.class);
-    
+
     private final int programId;
     private final int vertexShaderId;
     private final int fragmentShaderId;
@@ -20,7 +21,8 @@ public class Shader {
         // Compile and attach shaders
         try {
             vertexShaderId = createShader(ClassLoader.getSystemResourceAsStream(vertexShaderFile), GL_VERTEX_SHADER);
-            fragmentShaderId = createShader(ClassLoader.getSystemResourceAsStream(fragmentShaderFile), GL_FRAGMENT_SHADER);
+            fragmentShaderId = createShader(ClassLoader.getSystemResourceAsStream(fragmentShaderFile),
+                    GL_FRAGMENT_SHADER);
         } catch (RuntimeException e) {
             throw new RuntimeException("Could not load glsl file.");
         }
@@ -32,7 +34,7 @@ public class Shader {
 
     private int createProgram() {
         int id = glCreateProgram();
-        if(id == 0)
+        if (id == 0)
             throw new RuntimeException("Could create shader program.");
         return id;
     }
@@ -40,7 +42,7 @@ public class Shader {
     private int createShader(InputStream shaderInput, int shaderType) {
         String shaderSource = Util.loadShader(shaderInput);
         int shaderId = glCreateShader(shaderType);
-        if(shaderType == 0)
+        if (shaderType == 0)
             throw new RuntimeException("Could not create shader.");
 
         glShaderSource(shaderId, shaderSource);
@@ -56,7 +58,7 @@ public class Shader {
     }
 
     private void link() {
-        if(programId == 0)
+        if (programId == 0)
             throw new RuntimeException("Trying to link an invalid/released program");
 
         glAttachShader(programId, vertexShaderId);
@@ -69,9 +71,11 @@ public class Shader {
         }
 
         // Validate the shader program
-        glValidateProgram(programId);
-        if (glGetProgrami(programId, GL_VALIDATE_STATUS) == GL_FALSE) {
-            logger.warn("Warning validating Shader code: " + glGetProgramInfoLog(programId, 1024));
+        if (!System.getProperty("os.name").contains("Mac")) { // validation is not working on Mac, skip for now
+            glValidateProgram(programId);
+            if (glGetProgrami(programId, GL_VALIDATE_STATUS) == GL_FALSE) {
+                logger.warn("Warning validating Shader code: " + glGetProgramInfoLog(programId, 1024));
+            }
         }
     }
 
@@ -86,11 +90,11 @@ public class Shader {
     public void cleanup() {
         unuse();
         if (programId != 0) {
-            if(vertexShaderId != 0) {
+            if (vertexShaderId != 0) {
                 glDetachShader(programId, vertexShaderId);
                 glDeleteShader(vertexShaderId);
             }
-            if(fragmentShaderId != 0) {
+            if (fragmentShaderId != 0) {
                 glDetachShader(programId, fragmentShaderId);
                 glDeleteShader(fragmentShaderId);
             }

@@ -47,7 +47,7 @@ public class SphereEditorObject extends EditorObject {
 
     public SphereEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial<? extends BxDF> material, String label) throws IOException {
         super(sphereModel, material);
-        ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
+        ImGuizmo.recomposeMatrixFromComponents(translation, rotation, scale, this.getModelMatrix());
         this.label.set(label);
     }
 

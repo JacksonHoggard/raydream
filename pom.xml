@@ -13,13 +13,46 @@
         <maven.compiler.source>22</maven.compiler.source>
         <maven.compiler.target>22</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <lwjgl.version>3.3.4</lwjgl.version>
-        <imgui.java.version>1.86.11</imgui.java.version>
+        <lwjgl.version>3.3.6</lwjgl.version>
+        <imgui.java.version>1.90.0</imgui.java.version>
         <junit.version>5.10.2</junit.version>
-        <surefire.version>2.22.0</surefire.version>
+        <surefire.version>3.5.4</surefire.version>
     </properties>
 
-    <profiles>
+   <profiles>
+        <profile>
+            <id>windows-profile</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                </os>
+            </activation>
+            <properties>
+                <native.target>natives-windows</native.target>
+            </properties>
+        </profile>
+        <profile>
+            <id>linux-profile</id>
+            <activation>
+                <os>
+                    <family>Linux</family>
+                </os>
+            </activation>
+            <properties>
+                <native.target>natives-linux</native.target>
+            </properties>
+        </profile>
+        <profile>
+            <id>OSX-profile</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                </os>
+            </activation>
+            <properties>
+                <native.target>natives-macos</native.target>
+            </properties>
+        </profile>
         <profile>
             <id>lwjgl-natives-linux-amd64</id>
             <activation>
@@ -47,6 +80,32 @@
             </properties>
         </profile>
         <profile>
+            <id>lwjgl-natives-linux-arm</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>linux</name>
+                    <arch>arm</arch>
+                </os>
+            </activation>
+            <properties>
+                <lwjgl.natives>natives-linux-arm32</lwjgl.natives>
+            </properties>
+        </profile>
+        <profile>
+            <id>lwjgl-natives-linux-arm32</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>linux</name>
+                    <arch>arm32</arch>
+                </os>
+            </activation>
+            <properties>
+                <lwjgl.natives>natives-linux-arm32</lwjgl.natives>
+            </properties>
+        </profile>
+        <profile>
             <id>lwjgl-natives-macos-x86_64</id>
             <activation>
                 <os>
@@ -56,6 +115,18 @@
             </activation>
             <properties>
                 <lwjgl.natives>natives-macos</lwjgl.natives>
+            </properties>
+        </profile>
+        <profile>
+            <id>lwjgl-natives-macos-aarch64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <lwjgl.natives>natives-macos-arm64</lwjgl.natives>
             </properties>
         </profile>
         <profile>
@@ -140,18 +211,9 @@
         </dependency>
         <dependency>
             <groupId>io.github.spair</groupId>
-            <artifactId>imgui-java-natives-windows</artifactId>
+            <artifactId>imgui-java-${native.target}</artifactId>
             <version>${imgui.java.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.spair</groupId>
-            <artifactId>imgui-java-natives-linux</artifactId>
-            <version>${imgui.java.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.spair</groupId>
-            <artifactId>imgui-java-natives-macos</artifactId>
-            <version>${imgui.java.version}</version>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 

@@ -28,7 +28,7 @@ public class EditorAreaLight extends EditorLight {
 
     public EditorAreaLight(float[] translation, float[] rotation, float[] scale, EditorLightMaterial material, String label) throws IOException {
         super(model, material);
-        ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
+        ImGuizmo.recomposeMatrixFromComponents(translation, rotation, scale, this.getModelMatrix());
         this.label.set(label);
     }
 

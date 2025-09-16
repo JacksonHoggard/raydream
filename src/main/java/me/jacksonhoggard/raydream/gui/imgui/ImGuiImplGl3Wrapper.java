@@ -17,11 +17,16 @@ public class ImGuiImplGl3Wrapper implements AutoCloseable {
     public void renderDrawData(ImDrawData drawData) {
         impl.renderDrawData(drawData);
     }
+
+    public void newFrame() {
+        impl.newFrame();
+    }
     
     @Override
     public void close() {
         try {
-            impl.dispose();
+            impl.destroyFontsTexture();
+            impl.destroyDeviceObjects();
         } catch (Exception e) {
             // Log error but don't rethrow - we want cleanup to continue
             System.err.println("Error disposing ImGuiImplGl3: " + e.getMessage());

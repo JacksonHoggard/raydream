@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.gui.editor.window;
 
 import imgui.ImGui;
+import imgui.ImVec2;
 import imgui.extension.imguizmo.ImGuizmo;
 import imgui.extension.imguizmo.flag.Mode;
 import imgui.extension.imguizmo.flag.Operation;
@@ -31,7 +32,7 @@ public class EditorWindow {
             0.f, 0.f, 0.f, 1.f
     };
 
-    private static final float[] VIEW_MANIPULATE_SIZE = new float[]{128f, 128f};
+    private static final ImVec2 VIEW_MANIPULATE_SIZE = new ImVec2(128f, 128f);
 
     private static int currentMode = Mode.LOCAL;
     private static int currentGizmoOperation;
@@ -57,8 +58,8 @@ public class EditorWindow {
         if (firstFrame) {
             // Use a default scale factor since we don't have access to Window instance
             float scale = 1.0f; // Default scale, can be made configurable
-            VIEW_MANIPULATE_SIZE[0] *= scale;
-            VIEW_MANIPULATE_SIZE[1] *= scale;
+            VIEW_MANIPULATE_SIZE.x *= scale;
+            VIEW_MANIPULATE_SIZE.y *= scale;
             firstFrame = false;
         }
         if(shouldReset) {
@@ -102,7 +103,7 @@ public class EditorWindow {
         camera.updateProjection();
 
         ImGuizmo.setOrthographic(false);
-        ImGuizmo.setEnabled(true);
+        ImGuizmo.enable(true);
         ImGuizmo.setDrawList();
 
         float windowWidth = ImGui.getWindowWidth();
@@ -112,7 +113,7 @@ public class EditorWindow {
                 posX + windowWidth, posY + windowHeight
         );
         ImGuizmo.setRect(ImGui.getWindowPosX(), ImGui.getWindowPosY(), windowWidth, windowHeight);
-        ImGuizmo.setId(0);
+        ImGuizmo.setID(0);
         ImGuizmo.drawGrid(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), IDENTITY_MATRIX, 100);
 
         frameBuffer.rescale((int) windowWidth, (int) windowHeight);
@@ -127,25 +128,25 @@ public class EditorWindow {
         EditorObject selectedObject = ObjectWindow.getSelectedObject();
         if(selectedObject != null) {
             if (useSnap.get()) {
-                ImGuizmo.manipulate(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), selectedObject.getModelMatrix(), currentGizmoOperation, currentMode, PropWindow.getInputSnapValue());
+                ImGuizmo.manipulate(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), currentGizmoOperation, currentMode, selectedObject.getModelMatrix(), PropWindow.getInputSnapValue());
             } else {
-                ImGuizmo.manipulate(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), selectedObject.getModelMatrix(), currentGizmoOperation, currentMode);
+                ImGuizmo.manipulate(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), currentGizmoOperation, currentMode, selectedObject.getModelMatrix());
             }
         }
         EditorLight selectedLight = ObjectWindow.getSelectedLight();
         if(selectedLight != null) {
             if(selectedLight instanceof EditorAreaLight || currentGizmoOperation == Operation.TRANSLATE) {
                 if (useSnap.get()) {
-                    ImGuizmo.manipulate(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), selectedLight.getModelMatrix(), currentGizmoOperation, currentMode, PropWindow.getInputSnapValue());
+                    ImGuizmo.manipulate(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), currentGizmoOperation, currentMode, selectedLight.getModelMatrix(), PropWindow.getInputSnapValue());
                 } else {
-                    ImGuizmo.manipulate(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), selectedLight.getModelMatrix(), currentGizmoOperation, currentMode);
+                    ImGuizmo.manipulate(camera.getViewMatrix().getMatrixArray(), camera.getProjectionMatrix().getMatrixArray(), currentGizmoOperation, currentMode, selectedLight.getModelMatrix());
                 }
             }
         }
 
         float viewManipulateRight = ImGui.getWindowPosX() + windowWidth;
         float viewManipulateTop = ImGui.getWindowPosY();
-        ImGuizmo.viewManipulate(camera.getViewMatrix().getMatrixArray(), camDistance, new float[]{viewManipulateRight - VIEW_MANIPULATE_SIZE[0], viewManipulateTop}, VIEW_MANIPULATE_SIZE, 0x00000000);
+        ImGuizmo.viewManipulate(camera.getViewMatrix().getMatrixArray(), camDistance, new ImVec2(viewManipulateRight - VIEW_MANIPULATE_SIZE.x, viewManipulateTop), VIEW_MANIPULATE_SIZE, 0x00000000);
 
         ImGui.end();
     }

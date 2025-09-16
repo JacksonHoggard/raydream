@@ -44,7 +44,11 @@ public class ImGuiSetup implements AutoCloseable {
         FloatBuffer scaleX = BufferUtils.createFloatBuffer(1);
         FloatBuffer scaleY = BufferUtils.createFloatBuffer(1);
         glfwGetWindowContentScale(windowPtr, scaleX, scaleY);
-        scale = Math.max(scaleX.get(), scaleY.get());
+        if(System.getProperty("os.name").contains("Mac")) {
+            scale = Math.max(scaleX.get(), scaleY.get()) / 2.0f;
+        } else {
+            scale = Math.max(scaleX.get(), scaleY.get());
+        }
     }
     
     private void setupFonts(ImFontAtlas fontAtlas) {

@@ -45,7 +45,7 @@ public class BoxEditorObject extends EditorObject {
 
     public BoxEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial<? extends BxDF> material, String label) throws IOException {
         super(boxModel, material);
-        ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
+        ImGuizmo.recomposeMatrixFromComponents(translation, rotation, scale, this.getModelMatrix());
         this.label.set(label);
     }
 

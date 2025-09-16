@@ -39,7 +39,7 @@ public class ImGuiImplGlfwWrapper implements AutoCloseable {
     @Override
     public void close() {
         try {
-            impl.dispose();
+            impl.shutdown();
         } catch (Exception e) {
             // Log error but don't rethrow - we want cleanup to continue
             System.err.println("Error disposing ImGuiImplGlfw: " + e.getMessage());

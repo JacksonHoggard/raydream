@@ -120,8 +120,7 @@ public class PropWindow {
             ImGui.inputFloat3("Tr", translationMatrix, "%.4f");
             ImGui.inputFloat3("Rt", rotationMatrix, "%.4f");
             ImGui.inputFloat3("Sc", scaleMatrix, "%.4f");
-            ImGuizmo.recomposeMatrixFromComponents(selectedObject.getModelMatrix(), translationMatrix, rotationMatrix,
-                    scaleMatrix);
+            ImGuizmo.recomposeMatrixFromComponents(translationMatrix, rotationMatrix, scaleMatrix, selectedObject.getModelMatrix());
             ImGui.popItemWidth();
 
             if (EditorWindow.getCurrentGizmoOperation() != Operation.SCALE) {
@@ -161,20 +160,17 @@ public class PropWindow {
                 inputFloat.set(((EditorSphereLight) selectedLight).getRadius());
                 ImGui.inputFloat("Radius", inputFloat);
                 ((EditorSphereLight) selectedLight).setRadius(inputFloat.get());
-                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix,
-                        rotationMatrix, new float[] { inputFloat.get(), inputFloat.get(), inputFloat.get() });
+                ImGuizmo.recomposeMatrixFromComponents(translationMatrix, rotationMatrix, new float[]{inputFloat.get(), inputFloat.get(), inputFloat.get()}, selectedLight.getModelMatrix());
             }
             if (selectedLight instanceof EditorPointLight) {
                 ImGui.inputFloat3("Position", translationMatrix, "%.3f");
-                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix,
-                        rotationMatrix, scaleMatrix);
+                ImGuizmo.recomposeMatrixFromComponents(translationMatrix, rotationMatrix, scaleMatrix, selectedLight.getModelMatrix());
             }
             if (selectedLight instanceof EditorAreaLight) {
                 ImGui.inputFloat3("Tr", translationMatrix, "%.3f");
                 ImGui.inputFloat3("Rt", rotationMatrix, "%.3f");
                 ImGui.inputFloat3("Sc", scaleMatrix, "%.3f");
-                ImGuizmo.recomposeMatrixFromComponents(selectedLight.getModelMatrix(), translationMatrix,
-                        rotationMatrix, scaleMatrix);
+                ImGuizmo.recomposeMatrixFromComponents(translationMatrix, rotationMatrix, scaleMatrix, selectedLight.getModelMatrix());
             }
             ImGui.popItemWidth();
         }

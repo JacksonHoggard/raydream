@@ -199,6 +199,7 @@ public class GUIApplication implements AutoCloseable {
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                 
                 // Start ImGui frame
+                imGuiGl3.newFrame();
                 imGuiGlfw.newFrame();
                 ImGui.newFrame();
                 

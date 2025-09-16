@@ -22,7 +22,7 @@ public class ModelEditorObject extends EditorObject {
 
     public ModelEditorObject(MeshModel model, float[] translation, float[] rotation, float[] scale, String label) throws IOException {
         super(model, new EditorObjectMaterial<>());
-        ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
+        ImGuizmo.recomposeMatrixFromComponents(translation, rotation, scale, this.getModelMatrix());
         this.label.set(label);
     }
 

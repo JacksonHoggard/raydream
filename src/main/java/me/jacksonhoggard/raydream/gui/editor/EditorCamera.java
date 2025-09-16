@@ -106,7 +106,7 @@ public class EditorCamera {
         float[] translation = new float[]{(float) lookFrom.x, (float) lookFrom.y, (float) lookFrom.z};
         float[] rotation = new float[]{(float) (rotX * (180 / Math.PI)), (float) (rotY * (180 / Math.PI)), (float) (rotZ * (180 / Math.PI))};
         float[] scale = new float[]{0.03f, 0.03f, 0.03f};
-        ImGuizmo.recomposeMatrixFromComponents(modelMatrix.getMatrixArray(), translation, rotation, scale);
+        ImGuizmo.recomposeMatrixFromComponents(translation, rotation, scale, modelMatrix.getMatrixArray());
     }
 
     public void draw() {

@@ -45,7 +45,7 @@ public class PlaneEditorObject extends EditorObject {
 
     public PlaneEditorObject(float[] translation, float[] rotation, float[] scale, EditorObjectMaterial<? extends BxDF> material, String label) throws IOException {
         super(planeModel, material);
-        ImGuizmo.recomposeMatrixFromComponents(this.getModelMatrix(), translation, rotation, scale);
+        ImGuizmo.recomposeMatrixFromComponents(translation, rotation, scale, this.getModelMatrix());
         this.label.set(label);
     }
 

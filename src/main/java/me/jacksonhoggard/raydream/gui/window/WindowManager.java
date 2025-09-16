@@ -49,7 +49,11 @@ public class WindowManager implements AutoCloseable {
         }
         
         // Initialize GLSL
-        glslVersion = "#version 330";
+        if(System.getProperty("os.name").contains("Mac")) {
+            glslVersion = "#version 150";
+        } else {
+            glslVersion = "#version 330 core";
+        }
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
         glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
@@ -82,7 +86,9 @@ public class WindowManager implements AutoCloseable {
     }
     
     private void setupWindow() {
-        setWindowIcon();
+        if(!System.getProperty("os.name").contains("Mac")) {
+            setWindowIcon();
+        }
         configureWindow();
         
         glfwMakeContextCurrent(windowPtr);
