@@ -46,13 +46,13 @@ public class DisneyDiffuse extends BRDF {
 
     @Override
     public double pdf(Vector3D wo, Vector3D wi) {
-        return Math.abs(ns.dot(wi)) / Math.PI;
+        if(ns.dot(wi) <= 0.0D) return 0.0D;
+        return ns.dot(wi) / Math.PI;
     }
 
     @Override
     public BxDFSample sample(Vector3D wo) {
-        Vector3D wi = sampleCosineHemisphere();
-        if(wi.dot(ns) < 0.0D) wi.negate();
+        Vector3D wi = sampleCosineHemisphere(ns);
         double pdf = pdf(wo, wi);
         Vector3D f = eval(wo, wi);
         return new BxDFSample(wi, f, pdf, Event.REFLECT, false);

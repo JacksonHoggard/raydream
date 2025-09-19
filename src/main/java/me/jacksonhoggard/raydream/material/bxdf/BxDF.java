@@ -77,16 +77,22 @@ public abstract class BxDF implements IBxDF {
     // --------------------------------------------------------------------
     // Sampling helpers
     // --------------------------------------------------------------------
-    protected static Vector3D sampleGGX(Vector3D n, double a) {
-        double u1 = MathUtils.random();
-        double u2 = MathUtils.random();
-        double a2 = a * a;
-        double tan2 = a2 * u1 / (1.0 - u1);
-        double cos = 1.0 / Math.sqrt(1.0 + tan2);
-        double sin = Math.sqrt(Math.max(0.0, 1.0 - cos * cos));
-        double phi = 2.0 * Math.PI * u2;
-        Vector3D hLocal = new Vector3D(Math.cos(phi) * sin, Math.sin(phi) * sin, cos);
-        return toWorld(n, hLocal);
+    protected static Vector3D sampleVndfGGX(Vector3D wo, double alpha) {
+        Vector3D woStd = new Vector3D(alpha * wo.x, alpha * wo.y, wo.z).normalized();
+        Vector3D wmStd = sampleVndfHemisphere(woStd);
+        Vector3D wm = new Vector3D(wmStd.x * alpha, wmStd.y * alpha, wmStd.z).normalized();
+        return wm;
+    }
+
+    protected static Vector3D sampleVndfHemisphere(Vector3D wo) {
+        double phi = 2.0D * Math.PI * MathUtils.random();
+        double z = Math.fma(1.0D - MathUtils.random(), 1.0D + wo.z, -wo.z);
+        double sinTheta = Math.sqrt(Math.clamp(1.0D - z * z, 0.0D, 1.0D));
+        double x = sinTheta * Math.cos(phi);
+        double y = sinTheta * Math.sin(phi);
+        Vector3D c = new Vector3D(x, y, z);
+        Vector3D h = Vector3D.add(c, wo);
+        return h;
     }
 
     protected static Vector3D sampleGTR1(Vector3D n, double a) {
@@ -94,22 +100,28 @@ public abstract class BxDF implements IBxDF {
         double u1 = MathUtils.random();
         double u2 = MathUtils.random();
         double a2 = a * a;
-        double cos = Math.sqrt((1.0 - Math.pow(a2, 1.0 - u1)) / (1.0 - a2));
-        double sin = Math.sqrt(Math.max(0.0, 1.0 - cos * cos));
-        double phi = 2.0 * Math.PI * u2;
-        Vector3D hLocal = new Vector3D(Math.cos(phi) * sin, Math.sin(phi) * sin, cos);
-        return toWorld(n, hLocal);
+        double cosHElevation = Math.sqrt((1.0 - Math.pow(a2, 1.0 - u1)) / (1.0 - a2));
+        double hElevation = Math.acos(cosHElevation);
+        double hAzimuth = 2.0D * Math.PI * u2;
+        double sinHElevation = Math.sin(hElevation);
+        double cosHAzimuth = Math.cos(hAzimuth);
+        double sinHAzimuth = Math.sin(hAzimuth);
+        Vector3D hLocal = new Vector3D(sinHElevation * cosHAzimuth, sinHElevation * sinHAzimuth, cosHElevation);
+        return toWorld(n, hLocal).normalize();
     }
 
-    protected static Vector3D sampleCosineHemisphere() {
+    protected static Vector3D sampleCosineHemisphere(Vector3D n) {
         double u1 = MathUtils.random();
         double u2 = MathUtils.random();
         double r = Math.sqrt(u1);
         double theta = 2.0 * Math.PI * u2;
-        double x = r * Math.cos(theta);
-        double y = r * Math.sin(theta);
-        double z = Math.sqrt(Math.max(0.0, 1.0 - u1));
-        return new Vector3D(x, y, z);
+        Vector3D B = n.cross(new Vector3D(0, 1, 1)).normalized();
+        Vector3D T = B.cross(n);
+        return Vector3D
+                .mult(r * Math.sin(theta), B)
+                .add(Vector3D.mult(Math.sqrt(1.0 - u1), n))
+                .add(Vector3D.mult(r * Math.cos(theta), T))
+                .normalized();
     }
 
     protected static double cosineHemispherePdf(double cos) {
@@ -216,8 +228,34 @@ public abstract class BxDF implements IBxDF {
         return Vector3D.div(v, len);
     }
 
-    protected static Vector3D faceforward(Vector3D n, Vector3D v) {
-        return (n.dot(v) >= 0.0) ? n : n.negated();
+    protected static Vector3D reflect(Vector3D v, Vector3D m) {
+        Vector3D vNeg = v.negated();
+        return vNeg.sub(Vector3D.mult(m, 2*vNeg.dot(m))).normalized();
+    }
+
+    protected static Vector3D refract(Vector3D v, Vector3D m, double ior) {
+        Vector3D vNeg = v.negated();
+        double cosI = Math.clamp(vNeg.dot(m), -1.0, 1.0);
+        double etaI = 1.0;
+        double etaT = ior;
+        Vector3D n = new Vector3D(m);
+        if (cosI < 0.0) {
+            cosI = -cosI;
+        } else {
+            double temp = etaI;
+            etaI = etaT;
+            etaT = temp;
+            n.negate();
+        }
+        double eta = etaI / etaT;
+        double k = 1.0 - eta * eta * (1.0 - cosI * cosI);
+        if (k < 0.0)
+            return null; // Total internal reflection
+        return vNeg.mult(eta).add(n.mult(eta * cosI - Math.sqrt(k))).normalized();
+    }
+
+    protected static double sign(double x) {
+        return (x < 0.0) ? -1.0 : 1.0;
     }
 
 }

@@ -42,13 +42,12 @@ public class DisneyClearcoat extends BRDF {
         Vector3D h = Vector3D.add(wo, wi).normalized();
         Vector3D hLocal = toLocal(h, ns).normalize();
         double D = (sqr(ag) - 1.0D) / (Math.PI * Math.log(sqr(ag)) * (1.0D + (sqr(ag) - 1.0D) * (sqr(hLocal.z))));
-        return D;
+        return (D * Math.abs(ns.dot(h))) / (4.0D * Math.abs(h.dot(wi)));
     }
 
     @Override
     public BxDFSample sample(Vector3D wo) {
         Vector3D randomNormal = sampleGTR1(ns, (1.0D - clearcoatGloss) * 0.1D + clearcoatGloss * 0.001D);
-        if(randomNormal.dot(wo) < 0.0D) randomNormal.negate();
         Vector3D wi = reflect(wo, randomNormal);
         Vector3D f = eval(wo, wi);
         double pdf = pdf(wo, wi);

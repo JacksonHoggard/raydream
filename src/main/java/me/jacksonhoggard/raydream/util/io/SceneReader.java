@@ -167,6 +167,9 @@ public class SceneReader {
                 case "threads:":
                     SettingsWindow.setThreads(Integer.parseInt(params[1]));
                     break;
+                case "rrStartDepth:":
+                    SettingsWindow.setRrStartDepth(Integer.parseInt(params[1]));
+                    break;
                 default:
                     throw new UnrecognizedTokenException(params[0]);
             }

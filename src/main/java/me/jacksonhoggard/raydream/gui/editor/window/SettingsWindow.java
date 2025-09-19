@@ -170,6 +170,7 @@ public class SettingsWindow {
                 "bounces: " + bounces + "\n" +
                 "shadows: " + numShadowRays + "\n" +
                 "threads: " + threads + "\n" +
+                "rrStartDepth: " + rrStartDepth + "\n" +
                 ";\n";
     }
 

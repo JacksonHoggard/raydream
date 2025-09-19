@@ -54,6 +54,7 @@ public class DisneyMetal extends BRDF {
         Vector3D h = Vector3D.add(wo, wi).normalized();
         
         Vector3D hLocal = toLocal(h, ns).normalize();
+        Vector3D woLocal = toLocal(wo, ns).normalize();
 
         double aspect = Math.sqrt(1.0D - 0.9D * anisotropic);
         double ax = Math.max(0.0001D, sqr(roughness) / aspect);
@@ -64,16 +65,18 @@ public class DisneyMetal extends BRDF {
             (hLocal.y * hLocal.y) / (ay * ay) +
             (hLocal.z * hLocal.z), 2));
 
-        return D;
+        double lambdaV = (Math.sqrt(1.0 + (sqr(woLocal.x*ax) + sqr(woLocal.y*ay))/sqr(woLocal.z)) - 1.0D) / 2.0D;
+        double GV = 1.0D / (1.0D + lambdaV);
+
+        return (D * GV) / (4.0D * Math.abs(ns.dot(wo)));
     }
 
     @Override
     public BxDFSample sample(Vector3D wo) {
-        Vector3D randomNormal = sampleGGX(ns, sqr(roughness));
-        if(randomNormal.dot(wo) < 0.0D) randomNormal.negate();
+        Vector3D randomNormal = toWorld(ns, sampleVndfGGX(wo, Math.max(sqr(roughness), 0.0001D))).normalize();
         Vector3D wi = reflect(wo, randomNormal);
         Vector3D f = eval(wo, wi);
         double pdf = pdf(wo, wi);
-        return new BxDFSample(wi, f, pdf, Event.REFLECT, roughness == 0.0D);
+        return new BxDFSample(wi, f, pdf, Event.REFLECT, sqr(roughness) <= 0.0001D);
     }
 }

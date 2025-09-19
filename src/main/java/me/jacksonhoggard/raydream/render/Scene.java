@@ -335,7 +335,8 @@ public class Scene {
                 Vector3D ng = new Vector3D(hit.normal());
                 Vector3D ns = new Vector3D(hit.normal());
                 Vector3D wo = ray.direction().negated();
-                Material<? extends BxDF> mat = !hit.primitive().isLight() ? ((Object) hit.primitive()).getMaterial() : null;
+                Material<? extends BxDF> mat = !hit.primitive().isLight() ? ((Object) hit.primitive()).getMaterial()
+                        : null;
                 Vector2D uv = hit.texCoord();
                 Vector3D tan = new Vector3D();
                 Vector3D bitan = new Vector3D();
@@ -354,13 +355,21 @@ public class Scene {
                     // Transform all vectors to world space
                     ns.set(MathUtils.transformNormalToWS(ns, ((Object) hit.primitive()).getNormalMatrix())).normalize();
                     ng.set(MathUtils.transformNormalToWS(ng, ((Object) hit.primitive()).getNormalMatrix())).normalize();
-                    tan = MathUtils.transformDirectionToWS(tan, ((Object) hit.primitive()).getTransformMatrix()).normalize();
-                    bitan = MathUtils.transformDirectionToWS(bitan, ((Object) hit.primitive()).getTransformMatrix()).normalize();
+                    tan = MathUtils.transformDirectionToWS(tan, ((Object) hit.primitive()).getTransformMatrix())
+                            .normalize();
+                    bitan = MathUtils.transformDirectionToWS(bitan, ((Object) hit.primitive()).getTransformMatrix())
+                            .normalize();
+                    if (ns.dot(wo) < 0) {
+                        ns.negate();
+                    }
                 }
 
                 // Add emission when hitting a light source
                 if (hit.primitive().isLight() || mat.isEmissive()) {
-                    Vector3D Le = hit.primitive().isLight() ? Vector3D.mult(((Light) hit.primitive()).getColor(), ((Light) hit.primitive()).getBrightness()) : mat.getEmittance();
+                    Vector3D Le = hit.primitive().isLight()
+                            ? Vector3D.mult(((Light) hit.primitive()).getColor(),
+                                    ((Light) hit.primitive()).getBrightness())
+                            : mat.getEmittance();
                     if (bounce == 0 || prevDelta) {
                         L.add(Vector3D.mult(beta, Le));
                     }
@@ -400,7 +409,7 @@ public class Scene {
                 }
 
                 // Throughput update: beta *= f * |n . wi| / pdf
-                double cos = Math.abs(ng.dot(s.wi()));
+                double cos = Math.abs(ns.dot(s.wi()));
                 beta.mult(Vector3D.mult(s.f(), cos)).div(s.pdf());
 
                 if (bounce >= rrStart) {
@@ -414,12 +423,10 @@ public class Scene {
 
                 // Spawn next ray
                 Vector3D origin;
-                if(s.event() == BxDF.Event.TRANSMIT) {
-                    origin = s.wi().dot(ng) < 0 ?
-                        Vector3D.sub(p, Vector3D.mult(ng, EPS)) :
-                        Vector3D.add(p, Vector3D.mult(ng, EPS));
+                if (s.event() == BxDF.Event.REFLECT) {
+                    origin = Vector3D.add(p, Vector3D.mult(ns, EPS));
                 } else {
-                    origin = Vector3D.add(p, Vector3D.mult(ng, EPS));
+                    origin = Vector3D.sub(p, Vector3D.mult(ns, EPS));
                 }
                 ray = new Ray(origin, s.wi());
                 prevDelta = s.isDelta();

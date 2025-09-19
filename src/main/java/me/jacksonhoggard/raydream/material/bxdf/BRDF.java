@@ -16,10 +16,5 @@ public abstract class BRDF extends BxDF {
                 parameters
         );
     }
-
-    protected static Vector3D reflect(Vector3D v, Vector3D m) {
-        Vector3D vNeg = v.negated();
-        return vNeg.sub(Vector3D.mult(m, 2*vNeg.dot(m))).normalized();
-    }
     
 }
