@@ -153,8 +153,9 @@ public class DisneyGlass extends BSDF {
         wi = refract(wo, randomNormal, ior);
         if (wi == null) {
             // Total internal reflection, reflect instead
+            randomNormal = toWorld(ns, sampleVndfGGX(wo, Math.max(sqr(roughness), 0.0001D))).normalize();
             wi = reflect(wo, randomNormal);
-            return new BxDFSample(wi, eval(wo, wi), pdf(wo, wi), Event.REFLECT, sqr(roughness) <= 0.0001D);
+            return new BxDFSample(wi, eval(wo, wi), 1.0, Event.REFLECT, sqr(roughness) <= 0.0001D);
         }
         return new BxDFSample(wi, eval(wo, wi), pdf(wo, wi), Event.TRANSMIT, sqr(roughness) <= 0.0001D);
     }
