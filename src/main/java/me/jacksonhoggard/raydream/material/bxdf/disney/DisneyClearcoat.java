@@ -42,9 +42,12 @@ public class DisneyClearcoat extends BRDF {
     }
 
     @Override
-    public BxDFSample sample(Vector3D wo) {
+    public BxDFSample sample(Vector3D woWorld) {
+        Vector3D wo = shadingFrame.toLocal(woWorld);
         Vector3D randomNormal = sampleGTR1((1.0D - clearcoatGloss) * 0.1D + clearcoatGloss * 0.001D);
-        Vector3D wi = reflect(wo, randomNormal);
+        randomNormal = shadingFrame.toWorld(randomNormal);
+        Vector3D wi = reflect(woWorld, randomNormal);
+        wi = shadingFrame.toLocal(wi);
         Vector3D f = eval(wo, wi);
         double pdf = pdf(wo, wi);
         return new BxDFSample(shadingFrame.toWorld(wi), f, pdf, Event.REFLECT, clearcoatGloss == 1.0D);
