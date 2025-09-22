@@ -2,6 +2,7 @@ package me.jacksonhoggard.raydream.material.bxdf;
 
 import java.util.HashMap;
 
+import me.jacksonhoggard.raydream.math.Frame;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.util.MathUtils;
 
@@ -20,11 +21,19 @@ public abstract class BxDF implements IBxDF {
     ) {
     }
 
+    public record Refraction(
+            Vector3D wt, // Refracted direction
+            double eta, // Relative IOR (eta_i / eta_t)
+            boolean tir // If total internal reflection occurred
+    ) {
+    }
+
     protected final HashMap<String, Object> parameters;
 
     protected final Vector3D baseColor; // 0..1
     protected final Vector3D ng; // Geometric normal
     protected final Vector3D ns; // Shading normal
+    protected final Frame shadingFrame; // Frame for shading normal (ns aligned with z axis)
 
     public BxDF(
             Vector3D ng, Vector3D ns,
@@ -38,40 +47,15 @@ public abstract class BxDF implements IBxDF {
                 Math.clamp(baseColor.y, 0.0D, 1.0D),
                 Math.clamp(baseColor.z, 0.0D, 1.0D));
         this.parameters = parameters;
+        this.shadingFrame = Frame.fromZ(this.ns);
     }
 
     public HashMap<String, Object> getParameters() {
         return parameters;
     }
 
-    // --------------------------------------------------------------------
-    // Microfacet distributions and geometry terms
-    // --------------------------------------------------------------------
-    protected static double D_GTR2(double cosNh, double a) {
-        double a2 = a * a;
-        double d = (cosNh * cosNh) * (a2 - 1.0) + 1.0;
-        return a2 / (Math.PI * d * d + 1e-20);
-    }
-
-    // GTR1 for clearcoat
-    protected static double D_GTR1(double cosNh, double a) {
-        double a2 = a * a;
-        double denom = 1.0 + (a2 - 1.0) * (cosNh * cosNh);
-        double c = (a2 - 1.0) / (Math.PI * Math.log(a2 + 1e-20));
-        return c / (denom + 1e-20);
-    }
-
-    protected double G_SmithGGX(Vector3D wo, Vector3D wi, Vector3D N, double a) {
-        return G1_GGX(Math.abs(N.dot(wo)), a) * G1_GGX(Math.abs(N.dot(wi)), a);
-    }
-
-    protected static double G1_GGX(double cosTheta, double a) {
-        if (cosTheta <= 0.0)
-            return 0.0;
-        double a2 = a * a;
-        double tan2 = (1.0 - cosTheta * cosTheta) / (cosTheta * cosTheta + 1e-20);
-        double root = Math.sqrt(1.0 + a2 * tan2);
-        return 2.0 * cosTheta / (cosTheta + root);
+    public Frame getShadingFrame() {
+        return shadingFrame;
     }
 
     // --------------------------------------------------------------------
@@ -95,7 +79,7 @@ public abstract class BxDF implements IBxDF {
         return h;
     }
 
-    protected static Vector3D sampleGTR1(Vector3D n, double a) {
+    protected static Vector3D sampleGTR1(double a) {
         // Invert CDF for GTR1 over theta (Disney 2012) — approximate
         double u1 = MathUtils.random();
         double u2 = MathUtils.random();
@@ -106,87 +90,41 @@ public abstract class BxDF implements IBxDF {
         double sinHElevation = Math.sin(hElevation);
         double cosHAzimuth = Math.cos(hAzimuth);
         double sinHAzimuth = Math.sin(hAzimuth);
-        Vector3D hLocal = new Vector3D(sinHElevation * cosHAzimuth, sinHElevation * sinHAzimuth, cosHElevation);
-        return toWorld(n, hLocal).normalize();
+        Vector3D h = new Vector3D(sinHElevation * cosHAzimuth, sinHElevation * sinHAzimuth, cosHElevation);
+        return h;
     }
 
-    protected static Vector3D sampleCosineHemisphere(Vector3D n) {
+    protected static Vector3D sampleCosineHemisphere() {
         double u1 = MathUtils.random();
         double u2 = MathUtils.random();
         double r = Math.sqrt(u1);
-        double theta = 2.0 * Math.PI * u2;
-        Vector3D B = n.cross(new Vector3D(0, 1, 1)).normalized();
-        Vector3D T = B.cross(n);
-        return Vector3D
-                .mult(r * Math.sin(theta), B)
-                .add(Vector3D.mult(Math.sqrt(1.0 - u1), n))
-                .add(Vector3D.mult(r * Math.cos(theta), T))
-                .normalized();
+        double theta = 2.0D * Math.PI * u2;
+        double x = r * Math.cos(theta);
+        double y = r * Math.sin(theta);
+        return new Vector3D(x, y, Math.sqrt(Math.max(0.0D, 1.0D - u1)));
     }
 
     protected static double cosineHemispherePdf(double cos) {
         return cos / Math.PI;
     }
 
-    protected static Vector3D toWorld(Vector3D N, Vector3D vLocal) {
-        // Build an ONB from N
-        Vector3D T = (Math.abs(N.z) < 0.999) ? new Vector3D(0, 0, 1).cross(N).normalized()
-                : new Vector3D(0, 1, 0).cross(N).normalized();
-        Vector3D B = N.cross(T);
-        // vWorld = x*T + y*B + z*N
-        return Vector3D
-                .add(Vector3D.add(Vector3D.mult(T, vLocal.x), Vector3D.mult(B, vLocal.y)), Vector3D.mult(N, vLocal.z))
-                .normalized();
-    }
-
-    protected static Vector3D toLocal(Vector3D v, Vector3D N) {
-        // Build an ONB from N
-        Vector3D T = (Math.abs(N.z) < 0.999) ? new Vector3D(0, 0, 1).cross(N).normalized()
-                : new Vector3D(0, 1, 0).cross(N).normalized();
-        Vector3D B = N.cross(T);
-        // vLocal = (v . T, v . B, v . N)
-        return new Vector3D(v.dot(T), v.dot(B), v.dot(N));
-    }
-
-    protected static Vector3D microfacetHalfForRefraction(Vector3D wo, Vector3D wi, double eta) {
-        // Heitz convention: h ∝ eta*wi + wo
-        Vector3D h = Vector3D.mult(wi, eta).add(wo).normalize();
-        if (h == null)
-            return null;
-        // Ensure h points to same hemisphere as wo (for stability)
-        return h;
-    }
-
     // --------------------------------------------------------------------
     // Fresnel
     // --------------------------------------------------------------------
-    protected static Vector3D schlickF(Vector3D F0, double cosIt) {
-        double x = pow5(1.0 - cosIt);
-        return Vector3D.add(F0, Vector3D.mult(new Vector3D(1).sub(F0), x));
-    }
-
-    protected static double schlickScalar(double F0, double cosIt) {
-        return F0 + (1.0 - F0) * pow5(1.0 - cosIt);
-    }
-
-    protected static double fresnelDielectricExact(Vector3D v, Vector3D n, double ior) {
-        Vector3D vNeg = v.negated();
-        double cosI = Math.clamp(vNeg.dot(n), -1.0, 1.0);
-        double etaI = 1.0;
-        double etaT = ior;
-        if (cosI > 0.0) {
-            double temp = etaI;
-            etaI = etaT;
-            etaT = temp;
+    protected static double fresnelDielectricExact(double cosI, double eta) {
+        cosI = MathUtils.clamp(cosI, -1.0, 1.0);
+        if(cosI < 0) {
+            eta = 1.0 / eta;
+            cosI = -cosI;
         }
-        double sinT = etaI / etaT * Math.sqrt(Math.max(0.0D, 1 - cosI * cosI));
-        if (sinT >= 1.0)
+        double sin2I = 1.0 - sqr(cosI);
+        double sin2T = sin2I / sqr(eta);
+        if(sin2T >= 1.0)
             return 1.0; // TIR
-        double cosT = Math.sqrt(Math.max(0.0D, 1 - sinT * sinT));
-        cosI = Math.abs(cosI);
-        double Rs = ((etaT * cosI) - (etaI * cosT)) / ((etaT * cosI) + (etaI * cosT));
-        double Rp = ((etaI * cosI) - (etaT * cosT)) / ((etaI * cosI) + (etaT * cosT));
-        return (Rs * Rs + Rp * Rp) / 2.0;
+        double cosT = Math.sqrt(Math.max(0.0D, 1.0 - sin2T));
+        double rParl = (eta * cosI - cosT) / (eta * cosI + cosT);
+        double rPerp = (cosI - eta * cosT) / (cosI + eta * cosT);
+        return (sqr(rParl) + sqr(rPerp)) / 2.0D;
     }
 
     // --------------------------------------------------------------------
@@ -221,41 +159,74 @@ public abstract class BxDF implements IBxDF {
         return Vector3D.add(Vector3D.mult(a, 1 - t), Vector3D.mult(b, t));
     }
 
-    protected static Vector3D safeNormalize(Vector3D v) {
-        double len = v.length();
-        if (len <= 0.0)
-            return null;
-        return Vector3D.div(v, len);
+    protected static Vector3D reflect(Vector3D wo, Vector3D n) {
+        return wo.negated().add(Vector3D.mult(2.0D * wo.dot(n), n));
     }
 
-    protected static Vector3D reflect(Vector3D v, Vector3D m) {
-        Vector3D vNeg = v.negated();
-        return vNeg.sub(Vector3D.mult(m, 2*vNeg.dot(m))).normalized();
+    protected static Vector3D reflect(Vector3D wo) {
+        return new Vector3D(-wo.x, -wo.y, wo.z);
     }
 
-    protected static Vector3D refract(Vector3D v, Vector3D m, double ior) {
-        Vector3D vNeg = v.negated();
-        double cosI = Math.clamp(vNeg.dot(m), -1.0, 1.0);
-        double etaI = 1.0;
-        double etaT = ior;
-        Vector3D n = new Vector3D(m);
-        if (cosI < 0.0) {
+    protected static Refraction refract(Vector3D wi, Vector3D n, double eta) {
+        double cosI = n.dot(wi);
+        Vector3D normal = new Vector3D(n);
+        if(cosI < 0) {
+            eta = 1.0 / eta;
             cosI = -cosI;
-        } else {
-            double temp = etaI;
-            etaI = etaT;
-            etaT = temp;
-            n.negate();
+            normal.negate();
         }
-        double eta = etaI / etaT;
-        double k = 1.0 - eta * eta * (1.0 - cosI * cosI);
-        if (k < 0.0)
-            return null; // Total internal reflection
-        return vNeg.mult(eta).add(n.mult(eta * cosI - Math.sqrt(k))).normalized();
+        double sin2I = Math.max(0.0D, 1.0D - cosI * cosI);
+        double sin2T = sin2I / sqr(eta);
+        if(sin2T >= 1.0D)
+            return new Refraction(null, eta, true); // TIR
+        double cosT = Math.sqrt(Math.max(0.0D, 1.0D - sin2T));
+
+        Vector3D wt = wi.negated().div(eta).add(Vector3D.mult(cosI / eta - cosT, normal));
+        return new Refraction(wt, eta, false);
     }
 
-    protected static double sign(double x) {
-        return (x < 0.0) ? -1.0 : 1.0;
+    protected static double cosTheta(Vector3D w) {
+        return w.z;
     }
 
+    protected static double absCosTheta(Vector3D w) {
+        return Math.abs(w.z);
+    }
+
+    protected static double cos2Theta(Vector3D w) {
+        return sqr(w.z);
+    }
+
+    protected static double sin2Theta(Vector3D w) {
+        return Math.max(0, 1.0 - cos2Theta(w));
+    }
+
+    protected static double sinTheta(Vector3D w) {
+        return Math.sqrt(sin2Theta(w));
+    }
+
+    protected static double tanTheta(Vector3D w) {
+        return sinTheta(w) / cosTheta(w);
+    }
+
+    protected static double tan2Theta(Vector3D w) {
+        return sin2Theta(w) / cos2Theta(w);
+    }
+
+    protected static double cosPhi(Vector3D w) {
+        double sinTheta = sinTheta(w);
+        return (sinTheta == 0) ? 1.0 : MathUtils.clamp(w.x / sinTheta, -1.0, 1.0);
+    }
+
+    protected static double sinPhi(Vector3D w) {
+        double sinTheta = sinTheta(w);
+        return (sinTheta == 0) ? 0.0 : MathUtils.clamp(w.y / sinTheta, -1.0, 1.0);
+    }
+
+    protected static double cosDPhi(Vector3D wa, Vector3D wb) {
+        double waxy = sqr(wa.x) + sqr(wa.y);
+        double wbxy = sqr(wb.x) + sqr(wb.y);
+        if (waxy == 0 || wbxy == 0) return 1.0D;
+        return MathUtils.clamp((wa.x * wb.x + wa.y * wb.y) / Math.sqrt(waxy * wbxy), -1.0, 1.0);
+    }
 }

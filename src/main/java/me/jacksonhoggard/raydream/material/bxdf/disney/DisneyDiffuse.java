@@ -26,35 +26,35 @@ public class DisneyDiffuse extends BRDF {
         Vector3D h = Vector3D.add(wo, wi).normalized();
 
         double fd90 = 0.5 + 2.0 * roughness * sqr(Math.abs(h.dot(wi)));
-        double fdV = 1.0 + (fd90 - 1.0D) * pow5(1.0 - Math.abs(wo.dot(ns)));
-        double fdL = 1.0 + (fd90 - 1.0D) * pow5(1.0 - Math.abs(wo.dot(ns)));
+        double fdV = 1.0 + (fd90 - 1.0D) * pow5(1.0 - absCosTheta(wo));
+        double fdL = 1.0 + (fd90 - 1.0D) * pow5(1.0 - absCosTheta(wo));
         double fd = fdV * fdL;
 
-        Vector3D baseDiffuse = Vector3D.mult(baseDiffColor, fd * (Math.abs(ns.dot(wi))));
+        Vector3D baseDiffuse = Vector3D.mult(baseDiffColor, fd * absCosTheta(wi));
 
         Vector3D baseSubColor = Vector3D.mult(baseColor, 1.25D).div(Math.PI);
         double fss90 = roughness * sqr(Math.abs(h.dot(wi)));
-        double fssV = 1.0 + (fss90 - 1.0D) * pow5(1.0 - Math.abs(wo.dot(ns)));
-        double fssL = 1.0 + (fss90 - 1.0D) * pow5(1.0 - Math.abs(wi.dot(ns)));
+        double fssV = 1.0 + (fss90 - 1.0D) * pow5(1.0 - absCosTheta(wo));
+        double fssL = 1.0 + (fss90 - 1.0D) * pow5(1.0 - absCosTheta(wi));
         double fss = fssV * fssL;
-        double t1 = (1.0D / (Math.abs(wo.dot(ns)) + Math.abs(wi.dot(ns)))) - 0.5D;
+        double t1 = (1.0D / (absCosTheta(wo) + absCosTheta(wi))) - 0.5D;
         double t2 = (fss * t1) + 0.5D;
-        Vector3D baseSubsurface = Vector3D.mult(baseSubColor, t2 * (Math.abs(ns.dot(wi))));
+        Vector3D baseSubsurface = Vector3D.mult(baseSubColor, t2 * absCosTheta(wi));
 
         return Vector3D.add(Vector3D.mult(1.0D - subsurface, baseDiffuse), Vector3D.mult(subsurface, baseSubsurface));
     }
 
     @Override
     public double pdf(Vector3D wo, Vector3D wi) {
-        if(ns.dot(wi) <= 0.0D) return 0.0D;
-        return ns.dot(wi) / Math.PI;
+        return cosTheta(wi) / Math.PI;
     }
 
     @Override
-    public BxDFSample sample(Vector3D wo) {
-        Vector3D wi = sampleCosineHemisphere(ns);
+    public BxDFSample sample(Vector3D woWorld) {
+        Vector3D wi = sampleCosineHemisphere();
+        Vector3D wo = shadingFrame.toLocal(woWorld);
         double pdf = pdf(wo, wi);
         Vector3D f = eval(wo, wi);
-        return new BxDFSample(wi, f, pdf, Event.REFLECT, false);
+        return new BxDFSample(shadingFrame.toWorld(wi), f, pdf, Event.REFLECT, false);
     }
 }

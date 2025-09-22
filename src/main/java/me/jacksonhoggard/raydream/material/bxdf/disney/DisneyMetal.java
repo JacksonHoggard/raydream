@@ -23,28 +23,24 @@ public class DisneyMetal extends BRDF {
     @Override
     public Vector3D eval(Vector3D wo, Vector3D wi) {
         Vector3D h = Vector3D.add(wo, wi).normalized();
-        Vector3D Fm = Vector3D.add(baseColor, new Vector3D(1).sub(baseColor).mult(pow5(1 - Math.abs(h.dot(wi)))));
-        
-        Vector3D hLocal = toLocal(h, ns).normalize();
-        Vector3D woLocal = toLocal(wo, ns).normalize();
-        Vector3D wiLocal = toLocal(wi, ns).normalize();
+        Vector3D Fm = Vector3D.add(baseColor, new Vector3D(1).sub(baseColor).mult(pow5(1 - absCosTheta(wi))));
 
         double aspect = Math.sqrt(1.0D - 0.9D * anisotropic);
         double ax = Math.max(0.0001D, sqr(roughness) / aspect);
         double ay = Math.max(0.0001D, sqr(roughness) * aspect);
 
         double D = 1.0D / (Math.PI * ax * ay * Math.pow(
-            (hLocal.x * hLocal.x) / (ax * ax) +
-            (hLocal.y * hLocal.y) / (ay * ay) +
-            (hLocal.z * hLocal.z), 2));
+            (h.x * h.x) / (ax * ax) +
+            (h.y * h.y) / (ay * ay) +
+            (h.z * h.z), 2));
 
-        double lambdaL = (Math.sqrt(1.0 + (sqr(wiLocal.x*ax) + sqr(wiLocal.y*ay))/sqr(wiLocal.z)) - 1.0D) / 2.0D;
-        double lambdaV = (Math.sqrt(1.0 + (sqr(woLocal.x*ax) + sqr(woLocal.y*ay))/sqr(woLocal.z)) - 1.0D) / 2.0D;
+        double lambdaL = (Math.sqrt(1.0 + (sqr(wi.x*ax) + sqr(wi.y*ay))/sqr(wi.z)) - 1.0D) / 2.0D;
+        double lambdaV = (Math.sqrt(1.0 + (sqr(wo.x*ax) + sqr(wo.y*ay))/sqr(wo.z)) - 1.0D) / 2.0D;
         double GL = 1.0D / (1.0D + lambdaL);
         double GV = 1.0D / (1.0D + lambdaV);
         double G = GL * GV;
 
-        Vector3D fMetal = Vector3D.mult(Fm, D * G).div(4.0D * Math.abs(ns.dot(wo)));
+        Vector3D fMetal = Vector3D.mult(Fm, D * G).div(4.0D * absCosTheta(wo));
 
         return fMetal;
     }
@@ -52,31 +48,32 @@ public class DisneyMetal extends BRDF {
     @Override
     public double pdf(Vector3D wo, Vector3D wi) {
         Vector3D h = Vector3D.add(wo, wi).normalized();
-        
-        Vector3D hLocal = toLocal(h, ns).normalize();
-        Vector3D woLocal = toLocal(wo, ns).normalize();
 
         double aspect = Math.sqrt(1.0D - 0.9D * anisotropic);
         double ax = Math.max(0.0001D, sqr(roughness) / aspect);
         double ay = Math.max(0.0001D, sqr(roughness) * aspect);
 
         double D = 1.0D / (Math.PI * ax * ay * Math.pow(
-            (hLocal.x * hLocal.x) / (ax * ax) +
-            (hLocal.y * hLocal.y) / (ay * ay) +
-            (hLocal.z * hLocal.z), 2));
+            (h.x * h.x) / (ax * ax) +
+            (h.y * h.y) / (ay * ay) +
+            (h.z * h.z), 2));
 
-        double lambdaV = (Math.sqrt(1.0 + (sqr(woLocal.x*ax) + sqr(woLocal.y*ay))/sqr(woLocal.z)) - 1.0D) / 2.0D;
+        double lambdaV = (Math.sqrt(1.0 + (sqr(wo.x*ax) + sqr(wo.y*ay))/sqr(wo.z)) - 1.0D) / 2.0D;
         double GV = 1.0D / (1.0D + lambdaV);
 
-        return (D * GV) / (4.0D * Math.abs(ns.dot(wo)));
+        return (D * GV) / (4.0D * absCosTheta(wo));
     }
 
     @Override
-    public BxDFSample sample(Vector3D wo) {
-        Vector3D randomNormal = toWorld(ns, sampleVndfGGX(wo, Math.max(sqr(roughness), 0.0001D))).normalize();
-        Vector3D wi = reflect(wo, randomNormal);
+    public BxDFSample sample(Vector3D woWorld) {
+        Vector3D wi;
+        Vector3D wo = shadingFrame.toLocal(woWorld);
+        Vector3D randomNormal = sampleVndfGGX(wo, Math.max(sqr(roughness), 0.0001D)).normalize();
+        randomNormal = shadingFrame.toWorld(randomNormal);
+        wi = reflect(woWorld, randomNormal);
+        wi = shadingFrame.toLocal(wi);
         Vector3D f = eval(wo, wi);
         double pdf = pdf(wo, wi);
-        return new BxDFSample(wi, f, pdf, Event.REFLECT, sqr(roughness) <= 0.0001D);
+        return new BxDFSample(shadingFrame.toWorld(wi), f, pdf, Event.REFLECT, sqr(roughness) <= 0.0001D);
     }
 }

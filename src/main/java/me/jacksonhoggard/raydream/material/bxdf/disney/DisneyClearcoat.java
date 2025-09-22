@@ -22,17 +22,14 @@ public class DisneyClearcoat extends BRDF {
     public Vector3D eval(Vector3D wo, Vector3D wi) {
         double ag = (1.0D - clearcoatGloss) * 0.1D + clearcoatGloss * 0.001D;
         Vector3D h = Vector3D.add(wo, wi).normalized();
-        Vector3D hLocal = toLocal(h, ns).normalize();
-        Vector3D woLocal = toLocal(wo, ns).normalize();
-        Vector3D wiLocal = toLocal(wi, ns).normalize();
-        double Fc = 0.04D + (1.0D - 0.04D) * pow5(1 - Math.abs(h.dot(wi)));
-        double D = (sqr(ag) - 1.0D) / (Math.PI * Math.log(sqr(ag)) * (1.0D + (sqr(ag) - 1.0D) * (sqr(hLocal.z))));
-        double lambdaL = (Math.sqrt(1.0 + (sqr(wiLocal.x*0.25D) + sqr(wiLocal.y*0.25D))/sqr(wiLocal.z)) - 1.0D) / 2.0D;
-        double lambdaV = (Math.sqrt(1.0 + (sqr(woLocal.x*0.25D) + sqr(woLocal.y*0.25D))/sqr(woLocal.z)) - 1.0D) / 2.0D;
+        double Fc = 0.04D + (1.0D - 0.04D) * pow5(1 - absCosTheta(wi));
+        double D = (sqr(ag) - 1.0D) / (Math.PI * Math.log(sqr(ag)) * (1.0D + (sqr(ag) - 1.0D) * (sqr(h.z))));
+        double lambdaL = (Math.sqrt(1.0 + (sqr(wi.x*0.25D) + sqr(wi.y*0.25D))/sqr(wi.z)) - 1.0D) / 2.0D;
+        double lambdaV = (Math.sqrt(1.0 + (sqr(wo.x*0.25D) + sqr(wo.y*0.25D))/sqr(wo.z)) - 1.0D) / 2.0D;
         double GL = 1.0D / (1.0D + lambdaL);
         double GV = 1.0D / (1.0D + lambdaV);
         double G = GL * GV;
-        Vector3D fClearcoat = new Vector3D(1).mult(Fc * D * G).div(4.0D * Math.abs(ns.dot(wo)));
+        Vector3D fClearcoat = new Vector3D(1).mult(Fc * D * G).div(4.0D * absCosTheta(wo));
         return fClearcoat;
     }
 
@@ -40,17 +37,16 @@ public class DisneyClearcoat extends BRDF {
     public double pdf(Vector3D wo, Vector3D wi) {
         double ag = (1.0D - clearcoatGloss) * 0.1D + clearcoatGloss * 0.001D;
         Vector3D h = Vector3D.add(wo, wi).normalized();
-        Vector3D hLocal = toLocal(h, ns).normalize();
-        double D = (sqr(ag) - 1.0D) / (Math.PI * Math.log(sqr(ag)) * (1.0D + (sqr(ag) - 1.0D) * (sqr(hLocal.z))));
-        return (D * Math.abs(ns.dot(h))) / (4.0D * Math.abs(h.dot(wi)));
+        double D = (sqr(ag) - 1.0D) / (Math.PI * Math.log(sqr(ag)) * (1.0D + (sqr(ag) - 1.0D) * (sqr(h.z))));
+        return (D * absCosTheta(h)) / (4.0D * absCosTheta(wi));
     }
 
     @Override
     public BxDFSample sample(Vector3D wo) {
-        Vector3D randomNormal = sampleGTR1(ns, (1.0D - clearcoatGloss) * 0.1D + clearcoatGloss * 0.001D);
+        Vector3D randomNormal = sampleGTR1((1.0D - clearcoatGloss) * 0.1D + clearcoatGloss * 0.001D);
         Vector3D wi = reflect(wo, randomNormal);
         Vector3D f = eval(wo, wi);
         double pdf = pdf(wo, wi);
-        return new BxDFSample(wi, f, pdf, Event.REFLECT, clearcoatGloss == 1.0D);
+        return new BxDFSample(shadingFrame.toWorld(wi), f, pdf, Event.REFLECT, clearcoatGloss == 1.0D);
     }
 }

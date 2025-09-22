@@ -359,9 +359,6 @@ public class Scene {
                             .normalize();
                     bitan = MathUtils.transformDirectionToWS(bitan, ((Object) hit.primitive()).getTransformMatrix())
                             .normalize();
-                    if (ns.dot(wo) < 0) {
-                        ns.negate();
-                    }
                 }
 
                 // Add emission when hitting a light source
@@ -384,17 +381,19 @@ public class Scene {
                 LightSample ls = sampleLight(p);
                 if (ls != null && ls.pdf() > 0.0D && !ls.Li().equals(Vector3D.ZERO) && !prevDelta) {
                     Ray shadow = new Ray(
-                            Vector3D.add(p, Vector3D.mult(ng, EPS)),
+                            Vector3D.add(p, Vector3D.mult(ns, EPS)),
                             ls.wi());
                     boolean visible = !bvh.intersectShadowRay(shadow, ls.dist() - EPS);
 
                     if (visible) {
-                        Vector3D f = bxdf.eval(wo, ls.wi());
-                        double cos = Math.abs(ns.dot(ls.wi()));
-                        double bsdfPdf = bxdf.pdf(wo, ls.wi());
+                        Vector3D woLocal = bxdf.getShadingFrame().toLocal(wo);
+                        Vector3D wiLocal = bxdf.getShadingFrame().toLocal(ls.wi());
+                        Vector3D f = bxdf.eval(woLocal, wiLocal);
+                        double cos = Math.abs(wiLocal.z);
+                        double bsdfPdf = bxdf.pdf(woLocal, wiLocal);
                         double w = powerHeuristic(ls.pdf(), bsdfPdf);
                         if (bsdfPdf > 0.0D) {
-                            Vector3D contrib = f.mult(cos * w / ls.pdf());
+                            Vector3D contrib = f.mult(cos * w).div(ls.pdf());
                             if (!contrib.equals(Vector3D.ZERO)) {
                                 L.add(Vector3D.mult(beta, Vector3D.mult(contrib, ls.Li())));
                             }
@@ -409,7 +408,8 @@ public class Scene {
                 }
 
                 // Throughput update: beta *= f * |n . wi| / pdf
-                double cos = Math.abs(ns.dot(s.wi()));
+                Vector3D wi = bxdf.getShadingFrame().toLocal(s.wi());
+                double cos = Math.abs(wi.z);
                 beta.mult(Vector3D.mult(s.f(), cos)).div(s.pdf());
 
                 if (bounce >= rrStart) {
@@ -426,7 +426,8 @@ public class Scene {
                 if (s.event() == BxDF.Event.REFLECT) {
                     origin = Vector3D.add(p, Vector3D.mult(ns, EPS));
                 } else {
-                    origin = Vector3D.sub(p, Vector3D.mult(ns, EPS));
+                    origin = ns.dot(s.wi()) < 0 ? Vector3D.sub(p, Vector3D.mult(ns, EPS))
+                            : Vector3D.add(p, Vector3D.mult(ns, EPS));
                 }
                 ray = new Ray(origin, s.wi());
                 prevDelta = s.isDelta();
