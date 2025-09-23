@@ -3,6 +3,7 @@ package me.jacksonhoggard.raydream.material.bxdf;
 import java.util.HashMap;
 
 import me.jacksonhoggard.raydream.math.Frame;
+import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.util.MathUtils;
 
@@ -66,6 +67,50 @@ public abstract class BxDF implements IBxDF {
         Vector3D wmStd = sampleVndfHemisphere(woStd);
         Vector3D wm = new Vector3D(wmStd.x * alpha, wmStd.y * alpha, wmStd.z).normalized();
         return wm;
+    }
+
+    // Anisotropic GGX visible normal distribution sampling
+    protected static Vector3D sampleVndfGGXAniso(Vector3D wo, double ax, double ay) {
+        Vector3D wh = new Vector3D(ax * wo.x, ay * wo.y, wo.z).normalize();
+        if(wh.z < 0)
+            wh.negate();
+        Vector3D T1 = (wh.z < 0.99999D) ? new Vector3D(0, 0, 1).cross(wh).normalize()
+                                        : new Vector3D(1, 0, 0);
+        Vector3D T2 = wh.cross(T1);
+        Vector2D p = sampleUniformDiskPolar();
+        double h = Math.sqrt(1.0D - sqr(p.x));
+        p.y = MathUtils.lerp((1.0D + wh.z) / 2.0D, h, p.y);
+        double pz = Math.sqrt(Math.max(0, 1.0D - (sqr(p.x) + sqr(p.y))));
+        Vector3D nh = Vector3D.add(Vector3D.mult(p.x, T1), Vector3D.mult(p.y, T2)).add(Vector3D.mult(pz, wh));
+        return new Vector3D(ax * nh.x, ay * nh.y, Math.max(1e-6D, nh.z)).normalized();
+    }
+
+    protected static double pdfVndfGGX(Vector3D wm, double ax, double ay) {
+        double tan2Theta = tan2Theta(wm);
+        if(Double.isInfinite(tan2Theta))
+            return 0.0;
+        double cos4Theta = sqr(cos2Theta(wm));
+        double e = tan2Theta * (sqr(cosPhi(wm) / ax) + 
+                                sqr(sinPhi(wm) / ay));
+        return 1.0D / (Math.PI * ax * ay * cos4Theta * sqr(1.0D + e));
+    }
+
+    protected static double G_GGX(Vector3D wo, Vector3D wi, double ax, double ay) {
+        return 1.0D / (1.0D + lambda_GGX(wo, ax, ay) + lambda_GGX(wi, ax, ay));
+    }
+
+    protected static double lambda_GGX(Vector3D w, double ax, double ay) {
+        double tan2Theta = tan2Theta(w);
+        if(Double.isInfinite(tan2Theta))
+            return 0.0;
+        double alpha2 = sqr(cosPhi(w) * ax) + sqr(sinPhi(w) * ay);
+        return (Math.sqrt(1.0D + alpha2 * tan2Theta) - 1.0D) / 2.0D;
+    }
+
+    protected static Vector2D sampleUniformDiskPolar() {
+        double r = Math.sqrt(MathUtils.random());
+        double theta = 2.0D * Math.PI * MathUtils.random();
+        return new Vector2D(r * Math.cos(theta), r * Math.sin(theta));
     }
 
     protected static Vector3D sampleVndfHemisphere(Vector3D wo) {
@@ -169,19 +214,18 @@ public abstract class BxDF implements IBxDF {
 
     protected static Refraction refract(Vector3D wi, Vector3D n, double eta) {
         double cosI = n.dot(wi);
-        Vector3D normal = new Vector3D(n);
         if(cosI < 0) {
             eta = 1.0 / eta;
             cosI = -cosI;
-            normal.negate();
+            n.negate();
         }
         double sin2I = Math.max(0.0D, 1.0D - cosI * cosI);
         double sin2T = sin2I / sqr(eta);
         if(sin2T >= 1.0D)
             return new Refraction(null, eta, true); // TIR
-        double cosT = Math.sqrt(Math.max(0.0D, 1.0D - sin2T));
+        double cosT = Math.sqrt(1.0D - sin2T);
 
-        Vector3D wt = wi.negated().div(eta).add(Vector3D.mult(cosI / eta - cosT, normal));
+        Vector3D wt = wi.negated().div(eta).add(Vector3D.mult(cosI / eta - cosT, n));
         return new Refraction(wt, eta, false);
     }
 
@@ -228,5 +272,9 @@ public abstract class BxDF implements IBxDF {
         double wbxy = sqr(wb.x) + sqr(wb.y);
         if (waxy == 0 || wbxy == 0) return 1.0D;
         return MathUtils.clamp((wa.x * wb.x + wa.y * wb.y) / Math.sqrt(waxy * wbxy), -1.0, 1.0);
+    }
+
+    protected static boolean sameHemisphere(Vector3D w, Vector3D wp) {
+        return w.z * wp.z > 0.0D;
     }
 }

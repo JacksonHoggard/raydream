@@ -424,7 +424,9 @@ public class Scene {
                 // Spawn next ray
                 Vector3D origin;
                 if (s.event() == BxDF.Event.REFLECT) {
-                    origin = Vector3D.add(p, Vector3D.mult(ns, EPS));
+                    Vector3D normal = new Vector3D(ns);
+                    if (ns.dot(s.wi()) < 0) normal = ns.negated();
+                    origin = Vector3D.add(p, Vector3D.mult(normal, EPS));
                 } else {
                     origin = ns.dot(s.wi()) < 0 ? Vector3D.sub(p, Vector3D.mult(ns, EPS))
                             : Vector3D.add(p, Vector3D.mult(ns, EPS));

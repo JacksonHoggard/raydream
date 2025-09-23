@@ -67,23 +67,22 @@ public final class MathUtils {
      * @param t interpolation factor (0.0 to 1.0)
      * @return interpolated value
      */
-    public static double lerp(double a, double b, double t) {
-        return a + t * (b - a);
+    public static double lerp(double t, double a, double b) {
+        return (1.0 - t) * a + t * b;
     }
 
-    /**
-     * Linear interpolation between two vectors.
-     * 
-     * @param a start vector
-     * @param b end vector
-     * @param t interpolation factor (0.0 to 1.0)
-     * @return new interpolated vector
-     */
-    public static Vector3D lerp(Vector3D a, Vector3D b, double t) {
+    public static Vector3D max(Vector3D v, double value) {
         return new Vector3D(
-                lerp(a.x, b.x, t),
-                lerp(a.y, b.y, t),
-                lerp(a.z, b.z, t));
+                Math.max(v.x, value),
+                Math.max(v.y, value),
+                Math.max(v.z, value)
+        );
+    }
+
+    public static void faceForward(Vector3D normal, Vector3D v) {
+        if (normal.dot(v) < 0.0D) {
+            normal.negate();
+        }
     }
 
     /**
