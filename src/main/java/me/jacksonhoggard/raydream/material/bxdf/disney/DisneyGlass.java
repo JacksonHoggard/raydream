@@ -18,9 +18,18 @@ public class DisneyGlass extends BSDF {
       Vector3D baseColor,
       HashMap<String, Object> parameters) {
     super(ng, ns, baseColor, parameters);
-    this.ior = ((Double) parameters.get("ior"));
-    this.roughness = ((Double) parameters.get("roughness"));
-    this.anisotropic = ((Double) parameters.get("anisotropic"));
+    
+    // Get ior parameter or default to 1.5 if not provided
+    Object iorObj = parameters != null ? parameters.get("ior") : null;
+    this.ior = (iorObj instanceof Double) ? (Double) iorObj : 1.5;
+    
+    // Get roughness parameter or default to 0.0 if not provided  
+    Object roughnessObj = parameters != null ? parameters.get("roughness") : null;
+    this.roughness = (roughnessObj instanceof Double) ? (Double) roughnessObj : 0.0;
+    
+    // Get anisotropic parameter or default to 0.0 if not provided
+    Object anisotropicObj = parameters != null ? parameters.get("anisotropic") : null;
+    this.anisotropic = (anisotropicObj instanceof Double) ? (Double) anisotropicObj : 0.0;
   }
 
   @Override

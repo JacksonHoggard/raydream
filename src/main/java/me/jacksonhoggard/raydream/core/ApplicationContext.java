@@ -1,6 +1,7 @@
 package me.jacksonhoggard.raydream.core;
 
 import me.jacksonhoggard.raydream.config.ApplicationConfig;
+import me.jacksonhoggard.raydream.service.CommandLineService;
 import me.jacksonhoggard.raydream.service.LoggingService;
 import me.jacksonhoggard.raydream.service.RenderService;
 import me.jacksonhoggard.raydream.service.ResourceCacheService;
@@ -19,6 +20,7 @@ public class ApplicationContext {
     private final SceneService sceneService;
     private final RenderService renderService;
     private final ResourceCacheService cacheService;
+    private final CommandLineService commandLineService;
 
     private ApplicationContext() {
         // Initialize logging service first so other services can use it
@@ -35,6 +37,7 @@ public class ApplicationContext {
         this.sceneService = new SceneService();
         this.renderService = new RenderService();
         this.cacheService = new ResourceCacheService();
+        this.commandLineService = new CommandLineService();
     }
 
     /**
@@ -92,6 +95,14 @@ public class ApplicationContext {
      */
     public ResourceCacheService getCacheService() {
         return cacheService;
+    }
+
+    /**
+     * Gets the command line service for handling CLI operations.
+     * @return the command line service
+     */
+    public CommandLineService getCommandLineService() {
+        return commandLineService;
     }
 
     /**

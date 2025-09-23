@@ -14,6 +14,9 @@ public class Main {
 
         logger.info("Starting RayDream application...");
 
+        // Parse command line arguments
+        context.getCommandLineService().parseArguments(args);
+
         // Add shutdown hook for graceful cleanup
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (!shutdownInProgress) {

@@ -67,6 +67,10 @@ public class DialogWindow {
         }
     };
 
+    public static boolean isOpen() {
+        return frame != null && frame.isVisible();
+    }
+
     public static String openFileChooser(String description, String... extensions) {
         JFileChooser fileChooser = new JFileChooser();
         if(lastDir != null)

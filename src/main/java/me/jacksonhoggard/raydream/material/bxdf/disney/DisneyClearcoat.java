@@ -15,7 +15,10 @@ public class DisneyClearcoat extends BRDF {
         HashMap<String, Object> parameters
     ) {
         super(ng, ns, baseColor, parameters);
-        this.clearcoatGloss = ((Double) parameters.get("clearcoatGloss"));
+        
+        // Get clearcoatGloss parameter or default to 1.0 if not provided
+        Object clearcoatGlossObj = parameters != null ? parameters.get("clearcoatGloss") : null;
+        this.clearcoatGloss = (clearcoatGlossObj instanceof Double) ? (Double) clearcoatGlossObj : 1.0;
     }
 
     @Override

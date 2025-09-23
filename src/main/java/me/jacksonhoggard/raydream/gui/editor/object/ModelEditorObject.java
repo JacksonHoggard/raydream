@@ -4,11 +4,14 @@ import imgui.extension.imguizmo.ImGuizmo;
 import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.MeshModel;
 import me.jacksonhoggard.raydream.material.bxdf.BxDF;
+import me.jacksonhoggard.raydream.math.Matrix4D;
 import me.jacksonhoggard.raydream.math.Vector2D;
 import me.jacksonhoggard.raydream.math.Vector3D;
 import me.jacksonhoggard.raydream.object.Mesh;
 import me.jacksonhoggard.raydream.object.Model;
 import me.jacksonhoggard.raydream.object.Object;
+import me.jacksonhoggard.raydream.object.Primitive;
+import me.jacksonhoggard.raydream.object.Transform;
 import me.jacksonhoggard.raydream.object.Triangle;
 
 import java.io.*;
@@ -22,7 +25,15 @@ public class ModelEditorObject extends EditorObject {
 
     public ModelEditorObject(MeshModel model, float[] translation, float[] rotation, float[] scale, String label) throws IOException {
         super(model, new EditorObjectMaterial<>());
-        ImGuizmo.recomposeMatrixFromComponents(translation, rotation, scale, this.getModelMatrix());
+        Matrix4D m = Primitive.composeModelMatrix(
+            new Transform(
+                new Vector3D(translation[0], translation[1], translation[2]),
+                new Vector3D(rotation[0], rotation[1], rotation[2]),
+                new Vector3D(scale[0], scale[1], scale[2])
+            ));
+        for(int i = 0; i < 16; i++) {
+            this.getModelMatrix()[i] = (float) m.getMatrixArray()[i];
+        }
         this.label.set(label);
     }
 

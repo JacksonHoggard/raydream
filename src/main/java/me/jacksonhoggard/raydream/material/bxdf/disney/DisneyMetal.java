@@ -16,8 +16,14 @@ public class DisneyMetal extends BRDF {
         HashMap<String, Object> parameters
     ) {
         super(ng, ns, baseColor, parameters);
-        this.roughness = ((Double) parameters.get("roughness"));
-        this.anisotropic = ((Double) parameters.get("anisotropic"));
+        
+        // Get roughness parameter or default to 0.5 if not provided
+        Object roughnessObj = parameters != null ? parameters.get("roughness") : null;
+        this.roughness = (roughnessObj instanceof Double) ? (Double) roughnessObj : 0.5;
+        
+        // Get anisotropic parameter or default to 0.0 if not provided
+        Object anisotropicObj = parameters != null ? parameters.get("anisotropic") : null;
+        this.anisotropic = (anisotropicObj instanceof Double) ? (Double) anisotropicObj : 0.0;
     }
 
     @Override

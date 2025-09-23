@@ -9,7 +9,8 @@ public final class ApplicationConfig {
     // Window Configuration
     public static final int DEFAULT_WINDOW_WIDTH = 1280;
     public static final int DEFAULT_WINDOW_HEIGHT = 720;
-    public static final String WINDOW_TITLE = "RayDream - Ray Tracer";
+    public static final String WINDOW_TITLE = "RayDream";
+    public static final String VERSION = "1.2.1";
 
     // Rendering Configuration
     public static final int DEFAULT_MAX_BOUNCE_DEPTH = 10;

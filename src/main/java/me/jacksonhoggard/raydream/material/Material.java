@@ -42,7 +42,7 @@ public class Material<T extends BxDF> {
     }
 
     public Vector3D getAlbedo(Vector2D texCoord) {
-        if(texture != null)
+        if(texture != null && texCoord != null)
             return texture.getColorAt(texCoord.x, texCoord.y);
         return albedo;
     }
@@ -70,9 +70,40 @@ public class Material<T extends BxDF> {
     public T createBxDF(Vector3D ng, Vector3D ns, Vector2D uv) {
         T bxdf = null;
         try {
+            // Check for null parameters before creating the BxDF
+            if (ng == null) {
+                System.err.println("ERROR: ng (geometric normal) is null in createBxDF");
+                return null;
+            }
+            if (ns == null) {
+                System.err.println("ERROR: ns (shading normal) is null in createBxDF");
+                return null;
+            }
+            if (uv == null) {
+                System.err.println("ERROR: uv (texture coordinates) is null in createBxDF");
+                return null;
+            }
+            if (bxdfClass == null) {
+                System.err.println("ERROR: bxdfClass is null in createBxDF");
+                return null;
+            }
+            
+            Vector3D albedo = getAlbedo(uv);
+            if (albedo == null) {
+                System.err.println("ERROR: albedo returned null from getAlbedo() in createBxDF");
+                return null;
+            }
+            
+            // parameters can be null, but let's log it for debugging
+            if (parameters == null) {
+                System.err.println("WARNING: parameters is null in createBxDF (this may be okay)");
+            }
+            
             bxdf = (T) bxdfClass.getConstructor(Vector3D.class, Vector3D.class, Vector3D.class, HashMap.class)
-            .newInstance(ng, ns, getAlbedo(uv), parameters);
+            .newInstance(ng, ns, albedo, parameters);
         } catch (Exception e) {
+            System.err.println("ERROR in createBxDF: " + e.getMessage());
+            System.err.println("Parameters: ng=" + ng + ", ns=" + ns + ", uv=" + uv + ", bxdfClass=" + bxdfClass);
             e.printStackTrace();
         }
         return bxdf;

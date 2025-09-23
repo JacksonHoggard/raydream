@@ -15,8 +15,14 @@ public class DisneyDiffuse extends BRDF {
             Vector3D baseColor, HashMap<String, Object> parameters
     ) {
         super(ng, ns, baseColor, parameters);
-        this.roughness = ((Double) parameters.get("roughness"));
-        this.subsurface = ((Double) parameters.get("subsurface"));
+        
+        // Get roughness parameter or default to 0.0 if not provided
+        Object roughnessObj = parameters != null ? parameters.get("roughness") : null;
+        this.roughness = (roughnessObj instanceof Double) ? (Double) roughnessObj : 0.0;
+        
+        // Get subsurface parameter or default to 0.0 if not provided
+        Object subsurfaceObj = parameters != null ? parameters.get("subsurface") : null;
+        this.subsurface = (subsurfaceObj instanceof Double) ? (Double) subsurfaceObj : 0.0;
     }
 
     @Override

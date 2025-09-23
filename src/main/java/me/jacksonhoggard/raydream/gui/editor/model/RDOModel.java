@@ -24,6 +24,10 @@ public class RDOModel extends MeshModel {
         this.stream = stream;
     }
 
+    public void loadRDO() throws IOException {
+        loadRDO(stream);
+    }
+
     private void loadRDO(InputStream stream) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
         String line;

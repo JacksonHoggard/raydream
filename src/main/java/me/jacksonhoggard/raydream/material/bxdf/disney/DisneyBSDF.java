@@ -27,18 +27,43 @@ public class DisneyBSDF extends BSDF {
             HashMap<String, Object> parameters
     ) {
         super(ng, ns, baseColor, parameters);
-        this.metallic = ((Double) parameters.get("metallic")).doubleValue();
-        this.subsurface = ((Double) parameters.get("subsurface")).doubleValue();
-        this.specular = ((Double) parameters.get("specular")).doubleValue();
-        this.roughness = ((Double) parameters.get("roughness")).doubleValue();
-        this.specularTint = ((Double) parameters.get("specularTint")).doubleValue();
-        this.sheen = ((Double) parameters.get("sheen")).doubleValue();
-        this.sheenTint = ((Double) parameters.get("sheenTint")).doubleValue();
-        this.clearcoat = ((Double) parameters.get("clearcoat")).doubleValue();
-        this.clearcoatGloss = ((Double) parameters.get("clearcoatGloss")).doubleValue();
-        this.transmission = ((Double) parameters.get("transmission")).doubleValue();
-        this.ior = ((Double) parameters.get("ior")).doubleValue();
-        this.thin = ((Boolean) parameters.get("thin")).booleanValue();
+        
+        // Get all parameters with safe defaults
+        Object metallicObj = parameters != null ? parameters.get("metallic") : null;
+        this.metallic = (metallicObj instanceof Double) ? ((Double) metallicObj).doubleValue() : 0.0;
+        
+        Object subsurfaceObj = parameters != null ? parameters.get("subsurface") : null;
+        this.subsurface = (subsurfaceObj instanceof Double) ? ((Double) subsurfaceObj).doubleValue() : 0.0;
+        
+        Object specularObj = parameters != null ? parameters.get("specular") : null;
+        this.specular = (specularObj instanceof Double) ? ((Double) specularObj).doubleValue() : 0.5;
+        
+        Object roughnessObj = parameters != null ? parameters.get("roughness") : null;
+        this.roughness = (roughnessObj instanceof Double) ? ((Double) roughnessObj).doubleValue() : 0.5;
+        
+        Object specularTintObj = parameters != null ? parameters.get("specularTint") : null;
+        this.specularTint = (specularTintObj instanceof Double) ? ((Double) specularTintObj).doubleValue() : 0.0;
+        
+        Object sheenObj = parameters != null ? parameters.get("sheen") : null;
+        this.sheen = (sheenObj instanceof Double) ? ((Double) sheenObj).doubleValue() : 0.0;
+        
+        Object sheenTintObj = parameters != null ? parameters.get("sheenTint") : null;
+        this.sheenTint = (sheenTintObj instanceof Double) ? ((Double) sheenTintObj).doubleValue() : 0.5;
+        
+        Object clearcoatObj = parameters != null ? parameters.get("clearcoat") : null;
+        this.clearcoat = (clearcoatObj instanceof Double) ? ((Double) clearcoatObj).doubleValue() : 0.0;
+        
+        Object clearcoatGlossObj = parameters != null ? parameters.get("clearcoatGloss") : null;
+        this.clearcoatGloss = (clearcoatGlossObj instanceof Double) ? ((Double) clearcoatGlossObj).doubleValue() : 1.0;
+        
+        Object transmissionObj = parameters != null ? parameters.get("transmission") : null;
+        this.transmission = (transmissionObj instanceof Double) ? ((Double) transmissionObj).doubleValue() : 0.0;
+        
+        Object iorObj = parameters != null ? parameters.get("ior") : null;
+        this.ior = (iorObj instanceof Double) ? ((Double) iorObj).doubleValue() : 1.5;
+        
+        Object thinObj = parameters != null ? parameters.get("thin") : null;
+        this.thin = (thinObj instanceof Boolean) ? ((Boolean) thinObj).booleanValue() : false;
     }
 
 

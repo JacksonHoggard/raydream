@@ -10,11 +10,15 @@ import me.jacksonhoggard.raydream.gui.editor.material.EditorObjectMaterial;
 import me.jacksonhoggard.raydream.gui.editor.model.EditorModel;
 import me.jacksonhoggard.raydream.gui.editor.model.MeshModel;
 import me.jacksonhoggard.raydream.material.bxdf.BxDF;
+import me.jacksonhoggard.raydream.math.Matrix4D;
 import me.jacksonhoggard.raydream.math.Vector3D;
+import me.jacksonhoggard.raydream.object.Primitive;
 import me.jacksonhoggard.raydream.object.Transform;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
+import org.lwjgl.opengl.GL;
 
 public abstract class EditorObject implements IEditorObject {
 
@@ -39,7 +43,13 @@ public abstract class EditorObject implements IEditorObject {
     public EditorObject(EditorModel model, EditorObjectMaterial<? extends BxDF> material) throws IOException {
         this.material = material;
         this.model = model;
-        this.model.create();
+        try {
+            if(GL.getCapabilities() != null) {
+                this.model.create();
+            }
+        } catch (Exception e) {
+            // Do nothing
+        }
         id = lastID;
         label = new ImString("Object", 128);
         lastID++;
@@ -115,14 +125,21 @@ public abstract class EditorObject implements IEditorObject {
     }
 
     public Transform getTransform() {
-        float[] translation = new float[3];
-        float[] rotation = new float[3];
-        float[] scale = new float[3];
-        ImGuizmo.decomposeMatrixToComponents(getModelMatrix(), translation, rotation, scale);
+        Vector3D translation = new Vector3D();
+        Vector3D rotation = new Vector3D();
+        Vector3D scale = new Vector3D();
+        float[] mat = getModelMatrix();
+        Matrix4D m = new Matrix4D(
+            mat[0], mat[1], mat[2], mat[3],
+            mat[4], mat[5], mat[6], mat[7],
+            mat[8], mat[9], mat[10], mat[11],
+            mat[12], mat[13], mat[14], mat[15]
+        );
+        Primitive.decomposeMatrix(m, translation, rotation, scale);
         return new Transform(
-                new Vector3D(translation[0], translation[1], translation[2]),
-                new Vector3D(rotation[0], rotation[1], rotation[2]),
-                new Vector3D(scale[0], scale[1], scale[2])
+                translation,
+                rotation,
+                scale
         );
     }
 

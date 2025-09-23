@@ -32,7 +32,7 @@ public abstract class Primitive implements IPrimitive {
                 new Vector3D(max.x, min.y, max.z),
                 max
         };
-        for(Vector3D v : aabb) {
+        for (Vector3D v : aabb) {
             v = MathUtils.transformPointToWS(v, transformMatrix);
             this.min.x = Math.min(this.min.x, v.x);
             this.min.y = Math.min(this.min.y, v.y);
@@ -45,44 +45,72 @@ public abstract class Primitive implements IPrimitive {
         this.isLight = isLight;
     }
 
+    public static void decomposeMatrix(Matrix4D matrix, Vector3D translation, Vector3D rotation, Vector3D scale) {
+        double[] mat = matrix.transpose().getMatrixArray().clone();
+        Vector4D right = new Vector4D(mat[0], mat[1], mat[2], mat[3]);
+        Vector4D up = new Vector4D(mat[4], mat[5], mat[6], mat[7]);
+        Vector4D dir = new Vector4D(mat[8], mat[9], mat[10], mat[11]);
+        scale.x = right.length();
+        scale.y = up.length();
+        scale.z = dir.length();
+
+        Vector4D tempRight = new Vector4D(right).normalize();
+        Vector4D tempUp = new Vector4D(up).normalize();
+        Vector4D tempDir = new Vector4D(dir).normalize();
+
+        Matrix4D mOrtho = new Matrix4D(
+                tempRight.x, tempRight.y, tempRight.z, tempRight.w,
+                tempUp.x, tempUp.y, tempUp.z, tempUp.w,
+                tempDir.x, tempDir.y, tempDir.z, tempDir.w,
+                0.f, 0.f, 0.f, 1.f);
+
+        double RAD2DEG = 180.D / Math.PI;
+
+        rotation.x = RAD2DEG * Math.atan2(mOrtho.get(1, 2), mOrtho.get(2, 2));
+        rotation.y = RAD2DEG * Math.atan2(-mOrtho.get(0, 2),
+                Math.sqrt(mOrtho.get(1, 2) * mOrtho.get(1, 2) + mOrtho.get(2, 2) * mOrtho.get(2, 2)));
+        rotation.z = RAD2DEG * Math.atan2(mOrtho.get(0, 1), mOrtho.get(0, 0));
+
+        translation.x = mat[12];
+        translation.y = mat[13];
+        translation.z = mat[14];
+    }
+
     public static Matrix4D composeModelMatrix(Transform transform) {
         Matrix4D matrix;
         double[] translation, rotation, scale;
-        translation = new double[]{
+        translation = new double[] {
                 transform.translation().x,
                 transform.translation().y,
                 transform.translation().z
         };
-        rotation = new double[]{
+        rotation = new double[] {
                 transform.rotation().x,
                 transform.rotation().y,
                 transform.rotation().z
         };
-        scale = new double[]{
+        scale = new double[] {
                 transform.scale().x,
                 transform.scale().y,
                 transform.scale().z
         };
 
         Matrix4D[] rot = new Matrix4D[3];
-        Vector4D[] dirs = new Vector4D[]{
+        Vector4D[] dirs = new Vector4D[] {
                 new Vector4D(1, 0, 0, 0),
                 new Vector4D(0, 1, 0, 0),
                 new Vector4D(0, 0, 1, 0)
         };
-        for (int i = 0; i < 3; i++)
-        {
+        for (int i = 0; i < 3; i++) {
             float angle = (float) (rotation[i] * Math.PI / 180.F);
             Vector4D axis = dirs[i];
             float length2 = (float) Math.pow(dirs[i].length(), 2);
-            if (length2 < 1e-5)
-            {
+            if (length2 < 1e-5) {
                 rot[i] = new Matrix4D(
                         1, 0, 0, 0,
                         0, 1, 0, 0,
                         0, 0, 1, 0,
-                        0, 0, 0, 1
-                );
+                        0, 0, 0, 1);
                 continue;
             }
 
@@ -105,21 +133,16 @@ public abstract class Primitive implements IPrimitive {
                     xx, xy + zs, zx - ys, 0.f,
                     xy - zs, yy, yz + xs, 0.f,
                     zx + ys, yz - xs, zz, 0.f,
-                    0.f, 0.f, 0.f, 1.f
-            );
+                    0.f, 0.f, 0.f, 1.f);
         }
 
         matrix = rot[0].mult(rot[1]).mult(rot[2]);
 
         float[] validScale = new float[3];
-        for (int i = 0; i < 3; i++)
-        {
-            if (Math.abs(scale[i]) < 1e-5)
-            {
+        for (int i = 0; i < 3; i++) {
+            if (Math.abs(scale[i]) < 1e-5) {
                 validScale[i] = 0.001f;
-            }
-            else
-            {
+            } else {
                 validScale[i] = (float) scale[i];
             }
         }
@@ -127,26 +150,22 @@ public abstract class Primitive implements IPrimitive {
                 matrix.getMatrixArray()[0],
                 matrix.getMatrixArray()[1],
                 matrix.getMatrixArray()[2],
-                matrix.getMatrixArray()[3]
-        );
+                matrix.getMatrixArray()[3]);
         Vector4D up = new Vector4D(
                 matrix.getMatrixArray()[4],
                 matrix.getMatrixArray()[5],
                 matrix.getMatrixArray()[6],
-                matrix.getMatrixArray()[7]
-        );
+                matrix.getMatrixArray()[7]);
         Vector4D dir = new Vector4D(
                 matrix.getMatrixArray()[8],
                 matrix.getMatrixArray()[9],
                 matrix.getMatrixArray()[10],
-                matrix.getMatrixArray()[11]
-        );
+                matrix.getMatrixArray()[11]);
         Vector4D position = new Vector4D(
                 translation[0],
                 translation[1],
                 translation[2],
-                1.f
-        );
+                1.f);
         right.mult(validScale[0]);
         up.mult(validScale[1]);
         dir.mult(validScale[2]);
@@ -154,8 +173,7 @@ public abstract class Primitive implements IPrimitive {
                 right.x, right.y, right.z, right.w,
                 up.x, up.y, up.z, up.w,
                 dir.x, dir.y, dir.z, dir.w,
-                position.x, position.y, position.z, position.w
-        );
+                position.x, position.y, position.z, position.w);
         return matrix.transpose();
     }
 
