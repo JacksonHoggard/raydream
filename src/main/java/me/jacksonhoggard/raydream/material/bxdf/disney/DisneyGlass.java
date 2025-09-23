@@ -117,7 +117,7 @@ public class DisneyGlass extends BSDF {
       Vector3D f = new Vector3D(T * pdfVndfGGX(wm, ax, ay) * G_GGX(wo, refraction.wt(), ax, ay)
           * Math.abs(refraction.wt().dot(wm) * wo.dot(wm) / (cosTheta(refraction.wt()) * cosTheta(wo) * denom))).div(sqr(refraction.eta()))
           .mult(MathUtils.max(sqrtBaseColor, 1e-4D));
-      return new BxDFSample(shadingFrame.toWorld(refraction.wt()), f, pdf, BxDF.Event.TRANSMIT, sqr(roughness) <= 1e-4D);
+      return new BxDFSample(shadingFrame.toWorld(refraction.wt()), f, pdf, BxDF.Event.TRANSMIT, true);
     }
   }
 }
