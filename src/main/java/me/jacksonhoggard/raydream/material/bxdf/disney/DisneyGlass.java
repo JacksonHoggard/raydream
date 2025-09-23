@@ -45,10 +45,15 @@ public class DisneyGlass extends BSDF {
       return new Vector3D(pdfVndfGGX(wm, ax, ay) * G_GGX(wo, wi, ax, ay) * F / Math.abs(4.0D * cosTheta(wi) * cosTheta(wo)))
           .mult(baseColor);
     } else {
+      Vector3D sqrtBaseColor = new Vector3D(
+          Math.sqrt(baseColor.x),
+          Math.sqrt(baseColor.y),
+          Math.sqrt(baseColor.z)
+      );
       double denom = sqr(wi.dot(wm) + wo.dot(wm) / etaP) * cosTheta(wi) * cosTheta(wo);
       double ft = pdfVndfGGX(wm, ax, ay) * (1.0D - F) * G_GGX(wo, wi, ax, ay)
           * Math.abs(wi.dot(wm) * wo.dot(wm) / denom);
-      return new Vector3D(ft / sqr(etaP)).mult(baseColor);
+      return new Vector3D(ft / sqr(etaP)).mult(MathUtils.max(sqrtBaseColor, 1e-4D));
     }
   }
 
@@ -98,7 +103,7 @@ public class DisneyGlass extends BSDF {
       Vector3D wi = reflect(wo, wm);
       if(!sameHemisphere(wo, wi))
         return new BxDFSample(Vector3D.ZERO, Vector3D.ZERO, 0.0D, null, false);
-        pdf = pdfVndfGGX(wm, ax, ay) / (4.0D * Math.abs(wo.dot(wm))) * R / (R + T);
+      pdf = pdfVndfGGX(wm, ax, ay) / (4.0D * Math.abs(wo.dot(wm))) * R / (R + T);
       Vector3D f = new Vector3D(pdf * G_GGX(wo, wi, ax, ay) * R / (4.0D * cosTheta(wi) * cosTheta(wo)))
           .mult(baseColor);
       return new BxDFSample(shadingFrame.toWorld(wi), f, pdf, BxDF.Event.REFLECT, sqr(roughness) <= 1e-4D);
