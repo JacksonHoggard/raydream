@@ -53,6 +53,14 @@ A photorealistic raytracer and editor designed to create stunning rendered image
     java -jar raydream-jar-with-dependencies.jar
     ```
 
+### macOS Notes
+On macOS, GLFW must be initialized on the first thread. Run the JAR with `-XstartOnFirstThread` (and optionally `--enable-native-access=ALL-UNNAMED` to silence native access warnings):
+
+```bash
+cd target/
+java -XstartOnFirstThread --enable-native-access=ALL-UNNAMED -jar raydream-jar-with-dependencies.jar
+```
+
 ## Contributions
 
 Contributions to RayDream are welcome! Whether you want to fix bugs, add new features, or improve documentation, your contributions are greatly appreciated. Just fork the repository, make your changes, and submit a pull request.
