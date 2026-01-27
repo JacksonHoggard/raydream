@@ -258,6 +258,7 @@ public class GUIApplication implements AutoCloseable {
         ObjectWindow.show();
         SettingsWindow.show();
         PreviewWindow.show(renderManager.getPreviewFrameBuffer());
+        DialogWindow.renderMacProgressWindow();
     }
     
     private void render3DContent() {

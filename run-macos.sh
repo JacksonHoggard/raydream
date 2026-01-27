@@ -10,4 +10,4 @@ if [[ ! -f "${JAR_PATH}" ]]; then
   exit 1
 fi
 
-java -XstartOnFirstThread --enable-native-access=ALL-UNNAMED -jar "${JAR_PATH}" "$@"
+java -XstartOnFirstThread -Xshare:off --enable-native-access=ALL-UNNAMED -jar "${JAR_PATH}" "$@"

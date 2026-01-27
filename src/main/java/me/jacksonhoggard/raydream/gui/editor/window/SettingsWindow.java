@@ -15,6 +15,7 @@ import me.jacksonhoggard.raydream.service.SceneService;
 import me.jacksonhoggard.raydream.util.Logger;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import java.nio.file.Path;
 
@@ -106,33 +107,73 @@ public class SettingsWindow {
                 if(!(path.endsWith(".jpg") || path.endsWith(".png") || path.endsWith(".jpeg")))
                     path += ".png";
                 DialogWindow.showProgressBar("Render Progress", 250, 70, Scene.getRenderCancelListener());
-                try {
-                    sceneService.renderScene(
-                            ObjectWindow.objects,
-                            ObjectWindow.lights,
-                            new Vector3D(
+                if (DialogWindow.isMac()) {
+                    final String outputPath = path;
+                    final ArrayList<me.jacksonhoggard.raydream.gui.editor.object.EditorObject> renderObjects =
+                        new ArrayList<>(ObjectWindow.objects);
+                    final ArrayList<me.jacksonhoggard.raydream.gui.editor.light.EditorLight> renderLights =
+                        new ArrayList<>(ObjectWindow.lights);
+                    new Thread(() -> {
+                        try {
+                            sceneService.renderScene(
+                                renderObjects,
+                                renderLights,
+                                new Vector3D(
                                     skyColor[0],
                                     skyColor[1],
                                     skyColor[2]
-                            ),
-                            camera,
-                            imgWidth,
-                            imgHeight,
-                            aperture,
-                            path,
-                            sampleDepth,
-                            bounces,
-                            numShadowRays,
-                            threads,
-                            rrStartDepth,
-                            DialogWindow.getProgressListener()
-                    );
-                } catch (IOException e) {
-                    logger.error("Failed to render scene", e);
-                    // TODO: Show error dialog to user
+                                ),
+                                camera,
+                                imgWidth,
+                                imgHeight,
+                                aperture,
+                                outputPath,
+                                sampleDepth,
+                                bounces,
+                                numShadowRays,
+                                threads,
+                                rrStartDepth,
+                                DialogWindow.getProgressListener()
+                            );
+                        } catch (Exception e) {
+                            logger.error("Failed to render scene", e);
+                            DialogWindow.showError("Failed to render scene", e);
+                        } finally {
+                            if (!Scene.getRenderCancelListener().isCanceled()) {
+                                DialogWindow.openImage(Path.of(outputPath).getFileName().toString(), outputPath, imgWidth, imgHeight);
+                            }
+                            DialogWindow.endMacRender();
+                        }
+                    }, "RayDream-Render").start();
+                } else {
+                    try {
+                        sceneService.renderScene(
+                                ObjectWindow.objects,
+                                ObjectWindow.lights,
+                                new Vector3D(
+                                        skyColor[0],
+                                        skyColor[1],
+                                        skyColor[2]
+                                ),
+                                camera,
+                                imgWidth,
+                                imgHeight,
+                                aperture,
+                                path,
+                                sampleDepth,
+                                bounces,
+                                numShadowRays,
+                                threads,
+                                rrStartDepth,
+                                DialogWindow.getProgressListener()
+                        );
+                    } catch (IOException e) {
+                        logger.error("Failed to render scene", e);
+                        // TODO: Show error dialog to user
+                    }
+                    if(!Scene.getRenderCancelListener().isCanceled())
+                        DialogWindow.openImage(Path.of(path).getFileName().toString(), path, imgWidth, imgHeight);
                 }
-                if(!Scene.getRenderCancelListener().isCanceled())
-                    DialogWindow.openImage(Path.of(path).getFileName().toString(), path, imgWidth, imgHeight);
             }
         }
 

@@ -54,11 +54,11 @@ A photorealistic raytracer and editor designed to create stunning rendered image
     ```
 
 ### macOS Notes
-On macOS, GLFW must be initialized on the first thread. Run the JAR with `-XstartOnFirstThread` (and optionally `--enable-native-access=ALL-UNNAMED` to silence native access warnings):
+On macOS, GLFW must be initialized on the first thread. If you see SIGBUS crashes on Apple Silicon, disable class data sharing with `-Xshare:off`. Run the JAR with:
 
 ```bash
 cd target/
-java -XstartOnFirstThread --enable-native-access=ALL-UNNAMED -jar raydream-jar-with-dependencies.jar
+java -XstartOnFirstThread -Xshare:off --enable-native-access=ALL-UNNAMED -jar raydream-jar-with-dependencies.jar
 ```
 
 ## Contributions

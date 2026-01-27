@@ -11,11 +11,14 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.nio.channels.Channels;
+import java.util.Locale;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 public class WindowManager implements AutoCloseable {
+    private static final boolean IS_MAC =
+        System.getProperty("os.name", "").toLowerCase(Locale.ROOT).contains("mac");
     private final Logger logger;
     private final GUIErrorHandler errorHandler;
     private long windowPtr;
@@ -43,13 +46,24 @@ public class WindowManager implements AutoCloseable {
         // Set error callback BEFORE glfwInit
         errorCallback = GLFWErrorCallback.createPrint(System.err);
         glfwSetErrorCallback(errorCallback);
-        
-        if (!glfwInit()) {
-            throw new RuntimeException("Unable to initialize GLFW");
+
+        try {
+            if (!glfwInit()) {
+                throw new RuntimeException("Unable to initialize GLFW");
+            }
+        } catch (IllegalStateException e) {
+            if (IS_MAC && e.getMessage() != null && e.getMessage().contains("XstartOnFirstThread")) {
+                throw new IllegalStateException(
+                    "GLFW on macOS must be initialized on the first thread. " +
+                    "Run the JVM with -XstartOnFirstThread.",
+                    e
+                );
+            }
+            throw e;
         }
         
         // Initialize GLSL
-        if(System.getProperty("os.name").contains("Mac")) {
+        if (IS_MAC) {
             glslVersion = "#version 150";
         } else {
             glslVersion = "#version 330 core";
@@ -86,7 +100,7 @@ public class WindowManager implements AutoCloseable {
     }
     
     private void setupWindow() {
-        if(!System.getProperty("os.name").contains("Mac")) {
+        if (!IS_MAC) {
             setWindowIcon();
         }
         configureWindow();
@@ -169,6 +183,9 @@ public class WindowManager implements AutoCloseable {
     }
     
     public void setShouldClose(boolean shouldClose) {
+        if (windowPtr == NULL) {
+            return;
+        }
         glfwSetWindowShouldClose(windowPtr, shouldClose);
     }
     
